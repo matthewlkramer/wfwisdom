@@ -1,0 +1,506 @@
+{
+ "landlord_letter": {
+  "review": {
+   "verdict": "Needs significant work",
+   "summary": "Priya, your interest in this specific storefront and your care for Montessori come through clearly. Before sending this, replace the internal language and unsupported financing promise with a concrete picture of the school, the space you need, and your readiness to manage licensing and fit-out. The landlord also needs a specific next step and direct contact information.",
+   "rubric": [
+    {
+     "criterion": "Clarity of the ask and next step",
+     "score": 2,
+     "note": "\u201cPlease let me know if you are interested\u201d is easy to overlook. Ask for a 20-minute call or walk-through, suggest a timeframe, and include your phone number and email."
+    },
+    {
+     "criterion": "Concrete picture of the tenant",
+     "score": 1,
+     "note": "The letter does not state the children\u2019s ages, enrollment, adult team size, operating hours, square footage, space requirements, lease start, or a specific opening date."
+    },
+    {
+     "criterion": "Landlord's perspective",
+     "score": 1,
+     "note": "The draft does not yet address lease term, who the tenant will be, rent reliability, likely improvements, licensing planning, or effects on neighbors. \u201cI\u2019m sure we can work that out\u201d may make the project sound unprepared."
+    },
+    {
+     "criterion": "Wildflower and school story",
+     "score": 2,
+     "note": "Wildflower is described briefly, but \u201cSSJ,\u201d \u201cOps Guide,\u201d \u201cEmerging Teacher Leader,\u201d and \u201cSunlight Loan\u201d are internal terms. The statement that Wildflower will guarantee the lease is an overclaim unless formally approved."
+    },
+    {
+     "criterion": "Voice and length",
+     "score": 2,
+     "note": "The first-person voice is warm and the length is manageable. However, the long philosophy paragraph, sweeping claims, and double exclamation points make it less businesslike than this audience needs."
+    }
+   ],
+   "strengths": [
+    "You name the specific property\u2014\u201cthe storefront at 412 Broadway\u201d\u2014which makes the inquiry personal rather than generic.",
+    "\u201cI walk by it all the time\u201d begins to show a genuine connection to the place. Add why you want to open in this neighborhood.",
+    "The phrase \u201cteacher-led, shopfront Montessori micro-schools\u201d conveys several important features efficiently, though \u201cmicro-schools\u201d may need a plain-language explanation.",
+    "The draft is short enough to become an effective one-page letter after focused revision."
+   ],
+   "priority_changes": [
+    {
+     "what": "Add the basic facts about Marigold Montessori and the property search.",
+     "why": "A landlord needs to picture the proposed use and judge whether it fits the space. Without numbers and dates, the inquiry can read as early or speculative.",
+     "how": "State the age range, expected number of children, number of adults, approximate hours, desired square footage, target opening month and year, and realistic lease start. Name needs such as ground-floor access, natural light, two bathrooms or the ability to add them, and access to outdoor space or a nearby park."
+    },
+    {
+     "what": "Remove the lease-guarantee promise and clarify who would sign the lease.",
+     "why": "\u201cWildflower \u2026 will guarantee our lease so you don\u2019t need to worry about the rent\u201d is a consequential and potentially inaccurate financial claim. Wildflower Foundation should not be presented as the tenant or guarantor without formal approval.",
+     "how": "Say that you are forming or have formed an independent nonprofit that would be the tenant. Describe Wildflower\u2019s support accurately and conditionally, without naming internal programs unless they are relevant and approved. If financing or guaranty support has been formally secured, use the exact approved language."
+    },
+    {
+     "what": "Reframe the letter around the landlord\u2019s questions and make a small ask.",
+     "why": "The current philosophy section takes up most of the letter, while licensing, improvements, rent reliability, neighbors, and the next step remain vague.",
+     "how": "Reduce Montessori philosophy to one warm sentence describing what children actually do. Explain that this would be a small, quiet daytime use and a long-term, community-rooted tenancy; acknowledge that licensing and fit-out require planning. Close by requesting a 20-minute call or walk-through and include your phone and email."
+    }
+   ],
+   "line_notes": [
+    {
+     "quote": "I am an Emerging Teacher Leader with Wildflower Schools.",
+     "note": "\u201cEmerging Teacher Leader\u201d is internal language and does not tell Mr. Alvarez about your qualifications. Name your Montessori training and relevant teaching or school leadership experience in plain language."
+    },
+    {
+     "quote": "I am writing because I am in the SSJ and my Ops Guide suggested I reach out to you",
+     "note": "Neither \u201cSSJ\u201d nor \u201cOps Guide\u201d will mean anything to a landlord. Remove both. If someone made a personal introduction, give that person\u2019s name and externally understandable role only with their permission."
+    },
+    {
+     "quote": "Dr. Maria Montessori discovered over a century ago that children are naturally curious",
+     "note": "This begins a long philosophy explanation before the landlord knows the proposed use. Condense the whole paragraph to one sentence about the calm, carefully prepared classroom and children\u2019s independent work."
+    },
+    {
+     "quote": "they teach themselves",
+     "note": "This may unintentionally minimize the guide\u2019s role. Montessori language such as \u201cchildren build independence through purposeful work in a carefully prepared environment\u201d is more accurate and concrete."
+    },
+    {
+     "quote": "a love of learning that lasts a lifetime",
+     "note": "This is an outcome you cannot promise and sounds promotional. Describe observable classroom activity instead."
+    },
+    {
+     "quote": "to the liberation of every human being",
+     "note": "The commitment behind this matters, but this broad language is not connected to the landlord\u2019s decision. For this letter, use the limited space to explain that the school intends to serve an intentionally diverse neighborhood community, if that reflects your actual plan."
+    },
+    {
+     "quote": "Wildflower provides us with a Sunlight Loan and will guarantee our lease so you don't need to worry about the rent.",
+     "note": "Remove this sentence as written. \u201cSunlight Loan\u201d is internal jargon, access to startup financing should not be presented as guaranteed, and lease guaranties are rare and conditional. Also avoid promising that a landlord has no rent risk."
+    },
+    {
+     "quote": "We hope to open in the fall.",
+     "note": "State a month or season and year. The signature says \u201copening 2027,\u201d so \u201cfall\u201d is currently ambiguous. Add the intended lease start as well."
+    },
+    {
+     "quote": "We would need to make some changes for licensing but I'm sure we can work that out.",
+     "note": "This understates a central landlord concern. Name the likely categories you are evaluating\u2014such as bathrooms, egress, occupancy, or outdoor access\u2014without claiming approval, and explain who will help review feasibility."
+    },
+    {
+     "quote": "Please let me know if you are interested.",
+     "note": "Make the request specific: a 20-minute call or a walk-through. Include a phone number and email so responding is easy."
+    },
+    {
+     "quote": "a wonderful addition to the community!!",
+     "note": "Replace the general praise and double exclamation points with a specific benefit: a cared-for storefront, a quiet daytime use, and a daily flow of neighborhood families."
+    }
+   ],
+   "example_rewrites": [
+    {
+     "original": "My name is Priya Raman and I am an Emerging Teacher Leader with Wildflower Schools. I am writing because I am in the SSJ and my Ops Guide suggested I reach out to you about the storefront at 412 Broadway.",
+     "rewrite": "My name is Priya Raman. I am a Montessori educator with [training and relevant experience], and I am preparing to open Marigold Montessori in [neighborhood] because [brief, personal connection to the place]. I am writing to ask whether the storefront at 412 Broadway might be available for a small Montessori school.",
+     "why": "This removes internal jargon and gives the landlord the human information needed at the start. Fill the brackets only with facts that are true for you."
+    },
+    {
+     "original": "Please let me know if you are interested. I am so excited about this opportunity and I truly believe Marigold Montessori will be a wonderful addition to the community!!",
+     "rewrite": "Would you be available for a 20-minute call or a walk-through next week to discuss the space and any questions about licensing or improvements? I can be reached at [phone] or [email].",
+     "why": "This turns a general expression of enthusiasm into a clear, manageable next step."
+    }
+   ],
+   "questions_for_writer": [
+    "What Montessori training and relevant experience can you name in the opening?",
+    "What is your personal connection to this neighborhood, beyond walking past the storefront?",
+    "What ages and how many children will the school serve? How many adults will typically be present?",
+    "What will the school\u2019s approximate daily hours be?",
+    "What square footage and physical features do you need?",
+    "What are the exact target opening date and desired lease start date?",
+    "Has the independent nonprofit been formed, and what legal entity would sign the lease?",
+    "Has any startup financing or lease-guaranty support actually been approved?",
+    "Do you have a real estate attorney or facilities team member whose involvement you can accurately mention?",
+    "What lease term are you prepared to discuss?"
+   ],
+   "verify_with_humans": [
+    "Verify any statement about a startup loan, its availability, or its terms with your Operations Guide or accountant.",
+    "Verify any lease-guaranty language with your Operations Guide and attorney. Do not imply approval until it is formally documented.",
+    "Verify who the legal tenant will be and how to describe the nonprofit\u2019s formation status with your attorney or Operations Guide.",
+    "Verify licensing, zoning, occupancy, bathroom, egress, accessibility, and fit-out requirements for 412 Broadway with your Operations Guide, facilities team, and attorney before describing them as settled."
+   ],
+   "recommended_resources": [
+    {
+     "title": "Real Estate Pitch Deck Template",
+     "url": "https://connected.wildflowerschools.org/posts/4583329-real-estate-pitch-deck-template",
+     "why": "Use it to organize the concrete school, timeline, financial-readiness, and space information a landlord will expect."
+    },
+    {
+     "title": "Landlord Brochure Template",
+     "url": "https://connected.wildflowerschools.org/posts/5589224-landlord-brochure-template",
+     "why": "Pairing a short letter with this brochure can explain Wildflower without crowding the inquiry with philosophy."
+    },
+    {
+     "title": "School Lease Guaranty Overview",
+     "url": "https://connected.wildflowerschools.org/posts/4807564-school-lease-guaranty-overview",
+     "why": "Review this before making any statement about a Foundation guaranty."
+    },
+    {
+     "title": "Wildflower Facilities Manual",
+     "url": "https://connected.wildflowerschools.org/posts/4529451-wildflower-facilities-manual",
+     "why": "Use it to identify likely space and fit-out needs before presenting the property criteria."
+    }
+   ],
+   "nits": [
+    "Use one exclamation point at most; for this audience, a period is stronger.",
+    "Add a phone number and email beneath your signature.",
+    "Use a specific date consistently instead of \u201cin the fall\u201d in the body and \u201copening 2027\u201d in the signature.",
+    "Confirm whether \u201cstorefront\u201d or \u201cshopfront\u201d is the term most natural in your local market; either is defensible."
+   ]
+  },
+  "usage": {
+   "input_tokens": 2638,
+   "input_tokens_details": {
+    "cache_write_tokens": 2635,
+    "cached_tokens": 0
+   },
+   "output_tokens": 2623,
+   "output_tokens_details": {
+    "reasoning_tokens": 403
+   },
+   "total_tokens": 5261
+  },
+  "seconds": 41.1,
+  "model": "gpt-5.6-sol",
+  "effort": "medium"
+ },
+ "enrollment_email": {
+  "review": {
+   "verdict": "Needs significant work",
+   "summary": "You have a concise draft and clearly name the mixed-age classroom, ages served, and Montessori training. Before sending it, rebuild the email around one action, replace abstract Montessori language with a few classroom moments, and add the practical information families need to decide whether to apply. Families also need to hear from you by name rather than from an anonymous team.",
+   "rubric": [
+    {
+     "criterion": "One clear call to action",
+     "score": 1,
+     "note": "The email asks readers to apply, follow Instagram, join a newsletter, and donate. Choose one next step, then state it near the top and again at the end with a clickable link and relevant date."
+    },
+    {
+     "criterion": "Concrete and sensory",
+     "score": 2,
+     "note": "The references to hands-on work, materials, and daily time outdoors begin to describe the classroom, but most of the language explains Montessori in general. Show two or three things children actually do."
+    },
+    {
+     "criterion": "Practical facts present",
+     "score": 1,
+     "note": "The ages and school year are included, and before- and aftercare are mentioned. The email still needs regular hours, care hours, neighborhood, opening date, and an explanation of tuition, including flexible or income-based tuition if Bluebell uses it."
+    },
+    {
+     "criterion": "Inclusive and honest",
+     "score": 2,
+     "note": "The draft makes no unsupported outcome promises, which is good. However, leaving out tuition may cause lower-income families to assume the school is not for them, and the all-caps scarcity language creates unnecessary pressure."
+    },
+    {
+     "criterion": "Voice, brevity, and subject line",
+     "score": 2,
+     "note": "The body is comfortably under 200 words, but it sounds institutional rather than personal. The subject line does not identify the ages or location, and the email does not name a teacher leader or explain why you started Bluebell."
+    }
+   ],
+   "strengths": [
+    "\u201cOur mixed-age classroom serves children ages 2.9 to 6\u201d gives families two useful facts quickly: the age range and the mixed-age structure.",
+    "The email is short enough to read easily on a phone.",
+    "\u201cOur guides are AMI trained\u201d provides a concrete point about the adults\u2019 preparation, assuming that description is accurate.",
+    "You avoid promises about academic outcomes."
+   ],
+   "priority_changes": [
+    {
+     "what": "Choose one call to action.",
+     "why": "\u201cApply,\u201d \u201cfollow us,\u201d \u201csign up,\u201d and \u201cmake a donation\u201d compete with one another. A prospective-family email should make one next step unmistakable.",
+     "how": "If applying is the goal, remove the Instagram, newsletter, and donation requests. Put the application link and a meaningful date near the beginning, then repeat the same invitation at the end."
+    },
+    {
+     "what": "Add the missing practical facts, especially tuition.",
+     "why": "Families need ages, hours, neighborhood, start date, and tuition information before they can judge whether Bluebell fits their lives. Omitting a flexible tuition approach is an equity issue because families may assume they cannot afford the school.",
+     "how": "Add the school-day and care hours, neighborhood, specific first day or opening month, and a plain explanation of how tuition is set. If tuition is based on family income, say so directly and explain that this helps the school serve a community as diverse as its neighborhood."
+    },
+    {
+     "what": "Make the email personal and show classroom life.",
+     "why": "Phrases such as \u201cnurtures the whole child\u201d could describe almost any Montessori school. Families are choosing particular teachers and want to picture their child\u2019s day.",
+     "how": "Sign with the teacher leader\u2019s name. Include one line about your training and why you started Bluebell. Replace the list of Montessori areas with two or three accurate moments, such as a child preparing snack, choosing work from a shelf, or caring for the outdoor space."
+    }
+   ],
+   "line_notes": [
+    {
+     "quote": "Subject: Enrolling Now for Fall!!!",
+     "note": "Name the age group, neighborhood, and year. Remove the exclamation marks; specifics convey confidence without urgency theater."
+    },
+    {
+     "quote": "Bluebell Montessori is NOW ENROLLING for the 2027-28 school year!",
+     "note": "Avoid all caps. If applications are the one next step, place the application link and an actual deadline, event date, or decision date here."
+    },
+    {
+     "quote": "We offer an authentic Montessori education that nurtures the whole child in a peaceful, prepared environment.",
+     "note": "This is abstract and sounds like institutional marketing. Replace it with an accurate picture of what children do in Bluebell\u2019s classroom."
+    },
+    {
+     "quote": "Our curriculum includes practical life, sensorial, language, math, and cultural studies",
+     "note": "This list may be familiar to Montessori educators but does not help a new family picture the day. Use one or two examples of children\u2019s activity instead."
+    },
+    {
+     "quote": "Spaces are LIMITED so don't wait!",
+     "note": "Remove the all-caps scarcity message. If there is a real application deadline or a defined number of openings, state that fact plainly."
+    },
+    {
+     "quote": "You can also follow us on Instagram @bluebellmontessori for updates, sign up for our newsletter, and make a donation to support our scholarship fund.",
+     "note": "Remove these competing requests from this email. They distract from the application and mix prospective-family outreach with fundraising."
+    },
+    {
+     "quote": "We also offer before and aftercare.",
+     "note": "Give the actual hours. Families need to know whether the schedule works for them."
+    },
+    {
+     "quote": "Sincerely, The Bluebell Montessori Team",
+     "note": "Sign with a teacher leader\u2019s name and speak in the first person. Add one brief line about your Montessori preparation and why you started the school."
+    }
+   ],
+   "example_rewrites": [
+    {
+     "original": "Subject: Enrolling Now for Fall!!!",
+     "rewrite": "Applications for ages 2 years 9 months\u20136 in [neighborhood] | 2027\u201328",
+     "why": "This option tells families what the email is, who it is for, where the school is, and which year it concerns. Replace the bracketed text with the actual neighborhood."
+    },
+    {
+     "original": "We offer an authentic Montessori education that nurtures the whole child in a peaceful, prepared environment. At Bluebell we believe in following the child.",
+     "rewrite": "In our mixed-age classroom, children choose purposeful work, prepare and clean up snack, and spend time outdoors each day. Younger children learn by watching older classmates, while older children practice patience and responsibility.",
+     "why": "This is one possible structure for showing classroom life rather than explaining the philosophy. Use only details that accurately describe what happens at Bluebell."
+    }
+   ],
+   "questions_for_writer": [
+    "Is applying truly the best next step, or would a visit or information session be more appropriate for families encountering Bluebell for the first time?",
+    "What date should accompany the call to action?",
+    "What neighborhood is Bluebell in, and when does the 2027\u201328 school year begin?",
+    "What are the regular school hours and the exact before- and aftercare hours?",
+    "How does tuition work? Does Bluebell use flexible or income-based tuition?",
+    "Who should sign this email, and what brief, personal reason can they give for starting Bluebell?",
+    "Does \u201c2.9\u201d mean 2 years and 9 months? If so, can you write that out for clarity?",
+    "Can the email include one or two approved photos showing children engaged in classroom life?"
+   ],
+   "verify_with_humans": [
+    "Verify any description of flexible tuition, scholarships, application fees, or financial aid with your Operations Guide or accountant before publishing it.",
+    "If you retain the donation request in another communication, verify the scholarship fund and any tax-related wording with your Operations Guide or accountant."
+   ],
+   "recommended_resources": [
+    {
+     "title": "Wildflower Enrollment Playbooks",
+     "url": "https://connected.wildflowerschools.org/posts/6066353-wildflower-enrollment-playbooks",
+     "why": "Use the enrollment email or Canva templates to structure one clear next step and select approved photos."
+    },
+    {
+     "title": "Wildflower Style Guide",
+     "url": "https://connected.wildflowerschools.org/posts/4473006-wildflower-style-guide",
+     "why": "Check the email\u2019s colors, fonts, and photo choices before sending."
+    },
+    {
+     "title": "Marketing 101: School Specific Marketing",
+     "url": "https://connected.wildflowerschools.org/posts/4657338-marketing-101-school-specific-marketing",
+     "why": "This can help you replace general Montessori claims with details particular to Bluebell and its neighborhood."
+    }
+   ],
+   "nits": [
+    "Write \u201cbefore- and aftercare\u201d with a hyphen after \u201cbefore.\u201d",
+    "Consider writing \u201c2 years, 9 months\u201d instead of \u201c2.9,\u201d which some readers may interpret as a decimal age.",
+    "Make the application URL a clear, tappable link or button in the final email."
+   ]
+  },
+  "usage": {
+   "input_tokens": 2293,
+   "input_tokens_details": {
+    "cache_write_tokens": 2290,
+    "cached_tokens": 0
+   },
+   "output_tokens": 2420,
+   "output_tokens_details": {
+    "reasoning_tokens": 367
+   },
+   "total_tokens": 4713
+  },
+  "seconds": 33.7,
+  "model": "gpt-5.6-sol",
+  "effort": "medium"
+ },
+ "tuition_policy": {
+  "review": {
+   "verdict": "Needs significant work",
+   "summary": "You have a clear, readable starting point, but this is not yet a complete tuition and financial aid policy. Families still cannot tell how flexible tuition is calculated, what information they must provide, who reviews it, or how changes and confidentiality are handled. Build the determination process and complete payment terms first; then revise language that ranks families and verify the tax and contract claims.",
+   "rubric": [
+    {
+     "criterion": "Model and levels are explicit",
+     "score": 2,
+     "note": "The draft names flexible tuition, but it also presents one fixed tuition followed by need-based aid. Clarify whether this is flexible income-based tuition or fixed tuition with financial aid, explain why Larkspur chose it, and publish the levels or formula and their basis."
+    },
+    {
+     "criterion": "Process is clear and fair",
+     "score": 1,
+     "note": "\u201cLet us know when they apply\u201d does not tell families what to submit, who reviews it, how long a decision takes, who may adjust an award, or how to request reconsideration."
+    },
+    {
+     "criterion": "Complete terms",
+     "score": 2,
+     "note": "The payment schedules, deposit, due date, late fee, withdrawal statement, and sibling discount are useful beginnings. Missing or unclear items include payment methods, semester dates, what tuition includes and excludes, whether fees receive the same income-based adjustment, changed-circumstance reviews, confidentiality, and state assistance or subsidy handling."
+    },
+    {
+     "criterion": "Equity and dignity of language",
+     "score": 1,
+     "note": "\u201cFull pay families\u201d and \u201cscholarships to families who need them\u201d divide the community into categories of worth. The flat materials and aftercare charges may also undo the accessibility created by flexible tuition unless they are indexed or otherwise addressed."
+    },
+    {
+     "criterion": "Structure and readability",
+     "score": 3,
+     "note": "The headings and short paragraphs make the draft easy to scan. A tuition-level table and additional process headings are needed, and the tax-deductibility claim should not appear as a certainty without professional verification."
+    }
+   ],
+   "strengths": [
+    "The title identifies the school year, helping families know which rates and terms apply.",
+    "The tuition amount and program hours are stated directly: \u201c$18,500 for the full day program (8:30-3:30).\u201d",
+    "The payment section provides concrete options, a due date, a grace period, and the deposit amount.",
+    "The draft is brief and uses plain language rather than financial jargon."
+   ],
+   "priority_changes": [
+    {
+     "what": "Define the tuition model and determination process.",
+     "why": "\u201cFlexible tuition\u201d currently sits beside a single fixed price and vague need-based awards, so families cannot predict how their tuition will be set or know whether the process is consistent.",
+     "how": "Name one model: flexible income-based tuition, tiered tuition, or fixed tuition with financial aid. Add the levels or formula and their basis, preferably in a table. State what families submit, who reviews it, the decision timeline, who may adjust an individual amount, and how a family requests review."
+    },
+    {
+     "what": "Make the equity commitment operational rather than aspirational.",
+     "why": "\u201cFull pay families\u201d and \u201cfamilies who need them\u201d sort families into groups, while flat materials and aftercare fees may create barriers outside the tuition calculation.",
+     "how": "Describe flexible tuition as a shared community practice. Explain whether the $400 materials fee and $350 monthly aftercare charge vary with tuition level. If they do not, say so plainly and confirm that choice against the school\u2019s accessibility goals and budget."
+    },
+    {
+     "what": "Complete the policy terms and remove or verify unsupported claims.",
+     "why": "Families need to understand costs and obligations before signing, including what happens when income changes or a child withdraws. The tax statement is a legal or tax claim that should not be presented as settled without review.",
+     "how": "Add what tuition includes and excludes; payment methods; semester payment dates; refund and withdrawal details; changed-circumstance review; confidentiality and storage; and whether the school accepts any subsidy, voucher, or child care assistance and how it affects tuition. Coordinate these terms with the enrollment agreement."
+    }
+   ],
+   "line_notes": [
+    {
+     "quote": "Larkspur Montessori is a nonprofit school.",
+     "note": "Keep this only if the school\u2019s nonprofit status for 2027\u201328 is confirmed and this wording accurately describes the operating entity."
+    },
+    {
+     "quote": "Larkspur is committed to diversity and we offer flexible tuition.",
+     "note": "This states a value but does not explain the model. Add one plain paragraph about why Larkspur chose flexible tuition and how it supports an intentionally diverse, accessible school community."
+    },
+    {
+     "quote": "Financial aid is available for qualifying families.",
+     "note": "\u201cQualifying\u201d has no stated criteria. Replace it with the actual income bands, formula, or financial-aid standard."
+    },
+    {
+     "quote": "Families who would like to be considered for financial aid should let us know when they apply.",
+     "note": "Specify how they ask, what documents or form they provide, who sees the information, who decides, and when they can expect an answer."
+    },
+    {
+     "quote": "Awards are based on need and on the funds we have available.",
+     "note": "This is too open-ended for families and for consistent application by teacher leaders. Define how need is measured, whether awards may change based on available funds, and who has authority to make exceptions."
+    },
+    {
+     "quote": "Full pay families help make it possible for us to offer scholarships to families who need them.",
+     "note": "Avoid \u201cfull pay families\u201d and \u201cfamilies who need them.\u201d This ranks families and frames some as supporting others. Describe flexible tuition as a shared model in which each family pays its determined level."
+    },
+    {
+     "quote": "Aftercare until 5:30 is available for an additional $350/month. A materials fee of $400 is due at enrollment.",
+     "note": "State whether these charges are adjusted according to the same tuition levels. Also clarify what the materials fee covers and whether snack, field trips, and other likely costs are included or billed separately."
+    },
+    {
+     "quote": "Tuition may be paid annually, by semester, or in 10 monthly payments.",
+     "note": "Add the due dates for annual and semester payments, the starting month for the 10-payment plan, and accepted payment methods."
+    },
+    {
+     "quote": "A non-refundable deposit of $1,000 is due with the signed enrollment contract and will be applied to tuition.",
+     "note": "Clarify which tuition payment it reduces and how this relates to the separate $400 materials fee due at enrollment. Verify the non-refundable term against the enrollment agreement and applicable requirements."
+    },
+    {
+     "quote": "Tuition is not refundable if a child withdraws during the year.",
+     "note": "This needs more detail: notice requirements, the family\u2019s remaining obligation, treatment of prepaid tuition, and any exceptions the school permits. Ensure the policy and enrollment agreement say the same thing."
+    },
+    {
+     "quote": "Tuition is tax deductible as a childcare expense.",
+     "note": "Remove this sentence unless an accountant or attorney confirms both its accuracy and appropriate wording. Family tax treatment can depend on individual circumstances and program hours."
+    },
+    {
+     "quote": "Siblings receive a 10% discount.",
+     "note": "Clarify which sibling receives the discount, whether it applies to more than two enrolled siblings, and how it interacts with flexible tuition or financial aid."
+    },
+    {
+     "quote": "Questions? Email us at hello@larkspurmontessori.org.",
+     "note": "Keep the contact, but identify whether this is also the address for changed-circumstance reviews and financial-information submissions. If sensitive documents should use another secure method, say so."
+    }
+   ],
+   "example_rewrites": [
+    {
+     "original": "Full pay families help make it possible for us to offer scholarships to families who need them.",
+     "rewrite": "Flexible tuition is a shared commitment across our school community. Each family pays the tuition level determined through the same process, helping Larkspur remain accessible to families with a range of incomes.",
+     "why": "This preserves the communal purpose without ranking families or treating lower-income families as recipients of other families\u2019 generosity."
+    },
+    {
+     "original": "Families who would like to be considered for financial aid should let us know when they apply.",
+     "rewrite": "Families requesting a flexible tuition level complete [name of form] and provide [documents or self-reported information]. [Role] reviews the information confidentially and sends a decision within [time period].",
+     "why": "This gives you a simple structure for the missing process while leaving the facts for you to supply."
+    }
+   ],
+   "questions_for_writer": [
+    "Is Larkspur using flexible income-based tuition, tiered tuition, or fixed tuition with a separate financial aid fund?",
+    "What objective basis determines a family\u2019s tuition level: income bands, household size, adjusted gross income, a third-party assessment, or another method?",
+    "What financial information do families provide, who reviews it, how long does review take, and who may approve an exception?",
+    "Will the materials fee and aftercare charge vary with the family\u2019s tuition level?",
+    "What do tuition and the materials fee include or exclude, including snack and field trips?",
+    "How can a family request a new review after job loss, income change, household change, or another significant circumstance?",
+    "Who can see financial information, where is it stored, and when is it deleted?",
+    "Does the school accept any state subsidy, voucher, or child care assistance? If so, how does that payment interact with the family\u2019s tuition level? If not, will the policy say so?",
+    "Has the board approved these terms, and do they match the 2027\u201328 enrollment agreement?"
+   ],
+   "verify_with_humans": [
+    "Verify the statement that tuition is tax deductible as a child care expense with the Operations Guide, an attorney, or an accountant; remove it until confirmed.",
+    "Verify that \u201cnonprofit school\u201d accurately describes Larkspur\u2019s legal and tax status for the stated year.",
+    "Verify the enforceability and wording of the non-refundable deposit, late fee, and no-refund withdrawal terms with the Operations Guide or attorney.",
+    "Verify any future statement about eligibility for or acceptance of state subsidies, vouchers, or child care assistance before publication."
+   ],
+   "recommended_resources": [
+    {
+     "title": "Flexible Tuition Model Overview",
+     "url": "https://connected.wildflowerschools.org/posts/4396562-flexible-tuition-model-overview",
+     "why": "Use this to clarify and explain the school\u2019s chosen model and its equity purpose."
+    },
+    {
+     "title": "Flexible Tuition: Setting Tuition Levels + Tiered Income-Based Tuition Calculator",
+     "url": "https://connected.wildflowerschools.org/posts/4639886-flexible-tuition-setting-tuition-levels-tiered-income-based-tuition-calculator",
+     "why": "Use this to develop explicit, budget-aligned levels or a formula rather than open-ended awards."
+    },
+    {
+     "title": "Flexible Tuition: Determining Individual Families' Tuition Levels",
+     "url": "https://connected.wildflowerschools.org/posts/5394462-flexible-tuition-determining-individual-families-tuition-levels",
+     "why": "Use this to build the application, review, decision, confidentiality, and reconsideration process."
+    }
+   ],
+   "nits": [
+    "Use the same year format throughout: either \u201c2027\u20132028\u201d or \u201c2027\u201328.\u201d",
+    "Write times consistently, such as \u201c8:30 a.m.\u20133:30 p.m.\u201d and \u201c5:30 p.m.\u201d",
+    "Consider replacing the broad \u201cFinancial Aid\u201d heading once the model is settled, such as \u201cHow Flexible Tuition Is Determined.\u201d"
+   ]
+  },
+  "usage": {
+   "input_tokens": 2585,
+   "input_tokens_details": {
+    "cache_write_tokens": 2582,
+    "cached_tokens": 0
+   },
+   "output_tokens": 2784,
+   "output_tokens_details": {
+    "reasoning_tokens": 494
+   },
+   "total_tokens": 5369
+  },
+  "seconds": 45.8,
+  "model": "gpt-5.6-sol",
+  "effort": "medium"
+ }
+}

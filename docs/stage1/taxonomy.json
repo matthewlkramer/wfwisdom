@@ -1,0 +1,94 @@
+{
+ "stages": [
+  {"key":"discovery","name":"Discovery","desc":"Exploring whether to open a Wildflower school"},
+  {"key":"visioning","name":"Visioning","desc":"Committed; shaping the vision, name, partners, and location"},
+  {"key":"planning","name":"Planning","desc":"Forming the nonprofit, board, budget, space search, licensing, marketing launch"},
+  {"key":"startup","name":"Startup","desc":"The months before opening: enrolling families, hiring, fitting out the space, systems"},
+  {"key":"open","name":"Open (Year 1 and beyond)","desc":"Running the school: board cycles, finances, re-enrollment, staff, culture"}
+ ],
+ "jobs": [
+  {"key":"understand","name":"Understand Wildflower","subs":[
+    {"key":"understand.principles","name":"The principles and purpose"},
+    {"key":"understand.ssj","name":"How the School Startup Journey works"},
+    {"key":"understand.membership","name":"Network membership and what the Foundation does"},
+    {"key":"understand.vocabulary","name":"Vocabulary and definitions"}]},
+  {"key":"nonprofit","name":"Form your nonprofit","subs":[
+    {"key":"nonprofit.formation","name":"State-by-state nonprofit formation"},
+    {"key":"nonprofit.501c3","name":"501c3 status and the group exemption"},
+    {"key":"nonprofit.bylaws","name":"Bylaws, EIN, bank account, insurance"},
+    {"key":"nonprofit.affiliation","name":"Network Membership and charter affiliation agreements"}]},
+  {"key":"board","name":"Build and run your board","subs":[
+    {"key":"board.intro","name":"Board basics and recruiting members"},
+    {"key":"board.meetings","name":"Meetings: agendas, minutes, notice, first four meetings"},
+    {"key":"board.resolutions","name":"Board resolutions library"},
+    {"key":"board.policies","name":"Board policies (conflict of interest, nepotism, whistleblower, retention)"},
+    {"key":"board.health","name":"Board health, reflection, and training"}]},
+  {"key":"fund","name":"Fund your school","subs":[
+    {"key":"fund.startupcost","name":"What it costs to start and open"},
+    {"key":"fund.loans","name":"Wildflower loans and grants"},
+    {"key":"fund.fundraising","name":"Fundraising campaigns and donor communications"},
+    {"key":"fund.grants","name":"Outside grants and grant writing"}]},
+  {"key":"finance","name":"Budget, tuition, and finances","subs":[
+    {"key":"finance.budget","name":"Building and using your budget"},
+    {"key":"finance.tuition","name":"Setting tuition and flexible tuition"},
+    {"key":"finance.finaid","name":"Financial aid and subsidies"},
+    {"key":"finance.bookkeeping","name":"Bookkeeping, QuickBooks, and chart of accounts"},
+    {"key":"finance.policies","name":"Fiscal policies, audits, and the 990"}]},
+  {"key":"space","name":"Find and set up your space","subs":[
+    {"key":"space.search","name":"Finding a space and pitching landlords"},
+    {"key":"space.lease","name":"Leases, guaranties, and legal review"},
+    {"key":"space.buildout","name":"Design, construction, and interior"},
+    {"key":"space.buy","name":"Purchasing real estate"}]},
+  {"key":"license","name":"Get licensed and stay compliant","subs":[
+    {"key":"license.state","name":"Licensing by state"},
+    {"key":"license.quality","name":"QRIS and quality ratings"},
+    {"key":"license.safety","name":"Safety, health, and compliance policies"},
+    {"key":"license.charter","name":"Charter-specific compliance"}]},
+  {"key":"market","name":"Recruit families and market","subs":[
+    {"key":"market.basics","name":"Marketing 101, style guide, name, and logo"},
+    {"key":"market.web","name":"Website, social media, and online ads"},
+    {"key":"market.events","name":"Info sessions, local partnerships, and media"},
+    {"key":"market.playbook","name":"Enrollment playbooks and recruitment plans"}]},
+  {"key":"enroll","name":"Enroll and welcome families","subs":[
+    {"key":"enroll.forms","name":"Enrollment agreements and forms"},
+    {"key":"enroll.comms","name":"Family communications (accepted, waitlist, re-enrollment)"},
+    {"key":"enroll.handbook","name":"Family handbooks"},
+    {"key":"enroll.education","name":"Family education and Montessori 101"}]},
+  {"key":"team","name":"Hire, pay, and support your team","subs":[
+    {"key":"team.staffing","name":"Staffing plans and finding a co-teacher leader"},
+    {"key":"team.hiring","name":"Hiring: postings, offers, contracts, visas, onboarding"},
+    {"key":"team.pay","name":"Compensation, payroll, and benefits"},
+    {"key":"team.handbook","name":"Employee handbooks and HR policies"},
+    {"key":"team.growth","name":"Adult learning, assistants training, and exits"}]},
+  {"key":"culture","name":"Practice self-management and culture","subs":[
+    {"key":"culture.selfmgmt","name":"Self-management learning series"},
+    {"key":"culture.advice","name":"The advice process"},
+    {"key":"culture.roles","name":"Roles and responsibilities"},
+    {"key":"culture.conflict","name":"Conflict resolution"},
+    {"key":"culture.transparency","name":"Radical transparency and wholeness"},
+    {"key":"culture.liberation","name":"Liberation, equity, and anti-bias work"}]},
+  {"key":"systems","name":"Set up systems and tools","subs":[
+    {"key":"systems.tc","name":"Transparent Classroom"},
+    {"key":"systems.google","name":"Google Workspace, email, drives, and devices"},
+    {"key":"systems.connected","name":"Using Connected and Slack"},
+    {"key":"systems.requests","name":"Request forms and Foundation support"}]},
+  {"key":"program","name":"Run the classroom and program","subs":[
+    {"key":"program.materials","name":"Montessori materials and vendors"},
+    {"key":"program.calendar","name":"School calendar and schedules"},
+    {"key":"program.practice","name":"Montessori practice, observation, and assessment"},
+    {"key":"program.athome","name":"Montessori at home and distance learning"}]},
+  {"key":"help","name":"Find coaches, consultants, and vendors","subs":[
+    {"key":"help.coaches","name":"Coaches directory"},
+    {"key":"help.consultants","name":"Equity and conflict consultants"},
+    {"key":"help.vendors","name":"Vendors and network discounts"}]},
+  {"key":"foundation","name":"Foundation staff and regional work","subs":[
+    {"key":"foundation.ops","name":"Working for the Foundation and internal process"},
+    {"key":"foundation.regional","name":"Regional fundraising and growth"},
+    {"key":"foundation.data","name":"Network data and reports"}]},
+  {"key":"archive","name":"Archive","subs":[
+    {"key":"archive.news","name":"Wildflower in the news"},
+    {"key":"archive.covid","name":"COVID-era guidance"},
+    {"key":"archive.past","name":"Past gatherings, session notes, and dated reports"}]}
+ ],
+ "content_types": ["guide","template","example","policy","training","directory","link","news","data","other"]
+}
