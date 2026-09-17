@@ -24,3 +24,14 @@ The pulled catalog itself (`catalog_full.json`, `attachment_text.json`) is not c
 - `GET /posts`, `/series`, `/questions` return the whole collection (paging parameters are ignored on this instance; 715 posts in one 640 KB response).
 - `contents[].content_url` is a signed, expiring URL to a PDF rendering of the attachment; `contents[].audio_transcript.transcript` holds video transcripts.
 - Rate limit per Bloomfire docs: 500 requests per second for application access.
+
+## Decisions from Matt's Stage 1 review (September 17, 2026)
+
+- Nothing is archived or hidden by default; dated items carry a "Dated <year>" label and are excluded from Start here and Most used.
+- The indexer pulls full text of linked Google Docs, Sheets, and Slides (418 distinct files across 282 posts); about 70% export publicly, the rest need a service account with Drive read access.
+- The retire-or-refresh list ships as an admin "retirement queue" (Keep / Label as dated / Hide), refilled on each re-index.
+- Helpfulness score recomputed monthly and on demand; weights 40/35/25 confirmed.
+- Teacher-leader home page invites uploads of the material types, for feedback and as contributed examples.
+- Base prompt: the reviewer may judge legal/financial claims when the answer is clearly documented in the Wildflower source material provided (so reviews retrieve relevant Connected passages).
+- SSJ stage names. Bloomfire indexer logs in as Matt's account for now. Resend for outbound email (`RESEND_API_KEY`). Foundation-internal posts shown with a label.
+- Models: luna for rewrites, explanations, summaries, and chat answers (see `model_compare.json`); sol for reviews.

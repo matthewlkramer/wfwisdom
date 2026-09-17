@@ -1,0 +1,717 @@
+{
+ "retrieved": {
+  "where do i even start looking for a space for my school": [
+   "Getting started with the My Wildflower School Startup Journey Platform",
+   "School Startup Cost: How Much Does it Cost to Start a Wildflower School?",
+   "School Board Resources, Getting Started",
+   "For Operations Guides: Getting started with the My Wildflower Platform",
+   "How to Tell Your Current School You are Leaving & Implications for Family Recruitment/Enrollment"
+  ],
+  "how do we get 501c3 status": [
+   "Gaining 501c3 Tax-Exempt Status and Wildflower's Group Exemption",
+   "Wildflower 501c3 Group Exemption Application ",
+   "Keys to Maintaining the School's Nonprofit Status for Teacher Leaders ",
+   "Board Reflection: How we worked as a board",
+   "Time Management Professional Development: Getting Things Done"
+  ],
+  "how should we set our tuition levels": [
+   "Flexible Tuition: Setting Tuition Levels + Tiered Income-Based Tuition Calculator",
+   "Flexible Tuition: Determining Individual Families' Tuition Levels",
+   "FAST: a Tuition Determination / Financial Aid Assessment Platform ",
+   "Flexible Tuition Model Overview",
+   "Tuition Change Family Communication: Tips and Examples"
+  ]
+ },
+ "results": [
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "rewrite",
+   "label": "where do i even start looking for a space for my school",
+   "text": "{\"query\":\"How do I begin searching for and evaluating a suitable facility or physical space for my Wildflower school?\",\"keywords\":[\"facility search\",\"school space\",\"site selection\",\"property evaluation\",\"startup\"],\"job\":\"space\"}",
+   "seconds": 3.9,
+   "in": 143,
+   "out": 49,
+   "cost": 0.00155
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || Getting started with the My Wildflower School Startup Journey Platform",
+   "text": "This guide explains how to access Wildflower\u2019s platform, where startup milestones and tasks can help orient your school-space search.",
+   "seconds": 3.7,
+   "in": 262,
+   "out": 69,
+   "cost": 0.00243
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || School Startup Cost: How Much Does it Cost to Start a Wildflower School?",
+   "text": "This item explains how local research, licensing timelines, and renovation estimates help evaluate potential school spaces and forecast startup costs.",
+   "seconds": 4.4,
+   "in": 156,
+   "out": 80,
+   "cost": 0.00222
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || School Board Resources, Getting Started",
+   "text": "This starting-point guide links to school board basics, policy examples, and meeting templates that can help organize your school-planning process.",
+   "seconds": 4.3,
+   "in": 173,
+   "out": 88,
+   "cost": 0.00245
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || For Operations Guides: Getting started with the My Wildflower Platform",
+   "text": "This guide shows how to access your Ops Guide Dashboard, where you can begin finding school operations resources and support.",
+   "seconds": 4.4,
+   "in": 292,
+   "out": 96,
+   "cost": 0.00309
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || How to Tell Your Current School You are Leaving & Implications for Family Recruitment/Enrollment",
+   "text": "While it doesn\u2019t cover finding a space, it guides an early launch step: reviewing your contract and planning family recruitment.",
+   "seconds": 5.5,
+   "in": 264,
+   "out": 197,
+   "cost": 0.005
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "rewrite",
+   "label": "how do we get 501c3 status",
+   "text": "{\"query\":\"How does a Wildflower school apply for and obtain federal 501(c)(3) nonprofit tax-exempt status?\",\"keywords\":[\"501(c)(3)\",\"nonprofit status\",\"tax exemption\",\"IRS Form 1023\",\"federal recognition\"],\"job\":\"nonprofit\"}",
+   "seconds": 2.0,
+   "in": 140,
+   "out": 62,
+   "cost": 0.0018
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Gaining 501c3 Tax-Exempt Status and Wildflower's Group Exemption",
+   "text": "Explains federal 501(c)(3) requirements, state incorporation steps, benefits, and how schools can join Wildflower\u2019s Group Exemption.",
+   "seconds": 2.2,
+   "in": 282,
+   "out": 33,
+   "cost": 0.00179
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Wildflower 501c3 Group Exemption Application ",
+   "text": "This application guides Emerging Teacher Leaders through obtaining 501(c)(3) status via Wildflower\u2019s group exemption, including templates, submission instructions, and timelines.",
+   "seconds": 1.6,
+   "in": 230,
+   "out": 35,
+   "cost": 0.00162
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Keys to Maintaining the School's Nonprofit Status for Teacher Leaders ",
+   "text": "This guidance explains receiving 501(c)(3) status through Wildflower\u2019s group exemption, reviewing your status letter, and maintaining IRS compliance.",
+   "seconds": 2.1,
+   "in": 258,
+   "out": 82,
+   "cost": 0.00267
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Board Reflection: How we worked as a board",
+   "text": "This annual board reflection assesses fiduciary and legal responsibilities foundational to 501(c)(3) governance, though it does not cover application steps.",
+   "seconds": 3.9,
+   "in": 279,
+   "out": 160,
+   "cost": 0.00432
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Time Management Professional Development: Getting Things Done",
+   "text": "This item does not cover 501(c)(3) status; it contains a modifiable presentation on David Allen\u2019s Getting Things Done time-management system.",
+   "seconds": 4.0,
+   "in": 249,
+   "out": 75,
+   "cost": 0.0025
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "rewrite",
+   "label": "how should we set our tuition levels",
+   "text": "{\"query\":\"How should we determine and set tuition levels, including flexible tuition and income-based tuition tiers?\",\"keywords\":[\"tuition levels\",\"flexible tuition\",\"income-based tuition\",\"tuition tiers\",\"affordability\"],\"job\":\"finance\"}",
+   "seconds": 2.6,
+   "in": 138,
+   "out": 53,
+   "cost": 0.00161
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Flexible Tuition: Setting Tuition Levels + Tiered Income-Based Tuition Calculator",
+   "text": "This spreadsheet uses local HUD income data and your full-tuition benchmark to calculate flexible, tiered tuition levels for your school.",
+   "seconds": 3.2,
+   "in": 253,
+   "out": 77,
+   "cost": 0.00255
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Flexible Tuition: Determining Individual Families' Tuition Levels",
+   "text": "This post compares income-based, individualized, and third-party software methods for setting and communicating tiered tuition levels to families.",
+   "seconds": 2.4,
+   "in": 229,
+   "out": 44,
+   "cost": 0.0018
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || FAST: a Tuition Determination / Financial Aid Assessment Platform ",
+   "text": "This item provides FAST\u2019s income-minus-allowable-expenses formula and tools for setting transparent, flexible tuition and financial aid levels.",
+   "seconds": 1.9,
+   "in": 245,
+   "out": 30,
+   "cost": 0.00158
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Flexible Tuition Model Overview",
+   "text": "This overview explains flexible tuition models, design considerations, and school examples to help leaders set equitable tuition levels.",
+   "seconds": 1.7,
+   "in": 229,
+   "out": 25,
+   "cost": 0.00142
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Tuition Change Family Communication: Tips and Examples",
+   "text": "This item offers teacher-leader advice and examples for transparently communicating tuition increases through family meetings, letters, contracts, and handbooks.",
+   "seconds": 2.8,
+   "in": 237,
+   "out": 155,
+   "cost": 0.00405
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "summary",
+   "label": "School Lease Guaranty Overview",
+   "text": "This overview explains when the Wildflower Foundation may consider guaranteeing a school lease, including eligibility requirements, financial and legal conditions, and guaranty terms. Teacher leaders can use it to assess whether their school might qualify and what steps, documentation, and costs are involved.",
+   "seconds": 1.8,
+   "in": 509,
+   "out": 56,
+   "cost": 0.00316
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "summary",
+   "label": "Flexible Tuition Model Overview",
+   "text": "This overview explains flexible tuition models, in which families pay tuition based on their financial resources, and includes examples from schools. Teacher leaders can use it to consider the benefits, tradeoffs, terminology, equity goals, and financial sustainability involved in adopting or redesigning a tuition model.",
+   "seconds": 2.3,
+   "in": 540,
+   "out": 59,
+   "cost": 0.00334
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "summary",
+   "label": "Outline for First Four Board Meetings for a Wildflower School",
+   "text": "This document provides a four-meeting governance outline for the founding board of a new Wildflower School, covering board formation, nonprofit status, and network affiliation. Teacher leaders can use it to plan preparation tasks, board member engagement, meeting objectives, and sample agendas in the recommended sequence.",
+   "seconds": 3.0,
+   "in": 549,
+   "out": 60,
+   "cost": 0.0034
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "chat",
+   "label": "What are the requirements to get a lease guaranty from the Foundation?",
+   "text": "The Wildflower Foundation considers lease guarantees only rarely and as a last resort. To be considered, a school must meet these requirements:\n\n- Be opening in a competitive real estate market.\n- Have tried to secure at least three leases in its target geography.\n- Have attempted to negotiate alternatives, such as a higher deposit or rent.\n- Have a signed affiliation agreement.\n- Provide articles of incorporation and proof of 501(c)(3) status.\n- Present a financially sustainable budget.\n- Show a clear path to raising school startup funds.\n\nMeeting these requirements does not guarantee approval. [School Lease Guaranty Overview]",
+   "seconds": 4.1,
+   "in": 981,
+   "out": 126,
+   "cost": 0.00644
+  },
+  {
+   "model": "gpt-5.6-sol",
+   "kind": "chat",
+   "label": "Do I need a liquor license to serve wine at a fundraiser?",
+   "text": "Connected does not cover liquor licensing or alcohol service requirements for fundraisers. Requirements vary by state and locality. Please consult the Operations Guide or contact support@wildflowerschools.org.",
+   "seconds": 3.2,
+   "in": 1173,
+   "out": 40,
+   "cost": 0.00549
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "rewrite",
+   "label": "where do i even start looking for a space for my school",
+   "text": "{\"query\":\"How to begin searching for and evaluating a school space during the School Startup Journey, including location criteria, zoning, licensing requirements, budget, lease considerations, and support from the Hub\",\"keywords\":[\"school space search\",\"site selection\",\"zoning and licensing\",\"lease budget\",\"School Startup Journey\",\"Hub support\"],\"job\":\"space\"}",
+   "seconds": 2.5,
+   "in": 143,
+   "out": 72,
+   "cost": 0.00115
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || Getting started with the My Wildflower School Startup Journey Platform",
+   "text": "This startup platform helps emerging school founders begin by outlining milestones, tasks, onboarding, and walkthrough support for opening a school.",
+   "seconds": 1.6,
+   "in": 262,
+   "out": 28,
+   "cost": 0.00086
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || School Startup Cost: How Much Does it Cost to Start a Wildflower School?",
+   "text": "Explains how to estimate startup costs, including licensing timelines and renovation expenses, when evaluating potential school spaces.",
+   "seconds": 2.5,
+   "in": 156,
+   "out": 25,
+   "cost": 0.00061
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || School Board Resources, Getting Started",
+   "text": "Start here for three school board resource series, including introductions, policies, resolutions, and meeting tools for new Teacher Leaders.",
+   "seconds": 1.9,
+   "in": 173,
+   "out": 28,
+   "cost": 0.00068
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || For Operations Guides: Getting started with the My Wildflower Platform",
+   "text": "This Operations Guide introduces the My Wildflower platform dashboard, where you can access resources and support for launching a school, including space-finding guidance.",
+   "seconds": 1.9,
+   "in": 292,
+   "out": 33,
+   "cost": 0.00098
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || How to Tell Your Current School You are Leaving & Implications for Family Recruitment/Enrollment",
+   "text": "It helps you plan a respectful departure before launching, including contract considerations and managing relationships with local families and schools.",
+   "seconds": 2.2,
+   "in": 264,
+   "out": 26,
+   "cost": 0.00084
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "rewrite",
+   "label": "how do we get 501c3 status",
+   "text": "{\"query\":\"How do we obtain 501(c)(3) nonprofit status for a Wildflower school or organization?\",\"keywords\":[\"501(c)(3)\",\"nonprofit status\",\"IRS application\",\"tax-exempt organization\"],\"job\":\"nonprofit\"}",
+   "seconds": 2.2,
+   "in": 140,
+   "out": 54,
+   "cost": 0.00093
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Gaining 501c3 Tax-Exempt Status and Wildflower's Group Exemption",
+   "text": "Explains state incorporation, IRS 501c3 requirements, fundraising benefits, and Wildflower\u2019s Group Exemption option for schools.",
+   "seconds": 1.9,
+   "in": 282,
+   "out": 30,
+   "cost": 0.00092
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Wildflower 501c3 Group Exemption Application ",
+   "text": "Provides the Wildflower group exemption application, required policy templates, submission instructions, and review timeline for obtaining school 501(c)(3) status.",
+   "seconds": 1.9,
+   "in": 230,
+   "out": 33,
+   "cost": 0.00086
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Keys to Maintaining the School's Nonprofit Status for Teacher Leaders ",
+   "text": "Explains 501(c)(3) status through Wildflower\u2019s group exemption, including saving the IRS letter and ongoing compliance steps.",
+   "seconds": 2.1,
+   "in": 258,
+   "out": 30,
+   "cost": 0.00088
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Board Reflection: How we worked as a board",
+   "text": "This board reflection includes prompts to review fiduciary and legal responsibilities, relevant to governance needed when pursuing 501(c)(3) status.",
+   "seconds": 1.7,
+   "in": 279,
+   "out": 31,
+   "cost": 0.00093
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Time Management Professional Development: Getting Things Done",
+   "text": "This presentation offers teacher time-management strategies and productivity resources, but does not address obtaining 501(c)(3) nonprofit status.",
+   "seconds": 2.2,
+   "in": 249,
+   "out": 29,
+   "cost": 0.00085
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "rewrite",
+   "label": "how should we set our tuition levels",
+   "text": "{\"query\":\"How to set flexible tuition levels and determine tuition pricing for a Wildflower school\",\"keywords\":[\"flexible tuition\",\"tuition levels\",\"tuition pricing\",\"financial model\"],\"job\":\"fund\"}",
+   "seconds": 2.4,
+   "in": 138,
+   "out": 88,
+   "cost": 0.00133
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Flexible Tuition: Setting Tuition Levels + Tiered Income-Based Tuition Calculator",
+   "text": "Provides a tiered income-based tuition calculator using local HUD income data and your highest tuition rate to draft flexible tuition levels.",
+   "seconds": 1.5,
+   "in": 253,
+   "out": 28,
+   "cost": 0.00084
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Flexible Tuition: Determining Individual Families' Tuition Levels",
+   "text": "It offers concrete flexible tuition-setting methods, including income-based tiers, individualized decisions, and third-party financial aid software.",
+   "seconds": 1.8,
+   "in": 229,
+   "out": 27,
+   "cost": 0.00078
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || FAST: a Tuition Determination / Financial Aid Assessment Platform ",
+   "text": "Explains FAST\u2019s transparent tuition-setting formula, assessing income and allowable expenses to determine family tuition and financial aid levels.",
+   "seconds": 2.0,
+   "in": 245,
+   "out": 27,
+   "cost": 0.00081
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Flexible Tuition Model Overview",
+   "text": "Explains flexible tuition models, design considerations, and school examples to inform equitable tuition-level decisions.",
+   "seconds": 1.7,
+   "in": 229,
+   "out": 23,
+   "cost": 0.00073
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Tuition Change Family Communication: Tips and Examples",
+   "text": "Offers practical examples for communicating tuition increases, including family meetings, transparent explanations, follow-up letters, and enrollment contract updates.",
+   "seconds": 1.6,
+   "in": 237,
+   "out": 28,
+   "cost": 0.00081
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "summary",
+   "label": "School Lease Guaranty Overview",
+   "text": "This overview explains when the Wildflower Foundation may provide a lease guaranty\u2014a promise to cover lease costs if a school cannot pay\u2014and the requirements and terms involved. Teacher leaders can use it to determine whether their school might qualify, prepare the needed financial, legal, and planning documentation, and understand the costs and limits of a guaranty.",
+   "seconds": 3.0,
+   "in": 509,
+   "out": 71,
+   "cost": 0.00187
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "summary",
+   "label": "Flexible Tuition Model Overview",
+   "text": "This overview explains flexible or sliding-scale tuition as an alternative to traditional financial aid, with examples of how schools connect tuition to families\u2019 economic resources. A teacher leader could use it to explore whether this approach fits their school\u2019s equity goals and to identify design considerations for changing tuition policies.",
+   "seconds": 2.3,
+   "in": 540,
+   "out": 60,
+   "cost": 0.0018
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "summary",
+   "label": "Outline for First Four Board Meetings for a Wildflower School",
+   "text": "This is a sample outline for the first four board meetings of a new Wildflower School, covering board formation, 501(c)(3) setup, and Network affiliation. A teacher leader could use it to plan meeting agendas, assign pre-meeting actions for themselves and board members, and sequence early governance decisions.",
+   "seconds": 2.3,
+   "in": 549,
+   "out": 66,
+   "cost": 0.00189
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "chat",
+   "label": "What are the requirements to get a lease guaranty from the Foundation?",
+   "text": "To be considered for a Foundation lease guaranty, a school must meet all of these requirements:\n\n- Be opening in a competitive real-estate market.\n- Have tried to secure at least three leases in its target geography.\n- Have attempted to negotiate alternatives to a guaranty, such as a higher deposit or rent.\n- Have a signed affiliation agreement, articles of incorporation, and proof of 501(c)(3) status.\n- Have a financially sustainable budget and a clear path to raising startup funds. [School Lease Guaranty Overview]\n\nGuaranties are very rare and are considered only as a last resort. [School Lease Guaranty Overview]",
+   "seconds": 2.2,
+   "in": 981,
+   "out": 135,
+   "cost": 0.00358
+  },
+  {
+   "model": "gpt-5.6-terra",
+   "kind": "chat",
+   "label": "Do I need a liquor license to serve wine at a fundraiser?",
+   "text": "Connected does not cover liquor-license requirements for serving wine at a fundraiser. Requirements are likely state- and local-law dependent. Please consult the Operations Guide or contact support@wildflowerschools.org.",
+   "seconds": 2.1,
+   "in": 1173,
+   "out": 43,
+   "cost": 0.00286
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "rewrite",
+   "label": "where do i even start looking for a space for my school",
+   "text": "{\"query\":\"How do I start searching for and evaluating a suitable physical space for a Wildflower microschool, including location, size, zoning, licensing, accessibility, safety, lease terms, and budget?\",\"keywords\":[\"school space search\",\"site selection\",\"zoning and licensing\",\"lease terms\",\"space requirements\"],\"job\":\"space\"}",
+   "seconds": 1.9,
+   "in": 143,
+   "out": 71,
+   "cost": 0.00011
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || Getting started with the My Wildflower School Startup Journey Platform",
+   "text": "This platform outlines major milestones and tasks for opening a school, helping you begin navigating the startup journey and finding needed resources.",
+   "seconds": 1.4,
+   "in": 262,
+   "out": 28,
+   "cost": 9e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || School Startup Cost: How Much Does it Cost to Start a Wildflower School?",
+   "text": "This item helps you begin planning by identifying local research, licensing timelines, and renovation costs that shape your school\u2019s startup budget.",
+   "seconds": 1.8,
+   "in": 156,
+   "out": 73,
+   "cost": 0.00012
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || School Board Resources, Getting Started",
+   "text": "This page helps you get started with school boards through introductions, annotated resolutions, policies, meeting tools, and templates\u2014not facility searches.",
+   "seconds": 1.9,
+   "in": 173,
+   "out": 85,
+   "cost": 0.00014
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || For Operations Guides: Getting started with the My Wildflower Platform",
+   "text": "This guide helps you access My Wildflower\u2019s Ops Guide Dashboard, where you can begin navigating school-space resources and operational support.",
+   "seconds": 1.8,
+   "in": 292,
+   "out": 29,
+   "cost": 9e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "where do i even start looking for a space for my school || How to Tell Your Current School You are Leaving & Implications for Family Recruitment/Enrollment",
+   "text": "This item explains reviewing your employment contract, notifying your current school, and managing family recruitment when launching a Wildflower school.",
+   "seconds": 1.7,
+   "in": 264,
+   "out": 70,
+   "cost": 0.00014
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "rewrite",
+   "label": "how do we get 501c3 status",
+   "text": "{\"query\":\"How does a Wildflower microschool apply for and obtain 501(c)(3) tax-exempt status, including eligibility requirements, application steps, required documents, and ongoing compliance obligations?\",\"keywords\":[\"501(c)(3)\",\"nonprofit incorporation\",\"IRS Form 1023\",\"tax-exempt application\",\"ongoing compliance\"],\"job\":\"nonprofit\"}",
+   "seconds": 1.8,
+   "in": 140,
+   "out": 78,
+   "cost": 0.00012
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Gaining 501c3 Tax-Exempt Status and Wildflower's Group Exemption",
+   "text": "This item explains federal 501(c)(3) requirements, state incorporation steps, IRS status benefits, and Wildflower\u2019s Group Exemption option.",
+   "seconds": 1.5,
+   "in": 282,
+   "out": 33,
+   "cost": 0.0001
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Wildflower 501c3 Group Exemption Application ",
+   "text": "This application guides Emerging Teacher Leaders through obtaining 501(c)(3) status via Wildflower\u2019s group exemption, including required policies and submission instructions.",
+   "seconds": 1.4,
+   "in": 230,
+   "out": 33,
+   "cost": 9e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Keys to Maintaining the School's Nonprofit Status for Teacher Leaders ",
+   "text": "Explains maintaining IRS 501(c)(3) status through Wildflower\u2019s group exemption, including required compliance steps and recordkeeping after approval.",
+   "seconds": 1.4,
+   "in": 258,
+   "out": 32,
+   "cost": 9e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Board Reflection: How we worked as a board",
+   "text": "This item supports ongoing board governance reflection, but it does not explain how to obtain 501(c)(3) status.",
+   "seconds": 1.9,
+   "in": 279,
+   "out": 69,
+   "cost": 0.00014
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how do we get 501c3 status || Time Management Professional Development: Getting Things Done",
+   "text": "This presentation contains time-management strategies and productivity resources, but it does not address obtaining 501(c)(3) status.",
+   "seconds": 3.0,
+   "in": 249,
+   "out": 28,
+   "cost": 8e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "rewrite",
+   "label": "how should we set our tuition levels",
+   "text": "{\"query\":\"How should a Wildflower microschool set tuition levels, including flexible tuition options, affordability considerations, and a sustainable financial model?\",\"keywords\":[\"tuition levels\",\"flexible tuition\",\"affordability\",\"financial model\",\"enrollment pricing\"],\"job\":\"finance\"}",
+   "seconds": 1.6,
+   "in": 138,
+   "out": 95,
+   "cost": 0.00014
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Flexible Tuition: Setting Tuition Levels + Tiered Income-Based Tuition Calculator",
+   "text": "This calculator helps set flexible, tiered tuition levels using local HUD income data, market rates, and your school\u2019s highest tuition level.",
+   "seconds": 1.4,
+   "in": 253,
+   "out": 31,
+   "cost": 9e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Flexible Tuition: Determining Individual Families' Tuition Levels",
+   "text": "This post outlines income-based, individualized, and third-party software methods for setting and communicating flexible tuition levels with families.",
+   "seconds": 1.3,
+   "in": 229,
+   "out": 27,
+   "cost": 8e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || FAST: a Tuition Determination / Financial Aid Assessment Platform ",
+   "text": "This item explains how FAST sets tuition using total income minus allowable expenses, creating a systematic, transparent approach to flexible tuition and financial aid.",
+   "seconds": 1.5,
+   "in": 245,
+   "out": 31,
+   "cost": 9e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Flexible Tuition Model Overview",
+   "text": "This overview explains how to set equitable, income-based tuition levels, with design considerations, rationale, and examples from various schools.",
+   "seconds": 1.6,
+   "in": 229,
+   "out": 29,
+   "cost": 8e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "explain",
+   "label": "how should we set our tuition levels || Tuition Change Family Communication: Tips and Examples",
+   "text": "Provides family-meeting advice, transparent messaging strategies, and sample communications for announcing tuition increases and sharing updated enrollment materials.",
+   "seconds": 1.7,
+   "in": 237,
+   "out": 27,
+   "cost": 8e-05
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "summary",
+   "label": "School Lease Guaranty Overview",
+   "text": "This item explains when The Wildflower Foundation may provide a lease guaranty for a Wildflower school and lists the required school, financial, diversity, legal, and real estate conditions. A teacher leader would use it to determine whether their school might qualify for a guaranty and understand the limits, fees, documentation, and preparation needed to apply.",
+   "seconds": 2.6,
+   "in": 509,
+   "out": 72,
+   "cost": 0.00019
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "summary",
+   "label": "Flexible Tuition Model Overview",
+   "text": "This is an introductory guide to flexible or sliding-scale tuition, explaining why schools might use it and highlighting considerations and examples from other schools. Teacher leaders could use it to discuss whether this model fits their school\u2019s equity and enrollment goals and to prepare for designing or changing their tuition approach.",
+   "seconds": 2.9,
+   "in": 540,
+   "out": 60,
+   "cost": 0.00018
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "summary",
+   "label": "Outline for First Four Board Meetings for a Wildflower School",
+   "text": "This is a four-meeting governance plan for a new Wildflower School, covering board formation, 501(c)(3) incorporation, and network affiliation, with suggested preparation and agendas for each meeting. A teacher leader would use it to structure early board work and adapt the meeting sequence and timing to the school\u2019s startup needs.",
+   "seconds": 3.5,
+   "in": 549,
+   "out": 69,
+   "cost": 0.00019
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "chat",
+   "label": "What are the requirements to get a lease guaranty from the Foundation?",
+   "text": "To be considered for a Foundation lease guaranty, a school must meet all of these requirements:\n\n- Open in a competitive real estate market.\n- Have tried to secure at least three leases in the target geography.\n- Have attempted to negotiate to avoid a guaranty, such as offering a higher deposit or rent.\n- Have a signed affiliation agreement.\n- Have articles of incorporation and proof of 501(c)(3) status.\n- Have a financially sustainable budget.\n- Have a clear path to raising school startup funds. [School Lease Guaranty Overview]\n\nLease guaranties are very rare and considered only as a last resort. For additional guidance, ask the Operations Guide or contact support@wildflowerschools.org.",
+   "seconds": 2.6,
+   "in": 981,
+   "out": 147,
+   "cost": 0.00037
+  },
+  {
+   "model": "gpt-5.6-luna",
+   "kind": "chat",
+   "label": "Do I need a liquor license to serve wine at a fundraiser?",
+   "text": "Connected does not cover whether a liquor license is required to serve wine at a fundraiser. Requirements vary by state and may depend on whether the wine is sold, donated, or served free.\n\nPlease consult the Operations Guide or contact support@wildflowerschools.org for guidance.",
+   "seconds": 2.1,
+   "in": 1173,
+   "out": 58,
+   "cost": 0.0003
+  }
+ ]
+}
