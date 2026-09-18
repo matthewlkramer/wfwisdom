@@ -3,13 +3,15 @@ modules = ["nodejs-22"]
 run = "corepack pnpm@10.33.0 install --frozen-lockfile && corepack pnpm@10.33.0 preview"
 
 [env]
+COREPACK_ENABLE_DOWNLOAD_PROMPT = "0"
+COREPACK_ENABLE_AUTO_PIN = "0"
 BLOOMFIRE_LOGIN_EMAIL = "matthew.kramer@wildflowerschools.org"
 STAFF_DOMAIN = "wildflowerschools.org"
 MAIL_FROM = "Wildflower Wisdom <wisdom@wildflowerschools.org>"
 
 [deployment]
-run = ["corepack", "pnpm@10.33.0", "deploy:start"]
-build = ["corepack", "pnpm@10.33.0", "deploy:build"]
+run = ["sh", "-c", "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_ENABLE_AUTO_PIN=0 corepack pnpm@10.33.0 deploy:start"]
+build = ["sh", "-c", "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 COREPACK_ENABLE_AUTO_PIN=0 corepack pnpm@10.33.0 deploy:build"]
 deploymentTarget = "autoscale"
 
 [[ports]]
