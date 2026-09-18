@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { and, desc, eq, getDb, itemMeta, items, jobs, placements, signals, sql, subjobs, users } from "@wfw/db";
+import { and, desc, eq, getDb, inArray, isNull, itemMeta, items, jobs, placements, signals, sql, subjobs, users } from "@wfw/db";
 import { STAGES, type JobSummary, type StageKey } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { getSettings } from "../settings.js";
@@ -52,10 +52,25 @@ mapRouter.get("/subjob/:key", async (req, res) => {
 mapRouter.get("/item/:id", async (req, res) => {
   const staff = req.user!.role === "staff";
   const db = getDb();
-  const [r] = await db.select({ ...itemSelect, authorName: items.authorName, publishedAt: items.publishedAt, categories: items.categories, audiences: items.audiences, linkedDocs: items.linkedDocs, attachmentsFull: items.attachments }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.id, String(req.params.id)), visibleWhere(staff)));
+  const [r] = await db.select({ ...itemSelect, authorName: items.authorName, publishedAt: items.publishedAt, categories: items.categories, audiences: items.audiences, linkedDocs: items.linkedDocs, attachmentsFull: items.attachments, bodyHtml: items.bodyHtml, bodyText: items.bodyText, childPostIds: items.childPostIds, sourceKind: items.sourceKind, sourceId: items.sourceId }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.id, String(req.params.id)), visibleWhere(staff)));
   if (!r) { res.status(404).json({ error: "Not found" }); return; }
   const pl = await db.select({ key: subjobs.key, name: subjobs.name, jobName: jobs.name, jobKey: jobs.key, isPrimary: placements.isPrimary }).from(placements).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).innerJoin(jobs, eq(jobs.id, subjobs.jobId)).where(eq(placements.itemId, r.id)).orderBy(desc(placements.isPrimary));
   const [votes] = await db.select({ yes: sql<number>`count(*) filter (where kind='helpful_yes')::int`, no: sql<number>`count(*) filter (where kind='helpful_no')::int` }).from(signals).where(eq(signals.itemId, r.id));
   const mine = await db.select({ kind: signals.kind }).from(signals).where(and(eq(signals.itemId, r.id), eq(signals.userId, req.user!.id), sql`kind in ('helpful_yes','helpful_no')`)).orderBy(desc(signals.createdAt)).limit(1);
-  res.json({ item: { ...toSummary(r as ItemRow), authorName: r.authorName, publishedAt: r.publishedAt, categories: r.categories, audiences: r.audiences, attachments: r.attachmentsFull.map((a) => ({ name: a.name, type: a.type, bytes: a.bytes })), linkedDocs: r.linkedDocs.map((d) => ({ url: d.url, kind: d.kind })) }, placements: pl, votes: { yes: votes?.yes ?? 0, no: votes?.no ?? 0, mine: mine[0]?.kind ?? null } });
+  const childIds = (r.childPostIds ?? []).slice(0, 200);
+  const children = childIds.length ? await db.select({ ...itemSelect, sourceId: items.sourceId }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.sourceKind, "post"), inArray(items.sourceId, childIds), visibleWhere(staff))) : [];
+  const byId = new Map(children.map((c) => [c.sourceId, c]));
+  const contents = childIds.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => !!c).map((c) => toSummary(c as ItemRow));
+  // Items with no stored HTML yet (indexed before full content landed) fall back to their plain text.
+  const bodyHtml = r.bodyHtml ?? (r.bodyText ? `<p>${r.bodyText.split(/\n{2,}/).slice(0, 80).map((p) => p.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!))).join("</p><p>")}</p>` : "");
+  res.json({ item: { ...toSummary(r as ItemRow), authorName: r.authorName, publishedAt: r.publishedAt, categories: r.categories, audiences: r.audiences, bodyHtml, attachments: r.attachmentsFull.map((a) => ({ id: a.id, name: a.name, type: a.type, bytes: a.bytes, mime: a.mime ?? null })), linkedDocs: r.linkedDocs.map((d) => ({ url: d.url, kind: d.kind, status: d.status })), contents }, placements: pl, votes: { yes: votes?.yes ?? 0, no: votes?.no ?? 0, mine: mine[0]?.kind ?? null } });
+});
+
+/** Resolve a Connected post/series/question id to the wfwisdom item (used for links inside imported content). */
+mapRouter.get("/by-source/:kind/:sourceId", async (req, res) => {
+  const kind = String(req.params.kind), sourceId = Number(req.params.sourceId);
+  if (!["post", "series", "question"].includes(kind) || !Number.isFinite(sourceId)) { res.status(400).json({ error: "Bad reference" }); return; }
+  const [r] = await getDb().select({ id: items.id, title: items.title, url: items.url }).from(items).where(and(eq(items.sourceKind, kind), eq(items.sourceId, sourceId), isNull(items.removedAt))).limit(1);
+  if (!r) { res.status(404).json({ error: "Not in Wildflower Wisdom" }); return; }
+  res.json(r);
 });

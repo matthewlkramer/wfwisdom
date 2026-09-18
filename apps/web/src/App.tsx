@@ -14,9 +14,10 @@ import { AdminBasePrompt } from "./pages/admin/BasePrompt";
 import { AdminSubmissions, AdminSubmissionDetail } from "./pages/admin/Submissions";
 import { AdminSettings } from "./pages/admin/Settings";
 import { AdminActivity } from "./pages/admin/Activity";
+import { AdminFeedback } from "./pages/admin/Feedback";
 import { Ask } from "./pages/Ask";
 import { Home } from "./pages/Home";
-import { ItemPage } from "./pages/Item";
+import { ConnectedRedirect, ItemPage } from "./pages/Item";
 import { Landing } from "./pages/Landing";
 import { MapPage, SubjobPage } from "./pages/Map";
 import { Materials, MaterialType } from "./pages/Materials";
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="map" element={<MapPage />} />
         <Route path="map/:key" element={<SubjobPage />} />
         <Route path="item/:id" element={<ItemPage />} />
+        <Route path="c/:kind/:sourceId" element={<ConnectedRedirect />} />
         <Route path="search" element={<SearchPage />} />
         <Route path="ask" element={<Ask />} />
         <Route path="materials" element={<Materials />} />
@@ -53,6 +55,7 @@ export default function App() {
             <Route path="base-prompt" element={<AdminBasePrompt />} />
             <Route path="submissions" element={<AdminSubmissions />} />
             <Route path="submissions/:id" element={<AdminSubmissionDetail />} />
+            <Route path="feedback" element={<AdminFeedback />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="activity" element={<AdminActivity />} />
           </Route>

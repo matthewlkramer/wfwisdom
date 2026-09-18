@@ -1,4 +1,4 @@
-import { pgTable, text, uuid, timestamp, integer, boolean, jsonb, real, bigint, numeric, serial, uniqueIndex, index, primaryKey } from "drizzle-orm/pg-core";
+import { pgEnum, check, pgTable, text, uuid, timestamp, integer, boolean, jsonb, real, bigint, numeric, serial, uniqueIndex, index, primaryKey } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 const now = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
@@ -67,7 +67,11 @@ export const items = pgTable("items", {
   audiences: jsonb("audiences").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
   contentType: text("content_type"),
   bodyText: text("body_text"),
-  attachments: jsonb("attachments").$type<{ id: number; name: string; type: string; bytes: number; chars: number }[]>().notNull().default(sql`'[]'::jsonb`),
+  /** Sanitized HTML of the post body, text blocks, links and (for questions) answers, ready to render. */
+  bodyHtml: text("body_html"),
+  /** For series: Connected post ids in order, resolved to items at read time. */
+  childPostIds: jsonb("child_post_ids").$type<number[]>().notNull().default(sql`'[]'::jsonb`),
+  attachments: jsonb("attachments").$type<{ id: number; name: string; type: string; bytes: number; chars: number; mime?: string | null }[]>().notNull().default(sql`'[]'::jsonb`),
   linkedDocs: jsonb("linked_docs").$type<{ url: string; kind: string; status: string; chars: number }[]>().notNull().default(sql`'[]'::jsonb`),
   linkOnly: boolean("link_only").notNull().default(false),
   hasText: boolean("has_text").notNull().default(false),
@@ -267,3 +271,30 @@ export const auditLog = pgTable("audit_log", {
   detail: jsonb("detail").$type<Record<string, unknown>>(),
   createdAt: now(),
 });
+
+/** App feedback sent from the Feedback button: message, page, and a screenshot as a JPEG data URL (capped at 1 MB). */
+export const feedbackCategory = pgEnum("feedback_category", ["bug", "question", "suggestion", "other"]);
+export const feedbackStatus = pgEnum("feedback_status", ["open", "in_progress", "resolved", "dismissed"]);
+export const appFeedback = pgTable("app_feedback", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  createdByUserId: uuid("created_by_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  category: feedbackCategory("category").notNull(),
+  status: feedbackStatus("status").notNull().default("open"),
+  message: text("message").notNull(),
+  pageUrl: text("page_url"),
+  pagePath: text("page_path"),
+  pageTitle: text("page_title"),
+  screenshotDataUrl: text("screenshot_data_url"),
+  context: jsonb("context").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  adminNotes: text("admin_notes"),
+  resolvedByUserId: uuid("resolved_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("app_feedback_status_created_idx").on(t.status, t.createdAt),
+  index("app_feedback_creator_created_idx").on(t.createdByUserId, t.createdAt),
+  check("app_feedback_message_not_blank", sql`length(trim(${t.message})) > 0`),
+  check("app_feedback_context_size", sql`pg_column_size(${t.context}) <= 20480`),
+  check("app_feedback_screenshot_size", sql`${t.screenshotDataUrl} IS NULL OR octet_length(${t.screenshotDataUrl}) <= 1000000`),
+]);

@@ -104,12 +104,21 @@ async function checkGoogleDrive() {
   if (!driveId) return results.push("INFO  GOOGLE_SHARED_DRIVE_ID: not set (optional until native content lands)");
   for (const [label, token] of [["service account", direct], ["impersonated user", asUser]]) {
     if (!token) continue;
-    const r = await withTimeout(fetch(`https://www.googleapis.com/drive/v3/drives/${encodeURIComponent(driveId)}?fields=id,name,capabilities(canAddChildren,canListChildren)`, { headers: { Authorization: `Bearer ${token}` } }));
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) { bad("GOOGLE_SHARED_DRIVE_ID", `${label} cannot open shared drive ${driveId}: ${j.error?.message ?? r.status}`); continue; }
-    const f = await withTimeout(fetch(`https://www.googleapis.com/drive/v3/files?corpora=drive&driveId=${encodeURIComponent(driveId)}&includeItemsFromAllDrives=true&supportsAllDrives=true&pageSize=1&fields=files(id)`, { headers: { Authorization: `Bearer ${token}` } }));
+    const h = { headers: { Authorization: `Bearer ${token}` } };
+    // Accept either a shared drive id or a folder id (a folder inside a shared drive, or in someone's My Drive).
+    let r = await withTimeout(fetch(`https://www.googleapis.com/drive/v3/drives/${encodeURIComponent(driveId)}?fields=id,name,capabilities(canAddChildren)`, h));
+    let j = await r.json().catch(() => ({}));
+    let where = "shared drive";
+    if (!r.ok) {
+      r = await withTimeout(fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(driveId)}?supportsAllDrives=true&fields=id,name,mimeType,driveId,owners(emailAddress),capabilities(canAddChildren,canListChildren)`, h));
+      j = await r.json().catch(() => ({}));
+      if (!r.ok) { bad("GOOGLE_SHARED_DRIVE_ID", `${label} cannot open ${driveId}: ${j.error?.message ?? r.status}. Use the id from the shared drive or folder URL and share it with the service account.`); continue; }
+      if (j.mimeType !== "application/vnd.google-apps.folder") { bad("GOOGLE_SHARED_DRIVE_ID", `${label}: ${driveId} is a file ("${j.name}"), not a folder or shared drive`); continue; }
+      where = j.driveId ? "folder inside a shared drive" : `folder in My Drive of ${(j.owners ?? []).map((o) => o.emailAddress).join(", ") || "someone"} (files there leave with that account; a shared drive is safer)`;
+    }
+    const f = await withTimeout(fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${driveId}' in parents and trashed=false`)}&includeItemsFromAllDrives=true&supportsAllDrives=true&pageSize=1&fields=files(id)`, h));
     const listed = f.ok ? "can list files" : `cannot list files (HTTP ${f.status})`;
-    (j.capabilities?.canAddChildren ? ok : bad)("GOOGLE_SHARED_DRIVE_ID", `${label} opens "${j.name}"; ${listed}; ${j.capabilities?.canAddChildren ? "can add files" : "CANNOT add files (needs Content manager or Manager)"}`);
+    (j.capabilities?.canAddChildren ? ok : bad)("GOOGLE_SHARED_DRIVE_ID", `${label} opens "${j.name}" (${where}); ${listed}; ${j.capabilities?.canAddChildren ? "can add files" : "CANNOT add files (needs Content manager, Manager, or Editor)"}`);
   }
 }
 function checkSession() {

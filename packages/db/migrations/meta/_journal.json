@@ -15,6 +15,20 @@
       "when": 1789741725958,
       "tag": "0001_search_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789757682899,
+      "tag": "0002_full_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789758351079,
+      "tag": "0003_app_feedback",
+      "breakpoints": true
     }
   ]
 }

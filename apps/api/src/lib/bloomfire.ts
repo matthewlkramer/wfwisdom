@@ -40,13 +40,14 @@ export class Bloomfire {
         if (r.status === 401) { await this.login(); throw new Error("re-auth"); }
         if (!r.ok) throw new Error(`Bloomfire ${path}: ${r.status}`);
         return await r.json() as T;
-      } catch (e) { last = e; await new Promise((r) => setTimeout(r, 1500 * (i + 1))); }
+      } catch (e) { last = e; await new Promise((r) => setTimeout(r, 2500 * (i + 1))); }
     }
     throw last instanceof Error ? last : new Error(String(last));
   }
-  listPosts() { return this.get<{ id: number; updated_at: string }[]>("/posts"); }
-  listSeries() { return this.get<{ id: number; updated_at: string }[]>("/series"); }
-  listQuestions() { return this.get<{ id: number; updated_at: string }[]>("/questions"); }
+  // Only ids and timestamps are requested: rendering the full collection sometimes times out on Connected's side.
+  listPosts() { return this.get<{ id: number; updated_at: string }[]>("/posts", "id,updated_at", 6); }
+  listSeries() { return this.get<{ id: number; updated_at: string }[]>("/series", "id,updated_at", 6); }
+  listQuestions() { return this.get<{ id: number; updated_at: string }[]>("/questions", "id,updated_at", 6); }
   post(id: number) { return this.get<BfItem>(`/posts/${id}`, POST_FIELDS); }
   series(id: number) { return this.get<BfItem>(`/series/${id}`, SERIES_FIELDS); }
   question(id: number) { return this.get<BfItem>(`/questions/${id}`, QUESTION_FIELDS); }

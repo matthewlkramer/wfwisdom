@@ -2,6 +2,7 @@ import { and, eq, getDb, inArray, indexRuns, itemChunks, itemMeta, items, placem
 import { Bloomfire, type BfContent, type BfItem } from "../lib/bloomfire.js";
 import { extractText } from "../lib/extract.js";
 import { fetchGoogleDocText } from "../lib/google-docs.js";
+import { buildBodyHtml } from "../lib/html.js";
 import { embed, respond } from "../lib/openai.js";
 import { GOOGLE_DOC_RE, chunk, normalizeWs, sha, stripHtml } from "../lib/text.js";
 import { logger } from "../logger.js";
@@ -18,7 +19,7 @@ export async function markStaleRuns(): Promise<void> {
 export function isIndexing(): boolean { return running !== null; }
 
 type Kind = "post" | "series" | "question";
-interface Prepared { kind: Kind; sourceId: number; title: string; description: string | null; url: string; authorName: string | null; publishedAt: Date | null; sourceUpdatedAt: Date | null; views: number; likes: number; comments: number; seriesTitles: string[]; categories: string[]; audiences: string[]; contentType: string | null; bodyText: string; attachments: { id: number; name: string; type: string; bytes: number; chars: number }[]; linkedDocs: { url: string; kind: string; status: string; chars: number }[]; linkOnly: boolean; hasText: boolean; contentHash: string; }
+interface Prepared { kind: Kind; sourceId: number; title: string; description: string | null; url: string; authorName: string | null; publishedAt: Date | null; sourceUpdatedAt: Date | null; views: number; likes: number; comments: number; seriesTitles: string[]; categories: string[]; audiences: string[]; contentType: string | null; bodyText: string; bodyHtml: string; childPostIds: number[]; attachments: { id: number; name: string; type: string; bytes: number; chars: number; mime?: string | null }[]; linkedDocs: { url: string; kind: string; status: string; chars: number }[]; linkOnly: boolean; hasText: boolean; contentHash: string; }
 
 const MAX_ATTACHMENT_BYTES = 40 * 1024 * 1024;
 
@@ -38,7 +39,7 @@ async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) =
     if (c.type === "WebLink") { linkCount++; if (c.url) parts.push(`Link: ${c.url}`); continue; }
     if (c.type === "Video" || c.type === "Audio") {
       const tr = c.audio_transcript?.transcript; const name = c.original_file_name ?? c.title ?? "media";
-      attachments.push({ id: c.id, name, type: c.type, bytes: c.original_file_size ?? 0, chars: tr?.length ?? 0 });
+      attachments.push({ id: c.id, name, type: c.type, bytes: c.original_file_size ?? 0, chars: tr?.length ?? 0, mime: c.original_content_type ?? null });
       if (tr) attachmentText += `\n\nTranscript of ${name}:\n${normalizeWs(tr).slice(0, 60_000)}`;
       continue;
     }
@@ -49,10 +50,10 @@ async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) =
         try { const buf = await bf.download(c.content_url); const { text } = await extractText(buf, buf.subarray(0, 4).toString() === "%PDF" ? `${name}.pdf` : name); chars = text.length; if (text) attachmentText += `\n\nAttachment ${name}:\n${text.slice(0, 80_000)}`; }
         catch (e) { log(`attachment ${c.id} (${name}) failed: ${(e as Error).message}`); }
       }
-      attachments.push({ id: c.id, name, type: c.type, bytes: c.original_file_size ?? 0, chars });
+      attachments.push({ id: c.id, name, type: c.type, bytes: c.original_file_size ?? 0, chars, mime: c.original_content_type ?? null });
       continue;
     }
-    if (c.type === "Image") continue;
+    if (c.type === "Image") { attachments.push({ id: c.id, name: c.original_file_name ?? c.title ?? `image-${c.id}`, type: "Image", bytes: c.original_file_size ?? 0, chars: 0, mime: c.original_content_type ?? null }); continue; }
   }
   const linkedDocs: Prepared["linkedDocs"] = [];
   const seen = new Set<string>();
@@ -73,7 +74,7 @@ async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) =
     publishedAt: it.published_at ? new Date(it.published_at) : null, sourceUpdatedAt: it.updated_at ? new Date(it.updated_at) : null,
     views: it.views_count ?? 0, likes: it.likes_count ?? 0, comments: it.comments_count ?? 0,
     seriesTitles: (it.series ?? []).map((s) => s.title), categories: cats, audiences: auds, contentType: null,
-    bodyText, attachments, linkedDocs, linkOnly: realText < 200 && (linkCount > 0 || linkedDocs.length > 0), hasText: realText >= 300,
+    bodyText, bodyHtml: buildBodyHtml(kind, it), childPostIds: kind === "series" ? (it.posts ?? []).map((p) => p.id) : [], attachments, linkedDocs, linkOnly: realText < 200 && (linkCount > 0 || linkedDocs.length > 0), hasText: realText >= 300,
     contentHash: sha(`${title}|${it.description ?? ""}|${bodyText}`),
   };
 }
@@ -97,7 +98,7 @@ export async function runReindex(triggeredBy: string, opts: { full?: boolean; li
         { kind: "post", ids: await bf.listPosts() }, { kind: "series", ids: await bf.listSeries() }, { kind: "question", ids: await bf.listQuestions() },
       ];
       log(`catalog: ${lists.map((l) => `${l.ids.length} ${l.kind}s`).join(", ")}`);
-      const existing = await db.select({ id: items.id, kind: items.sourceKind, sourceId: items.sourceId, hash: items.contentHash, upd: items.sourceUpdatedAt, removedAt: items.removedAt }).from(items);
+      const existing = await db.select({ id: items.id, kind: items.sourceKind, sourceId: items.sourceId, hash: items.contentHash, upd: items.sourceUpdatedAt, removedAt: items.removedAt, hasHtml: sql<boolean>`${items.bodyHtml} is not null` }).from(items);
       const byKey = new Map(existing.map((e) => [`${e.kind}:${e.sourceId}`, e]));
       const seenKeys = new Set<string>();
       const changedIds: string[] = [];
@@ -111,7 +112,7 @@ export async function runReindex(triggeredBy: string, opts: { full?: boolean; li
           const key = `${kind}:${ref.id}`; seenKeys.add(key);
           const prev = byKey.get(key);
           const updated = ref.updated_at ? new Date(ref.updated_at) : null;
-          const skip = !opts.full && prev && !prev.removedAt && prev.upd && updated && prev.upd.getTime() === updated.getTime();
+          const skip = !opts.full && prev && !prev.removedAt && prev.hasHtml && prev.upd && updated && prev.upd.getTime() === updated.getTime();
           try {
             const detail = kind === "post" ? await bf.post(ref.id) : kind === "series" ? await bf.series(ref.id) : await bf.question(ref.id);
             (stats.fetched as number)++;
@@ -126,8 +127,8 @@ export async function runReindex(triggeredBy: string, opts: { full?: boolean; li
               (stats.unchanged as number)++;
             } else {
               const p = await prepare(bf, kind, detail, log, { fetchAttachments: true });
-              const [row] = await db.insert(items).values({ sourceKind: kind, sourceId: p.sourceId, title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, contentHash: p.contentHash, indexedAt: new Date(), removedAt: null })
-                .onConflictDoUpdate({ target: [items.sourceKind, items.sourceId], set: { title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, contentHash: p.contentHash, indexedAt: new Date(), removedAt: null } }).returning({ id: items.id });
+              const [row] = await db.insert(items).values({ sourceKind: kind, sourceId: p.sourceId, title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, contentHash: p.contentHash, indexedAt: new Date(), removedAt: null })
+                .onConflictDoUpdate({ target: [items.sourceKind, items.sourceId], set: { title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, contentHash: p.contentHash, indexedAt: new Date(), removedAt: null } }).returning({ id: items.id });
               if (row && (!prev || prev.hash !== p.contentHash)) changedIds.push(row.id);
               (stats.changed as number)++;
             }

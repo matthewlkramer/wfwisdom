@@ -5,7 +5,8 @@ For Wildflower Foundation staff. Everything staff might want to change lives in 
 ## What the site is
 
 - **Start here**: a teacher leader picks their stage (Discovery, Visioning, Planning, Startup, Open) and sees the resources staff pinned or marked Essential for that stage, plus what the network is opening most.
-- **Map**: Connected organized by job (form your nonprofit, build your board, find a space, and so on) and sub-job. Two clicks to any resource. Every item links back to Connected; the site never shows a full Connected post.
+- **Feedback queue** (Staff, Feedback queue): notes sent from the Feedback button in the header. Each carries the page, a screenshot of the viewport, the browser, and the reporter. Set a status (open, in progress, resolved, dismissed) and keep staff notes; status changes are written to the activity log.
+- **Map**: Connected organized by job (form your nonprofit, build your board, find a space, and so on) and sub-job. Two clicks to any resource. Item pages show the full post, its files (streamed from Connected while it exists), and embedded Google files, with a link to the original in Connected.
 - **Search** and **Ask**: semantic search over everything indexed (including attachment and linked Google Doc text), with a one-line "why this matches", and a chat that answers only from Connected and cites the items it used.
 - **Get feedback**: 26 material types (landlord letter, family handbook, budget, job posting, and more). Each has a "what good looks like" guide, linked Connected resources, and a review prompt. A teacher leader pastes or uploads a draft and gets a verdict, rubric scores, and specific feedback from the AI reviewer, which they can email to themselves or download.
 

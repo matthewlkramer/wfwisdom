@@ -45,3 +45,13 @@ export const SETTING_DEFAULTS: Settings = {
   scoreWeights: { curation: 0.4, usage: 0.35, freshness: 0.25 }, freshnessLadder: [1, 0.8, 0.6, 0.4, 0.25], evergreenContentTypes: ["template", "policy", "definition"],
   startHereCap: 7, signalBlendCeiling: 0.6, signalHalfLifeDays: 90, staffDomain: "wildflowerschools.org",
 };
+
+export type FeedbackCategory = "bug" | "question" | "suggestion" | "other";
+export type FeedbackStatus = "open" | "in_progress" | "resolved" | "dismissed";
+export interface FeedbackResult {
+  id: string; category: FeedbackCategory; status: FeedbackStatus; message: string;
+  pageUrl: string | null; pagePath: string | null; pageTitle: string | null; screenshotDataUrl: string | null;
+  context: Record<string, unknown>; adminNotes: string | null; createdByUserId: string; resolvedByUserId: string | null;
+  resolvedAt: string | null; createdAt: string; updatedAt: string; reporterName: string; reporterEmail: string;
+}
+export interface FeedbackListResult { feedback: FeedbackResult[]; pagination: { page: number; limit: number; total: number; pageCount: number } }

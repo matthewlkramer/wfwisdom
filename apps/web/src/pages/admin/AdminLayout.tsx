@@ -1,10 +1,22 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
+const SECTIONS: Record<string, [string, string]> = {
+  "": ["Overview", "Index health, usage, spend, and the kill switch."],
+  taxonomy: ["Taxonomy", "Jobs and sub-jobs on the map, and the stages each belongs to."],
+  curation: ["Curation", "Essential, Recommended, pins, hides, and Dated labels. Overrides outrank the computed score."],
+  retirement: ["Retirement queue", "Items the audit flagged as dated, thin, or superseded. Keep, label, or hide each one."],
+  types: ["Material types", "The material types teacher leaders can get feedback on: guides, rubrics, review prompts, and linked resources."],
+  "base-prompt": ["Base prompt", "The shared reviewer instructions every material type builds on."],
+  submissions: ["Submission log", "Every draft reviewed, with who sent it, cost, and the verdict."],
+  feedback: ["Feedback queue", "Notes sent from the Feedback button, with page and screenshot."],
+  settings: ["Settings", "Models, limits, scoring weights, and the staff domain."],
+  activity: ["Activity", "Searches, chat, and staff changes."],
+};
 export function AdminLayout() {
-  const tabs = [["", "Overview"], ["taxonomy", "Taxonomy"], ["curation", "Curation"], ["retirement", "Retirement queue"], ["types", "Material types"], ["base-prompt", "Base prompt"], ["submissions", "Submission log"], ["settings", "Settings"], ["activity", "Activity"]] as const;
+  const seg = useLocation().pathname.replace(/^\/admin\/?/, "").split("/")[0] ?? "";
+  const [title, blurb] = SECTIONS[seg] ?? ["Staff workspace", ""];
   return (
     <div className="wf-page">
-      <div className="wf-page-header"><div><p className="eyebrow">Staff workspace</p><h1>Wildflower Wisdom admin</h1><p>Everything staff might want to change lives here: the map, curation, material types and prompts, models, limits, and the re-index.</p></div></div>
-      <nav className="wf-tabs" aria-label="Admin sections">{tabs.map(([p, l]) => <NavLink key={p} to={`/admin${p ? `/${p}` : ""}`} end={p === ""}>{l}</NavLink>)}</nav>
+      <div className="wf-page-header"><div><p className="eyebrow">Staff workspace</p><h1>{title}</h1>{blurb ? <p>{blurb}</p> : null}</div></div>
       <Outlet />
     </div>
   );
