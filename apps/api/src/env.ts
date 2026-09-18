@@ -2,7 +2,14 @@ export const env = {
   get nodeEnv() { return process.env.NODE_ENV ?? "development"; },
   get isProd() { return (process.env.NODE_ENV ?? "development") === "production"; },
   get port() { return Number(process.env.PORT ?? 8080); },
-  get appBaseUrl() { return (process.env.APP_BASE_URL ?? "http://localhost:5173").replace(/\/$/, ""); },
+  /** Public base URL. Explicit APP_BASE_URL wins; on Replit it is derived from the deployment or dev domain. */
+  get appBaseUrl() {
+    const explicit = process.env.APP_BASE_URL?.trim();
+    if (explicit) return explicit.replace(/\/$/, "");
+    if (process.env.REPLIT_DEPLOYMENT && process.env.REPLIT_DOMAINS) return `https://${process.env.REPLIT_DOMAINS.split(",")[0]!.trim()}`;
+    if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    return "http://localhost:5173";
+  },
   get sessionSecret() { const s = process.env.SESSION_SECRET; if (!s || s.length < 16) throw new Error("SESSION_SECRET must be set (32+ chars)"); return s; },
   get googleClientId() { return process.env.GOOGLE_CLIENT_ID ?? ""; },
   get googleClientSecret() { return process.env.GOOGLE_CLIENT_SECRET ?? ""; },

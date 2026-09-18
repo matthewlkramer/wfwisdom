@@ -1,6 +1,6 @@
 modules = ["nodejs-22"]
 
-run = "corepack pnpm@10.33.0 preview"
+run = "corepack pnpm@10.33.0 install --frozen-lockfile && corepack pnpm@10.33.0 preview"
 
 [deployment]
 run = ["corepack", "pnpm@10.33.0", "deploy:start"]
@@ -29,7 +29,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "corepack pnpm@10.33.0 preview"
+args = "corepack pnpm@10.33.0 install --frozen-lockfile && corepack pnpm@10.33.0 preview"
 waitForPort = 8080
 
 [workflows.workflow.metadata]

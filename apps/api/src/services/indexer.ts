@@ -12,7 +12,8 @@ import { loadVectors } from "./vectors.js";
 let running: Promise<void> | null = null;
 /** Runs left in "running" by a process that died are marked failed so the admin page does not show them as live. */
 export async function markStaleRuns(): Promise<void> {
-  await getDb().update(indexRuns).set({ status: "failed", error: "Interrupted by a restart", finishedAt: new Date() }).where(eq(indexRuns.status, "running"));
+  // Tolerates a database that has not been migrated yet (first boot).
+  await getDb().update(indexRuns).set({ status: "failed", error: "Interrupted by a restart", finishedAt: new Date() }).where(eq(indexRuns.status, "running")).catch((e: Error) => logger.warn({ err: e.message }, "could not mark stale runs"));
 }
 export function isIndexing(): boolean { return running !== null; }
 
