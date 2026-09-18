@@ -4,12 +4,12 @@ import { Download, ExternalLink, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { ItemSummary } from "@wfw/shared";
 import { api, fmtDate, signalClick } from "../api";
-import { ErrorState, ItemGrid, Loading, Pill } from "../components/ui";
+import { ErrorState, ItemGrid, Linkify, Loading, Pill } from "../components/ui";
 
 type Attachment = { id: number; name: string; type: string; bytes: number; mime: string | null };
 type LinkedDoc = { url: string; kind: string; status: string };
 type Detail = {
-  item: ItemSummary & { authorName: string | null; publishedAt: string | null; categories: string[]; audiences: string[]; bodyHtml: string; attachments: Attachment[]; linkedDocs: LinkedDoc[]; contents: ItemSummary[] };
+  item: ItemSummary & { authorName: string | null; publishedAt: string | null; categories: string[]; audiences: string[]; bodyHtml: string; primaryVideo: Attachment | null; attachments: Attachment[]; linkedDocs: LinkedDoc[]; contents: ItemSummary[] };
   placements: { key: string; name: string; jobName: string; jobKey: string; isPrimary: boolean }[];
   votes: { yes: number; no: number; mine: string | null };
 };
@@ -43,7 +43,8 @@ export function ItemPage() {
   const { item, placements, votes } = q.data!;
   const primary = placements.find((p) => p.isPrimary) ?? placements[0];
   const inlined = new Set([...item.bodyHtml.matchAll(/data-content-id="(\d+)"/g)].map((m) => Number(m[1])));
-  const rest = item.attachments.filter((a) => !inlined.has(a.id));
+  // The primary video is rendered at the top of the page, so it is not repeated in the body or Files.
+  const rest = item.attachments.filter((a) => !inlined.has(a.id) && a.id !== item.primaryVideo?.id);
   const images = rest.filter((a) => a.type === "Image");
   const files = rest.filter((a) => a.type !== "Image");
   const kindLabel = item.kind === "series" ? "Series" : item.kind === "question" ? "Q&A" : item.contentType ?? "Post";
@@ -66,6 +67,7 @@ export function ItemPage() {
       <div className="two-col">
         <div>
           <article className="wf-card wf-card-section">
+            {item.primaryVideo ? <Media a={item.primaryVideo} /> : null}
             {item.description && item.description !== item.title ? <p className="lede" style={{ marginTop: 0 }}>{item.description}</p> : null}
             {item.bodyHtml ? <div className="wf-doc" dangerouslySetInnerHTML={{ __html: item.bodyHtml }} /> : null}
             {images.map((a) => <Media key={a.id} a={a} />)}
@@ -79,7 +81,7 @@ export function ItemPage() {
         </div>
         <aside>
           <div className="wf-card wf-card-section sticky">
-            {item.summary ? <><h3 style={{ marginTop: 0 }}>At a glance</h3><p style={{ fontSize: ".92rem" }}>{item.summary}</p></> : null}
+            {item.summary ? <><h3 style={{ marginTop: 0 }}>At a glance</h3><p style={{ fontSize: ".92rem" }}><Linkify text={item.summary} /></p></> : null}
             <h3>Was this helpful?</h3>
             <div className="inline-actions"><button className={votes.mine === "helpful_yes" ? "primary-button" : ""} onClick={() => vote.mutate("helpful_yes")}><ThumbsUp size={16} /> Yes{votes.yes ? ` (${votes.yes})` : ""}</button><button className={votes.mine === "helpful_no" ? "primary-button" : ""} onClick={() => vote.mutate("helpful_no")}><ThumbsDown size={16} /> Not really{votes.no ? ` (${votes.no})` : ""}</button></div>
             <p className="muted" style={{ fontSize: ".8rem" }}>Votes feed the ranking so the best resources rise.</p>

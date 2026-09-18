@@ -11,6 +11,8 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("teacher_leader"),
   hostedDomain: text("hosted_domain"),
   stage: text("stage"),
+  /** Which resource language the reader last chose: all | en | es. Follows them across devices. */
+  resourceLanguage: text("resource_language").notNull().default("all"),
   createdAt: now(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
@@ -77,10 +79,12 @@ export const items = pgTable("items", {
   hasText: boolean("has_text").notNull().default(false),
   summary: text("summary"),
   summaryHash: text("summary_hash"),
+  /** Detected from the title, labels and body at index time: en | es | unknown. "unknown" only shows under "All resources". */
+  language: text("language").notNull().default("unknown"),
   indexedAt: timestamp("indexed_at", { withTimezone: true }).defaultNow().notNull(),
   removedAt: timestamp("removed_at", { withTimezone: true }),
   contentHash: text("content_hash"),
-}, (t) => [uniqueIndex("items_source_idx").on(t.sourceKind, t.sourceId)]);
+}, (t) => [uniqueIndex("items_source_idx").on(t.sourceKind, t.sourceId), index("items_language_idx").on(t.language)]);
 
 export const itemChunks = pgTable("item_chunks", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -238,8 +242,29 @@ export const chatTurns = pgTable("chat_turns", {
   model: text("model"),
   usage: jsonb("usage").$type<Record<string, number>>(),
   costUsd: numeric("cost_usd", { precision: 10, scale: 6 }),
+  /** The asker ticked "let staff review this question and answer". Drives the staff Questions queue. */
+  staffReviewRequested: boolean("staff_review_requested").notNull().default(false),
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  /** The asker ticked "share this question as an example". Nothing is public until staff approve it. */
+  shareRequested: boolean("share_requested").notNull().default(false),
+  shareAttribution: text("share_attribution").notNull().default("anonymous"), // anonymous | name
+  shareStatus: text("share_status").notNull().default("none"), // none | pending | approved | rejected
+  shareDecidedBy: text("share_decided_by"),
+  shareDecidedAt: timestamp("share_decided_at", { withTimezone: true }),
   createdAt: now(),
-}, (t) => [index("chat_user_idx").on(t.userId), index("chat_created_idx").on(t.createdAt)]);
+}, (t) => [index("chat_user_idx").on(t.userId), index("chat_created_idx").on(t.createdAt), index("chat_review_idx").on(t.staffReviewRequested, t.createdAt), index("chat_share_idx").on(t.shareStatus, t.createdAt)]);
+
+/** Staff notes on a question and its answer, one row per note so who wrote it and when is kept. */
+export const chatTurnNotes = pgTable("chat_turn_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  turnId: uuid("turn_id").notNull().references(() => chatTurns.id, { onDelete: "cascade" }),
+  authorUserId: uuid("author_user_id").references(() => users.id, { onDelete: "set null" }),
+  /** Snapshot of the author's name so the note still reads correctly if the account is removed. */
+  authorName: text("author_name").notNull(),
+  body: text("body").notNull(),
+  createdAt: now(),
+}, (t) => [index("chat_turn_notes_turn_idx").on(t.turnId, t.createdAt), check("chat_turn_notes_body_not_blank", sql`length(trim(${t.body})) > 0`)]);
 
 export const searchLog = pgTable("search_log", {
   id: uuid("id").primaryKey().defaultRandom(),

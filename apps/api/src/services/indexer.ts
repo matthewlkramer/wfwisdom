@@ -2,9 +2,10 @@ import { and, eq, getDb, inArray, indexRuns, itemChunks, itemMeta, items, placem
 import { Bloomfire, type BfContent, type BfItem } from "../lib/bloomfire.js";
 import { extractText } from "../lib/extract.js";
 import { fetchGoogleDocText } from "../lib/google-docs.js";
-import { buildBodyHtml } from "../lib/html.js";
+import { buildBodyHtml, stripContentTokens } from "../lib/html.js";
 import { embed, respond } from "../lib/openai.js";
 import { GOOGLE_DOC_RE, chunk, normalizeWs, sha, stripHtml } from "../lib/text.js";
+import { detectLanguage, type ItemLanguage } from "@wfw/shared";
 import { logger } from "../logger.js";
 import { getSettings } from "../settings.js";
 import { recomputeScores } from "./score.js";
@@ -19,7 +20,7 @@ export async function markStaleRuns(): Promise<void> {
 export function isIndexing(): boolean { return running !== null; }
 
 type Kind = "post" | "series" | "question";
-interface Prepared { kind: Kind; sourceId: number; title: string; description: string | null; url: string; authorName: string | null; publishedAt: Date | null; sourceUpdatedAt: Date | null; views: number; likes: number; comments: number; seriesTitles: string[]; categories: string[]; audiences: string[]; contentType: string | null; bodyText: string; bodyHtml: string; childPostIds: number[]; attachments: { id: number; name: string; type: string; bytes: number; chars: number; mime?: string | null }[]; linkedDocs: { url: string; kind: string; status: string; chars: number }[]; linkOnly: boolean; hasText: boolean; contentHash: string; }
+interface Prepared { kind: Kind; sourceId: number; title: string; description: string | null; url: string; authorName: string | null; publishedAt: Date | null; sourceUpdatedAt: Date | null; views: number; likes: number; comments: number; seriesTitles: string[]; categories: string[]; audiences: string[]; contentType: string | null; bodyText: string; bodyHtml: string; childPostIds: number[]; attachments: { id: number; name: string; type: string; bytes: number; chars: number; mime?: string | null }[]; linkedDocs: { url: string; kind: string; status: string; chars: number }[]; linkOnly: boolean; hasText: boolean; language: ItemLanguage; contentHash: string; }
 
 const MAX_ATTACHMENT_BYTES = 40 * 1024 * 1024;
 
@@ -65,7 +66,8 @@ async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) =
     if (r.text) attachmentText += `\n\nLinked ${kindG}:\n${r.text.slice(0, 60_000)}`;
   }
   for (const c of (it.contents ?? []) as BfContent[]) if (c.type === "WebLink" && c.url) for (const m of c.url.matchAll(GOOGLE_DOC_RE)) { const id = m[2] ?? ""; if (!id || seen.has(id)) continue; seen.add(id); const r = await fetchGoogleDocText(m[1] ?? "document", id); linkedDocs.push({ url: r.url, kind: r.kind, status: r.status, chars: r.text.length }); if (r.text) attachmentText += `\n\nLinked ${m[1]}:\n${r.text.slice(0, 60_000)}`; }
-  const bodyText = normalizeWs([parts.join("\n\n"), attachmentText].filter(Boolean).join("\n\n")).slice(0, 400_000);
+  // The embed tokens are rendered (or dropped) in the HTML; they must never reach summaries, chunks or search.
+  const bodyText = stripContentTokens(normalizeWs([parts.join("\n\n"), attachmentText].filter(Boolean).join("\n\n"))).slice(0, 400_000);
   const cats = (it.taxa ?? []).filter((t) => t.taxonomy_name === "Category" && t.name !== "All Hubs").map((t) => t.name_path.join(" > "));
   const auds = (it.taxa ?? []).filter((t) => t.taxonomy_name === "Audience" && t.name !== "All Hubs").map((t) => t.name);
   const realText = body.length + attachmentText.length;
@@ -75,6 +77,7 @@ async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) =
     views: it.views_count ?? 0, likes: it.likes_count ?? 0, comments: it.comments_count ?? 0,
     seriesTitles: (it.series ?? []).map((s) => s.title), categories: cats, audiences: auds, contentType: null,
     bodyText, bodyHtml: buildBodyHtml(kind, it), childPostIds: kind === "series" ? (it.posts ?? []).map((p) => p.id) : [], attachments, linkedDocs, linkOnly: realText < 200 && (linkCount > 0 || linkedDocs.length > 0), hasText: realText >= 300,
+    language: detectLanguage({ title, description: stripHtml(it.description), body: bodyText, categories: cats, seriesTitles: (it.series ?? []).map((s) => s.title) }),
     contentHash: sha(`${title}|${it.description ?? ""}|${bodyText}`),
   };
 }
@@ -127,8 +130,8 @@ export async function runReindex(triggeredBy: string, opts: { full?: boolean; li
               (stats.unchanged as number)++;
             } else {
               const p = await prepare(bf, kind, detail, log, { fetchAttachments: true });
-              const [row] = await db.insert(items).values({ sourceKind: kind, sourceId: p.sourceId, title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, contentHash: p.contentHash, indexedAt: new Date(), removedAt: null })
-                .onConflictDoUpdate({ target: [items.sourceKind, items.sourceId], set: { title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, contentHash: p.contentHash, indexedAt: new Date(), removedAt: null } }).returning({ id: items.id });
+              const [row] = await db.insert(items).values({ sourceKind: kind, sourceId: p.sourceId, title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, language: p.language, contentHash: p.contentHash, indexedAt: new Date(), removedAt: null })
+                .onConflictDoUpdate({ target: [items.sourceKind, items.sourceId], set: { title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, language: p.language, contentHash: p.contentHash, indexedAt: new Date(), removedAt: null } }).returning({ id: items.id });
               if (row && (!prev || prev.hash !== p.contentHash)) changedIds.push(row.id);
               (stats.changed as number)++;
             }

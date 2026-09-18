@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, Info, Loader2, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import type { ItemSummary } from "@wfw/shared";
+import { linkifyParts, type ItemSummary } from "@wfw/shared";
 import { fmtMonth, signalClick } from "../api";
 
 export function State({ kind = "info", title, children, icon }: { kind?: "info" | "error" | "success" | "loading" | "empty"; title: string; children?: ReactNode; icon?: ReactNode }) {
@@ -16,6 +16,10 @@ export function ErrorState({ error, retry }: { error: unknown; retry?: () => voi
 }
 export function SearchInput({ value, onChange, placeholder, large, autoFocus, onSubmit }: { value: string; onChange: (v: string) => void; placeholder?: string; large?: boolean; autoFocus?: boolean; onSubmit?: () => void }) {
   return <form className={`wf-search${large ? " large" : ""}`} role="search" onSubmit={(e) => { e.preventDefault(); onSubmit?.(); }}><Search size={18} /><input type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder ?? "Search Connected"} aria-label={placeholder ?? "Search Connected"} autoFocus={autoFocus} /></form>;
+}
+/** Renders plain text with bare URLs as real links that open in a new tab. */
+export function Linkify({ text }: { text: string }) {
+  return <>{linkifyParts(text).map((p, i) => (p.kind === "link" ? <a key={i} href={p.href} target="_blank" rel="noopener noreferrer">{p.text}</a> : <span key={i}>{p.text}</span>))}</>;
 }
 export function Pill({ item }: { item: ItemSummary }) {
   return <>{item.curation === "essential" ? <span className="wf-status wf-status-essential">Essential</span> : item.curation === "recommended" ? <span className="wf-status wf-status-recommended">Staff pick</span> : null}{item.dated ? <span className="wf-status wf-status-attention">{item.dated}</span> : null}</>;

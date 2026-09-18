@@ -23,6 +23,7 @@ const staff: NavItem[] = [
   { to: "/admin/base-prompt", label: "Base prompt", icon: FileText },
   { to: "/admin/submissions", label: "Submission log", icon: FileText },
   { to: "/admin/feedback", label: "Feedback queue", icon: MessageSquareText },
+  { to: "/admin/questions", label: "Questions", icon: MessagesSquare },
   { to: "/admin/settings", label: "Settings", icon: Settings },
   { to: "/admin/activity", label: "Activity", icon: Activity },
 ];

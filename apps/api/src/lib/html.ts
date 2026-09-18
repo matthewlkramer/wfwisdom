@@ -40,8 +40,16 @@ export function sanitizeBody(html: string): string {
 }
 
 
-/** Connected embeds a file inside a post body with a token like [content|2595515|]; render that file in place. */
-const CONTENT_TOKEN = /\[content\|(\d+)\|?\]/g;
+/**
+ * Connected embeds a file inside a post body with a token like [content|2595515|]; render that file in place.
+ * Some posts carry variants ([content|123], [content|123|caption]), so the pattern is deliberately loose:
+ * a token that cannot be rendered must never survive into what a reader sees.
+ */
+const CONTENT_TOKEN = /\[content\|\s*(\d+)\s*(?:\|[^\]]*)?\]/gi;
+/** Remove every embed token from text or HTML. Safe to run twice; used at render time and while indexing. */
+export function stripContentTokens(s: string): string {
+  return s ? s.replace(CONTENT_TOKEN, "") : s;
+}
 export function mediaHtml(c: BfContent): string {
   const src = `/api/files/${c.id}`;
   const name = esc(c.original_file_name ?? c.title ?? `file-${c.id}`);
@@ -77,5 +85,23 @@ export function buildBodyHtml(kind: "post" | "series" | "question", it: BfItem):
     const who = a.author ? `${a.author.first_name ?? ""} ${a.author.last_name ?? ""}`.trim() : "";
     parts.push(`<section class="answer"><h3>Answer${who ? ` from ${esc(who)}` : ""}</h3>${sanitizeBody(html)}</section>`);
   }
-  return parts.join("\n").replace(CONTENT_TOKEN, "");
+  return stripContentTokens(parts.join("\n"));
+}
+
+
+/** A video attachment hoisted out of the body so the player can sit at the top of the item page. */
+export interface PrimaryVideo { id: number; name: string; type: string; bytes: number; mime: string | null }
+const FIGURE_RE = /<figure class="wf-media" data-content-id="(\d+)">[\s\S]*?<\/figure>/g;
+
+/**
+ * When an item's primary content is a video, pull it out of the body HTML so the page can render the
+ * player above the transcript. The first video attachment wins; whatever figure the body already had
+ * for it is removed so the player is not shown twice.
+ */
+export function extractPrimaryVideo(html: string, attachments: { id: number; name: string; type: string; bytes: number; mime?: string | null }[]): { html: string; video: PrimaryVideo | null } {
+  const v = attachments.find((a) => a.type === "Video");
+  if (!v) return { html, video: null };
+  FIGURE_RE.lastIndex = 0;
+  const stripped = html.replace(FIGURE_RE, (m, id: string) => (Number(id) === v.id ? "" : m));
+  return { html: stripped, video: { id: v.id, name: v.name, type: v.type, bytes: v.bytes, mime: v.mime ?? null } };
 }

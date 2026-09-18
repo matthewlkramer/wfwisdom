@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { SessionUser } from "@wfw/shared";
 import { api } from "./api";
 import { Shell } from "./components/Shell";
+import { LanguageProvider } from "./language";
 import { Loading } from "./components/ui";
 import { AdminLayout } from "./pages/admin/AdminLayout";
 import { AdminOverview } from "./pages/admin/Overview";
@@ -15,6 +16,7 @@ import { AdminSubmissions, AdminSubmissionDetail } from "./pages/admin/Submissio
 import { AdminSettings } from "./pages/admin/Settings";
 import { AdminActivity } from "./pages/admin/Activity";
 import { AdminFeedback } from "./pages/admin/Feedback";
+import { AdminQuestions } from "./pages/admin/Questions";
 import { Ask } from "./pages/Ask";
 import { Home } from "./pages/Home";
 import { ConnectedRedirect, ItemPage } from "./pages/Item";
@@ -29,8 +31,9 @@ export default function App() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => api.get<{ user: SessionUser | null }>("/api/me") });
   if (me.isLoading) return <div className="wf-page"><Loading what="Signing you in" /></div>;
   const user = me.data?.user ?? null;
-  if (!user) return <Routes><Route path="*" element={<Landing next={loc.pathname + loc.search} />} /></Routes>;
+  if (!user) return <LanguageProvider user={null}><Routes><Route path="*" element={<Landing next={loc.pathname + loc.search} />} /></Routes></LanguageProvider>;
   return (
+    <LanguageProvider user={user}>
     <Routes>
       <Route element={<Shell user={user} onSignOut={() => qc.setQueryData(["me"], { user: null })} />}>
         <Route index element={<Home />} />
@@ -56,6 +59,7 @@ export default function App() {
             <Route path="submissions" element={<AdminSubmissions />} />
             <Route path="submissions/:id" element={<AdminSubmissionDetail />} />
             <Route path="feedback" element={<AdminFeedback />} />
+            <Route path="questions" element={<AdminQuestions />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="activity" element={<AdminActivity />} />
           </Route>
@@ -63,5 +67,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+    </LanguageProvider>
   );
 }

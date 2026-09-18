@@ -1,9 +1,9 @@
 import { and, eq, getDb, inArray, itemChunks, itemMeta, items, jobs, placements, sql, subjobs } from "@wfw/db";
-import type { ItemSummary } from "@wfw/shared";
+import type { ItemSummary, ResourceLanguage } from "@wfw/shared";
 import { embed, respondJson, respond } from "../lib/openai.js";
 import { logger } from "../logger.js";
 import { getSettings } from "../settings.js";
-import { itemsByIds, toSummary, visibleWhere, type ItemRow } from "./items.js";
+import { itemsByIds, languageWhere, toSummary, visibleWhere, type ItemRow } from "./items.js";
 import { loadVectors, searchVectors, vectorCount } from "./vectors.js";
 
 const REWRITE_SYSTEM = (jobs: { key: string; name: string }[]) => `You rewrite a teacher leader's search into a precise query for Wildflower Schools' knowledge base (Connected). Expand shorthand (SSJ = School Startup Journey, TL = teacher leader, ETL = emerging teacher leader, ops guide, hub, flexible tuition, 501c3, TC = Transparent Classroom). Keep the query under 20 words and do not add topics the searcher did not ask about. Also pick the one job the search is about, or "none".
@@ -15,7 +15,7 @@ const EXPLAIN_SCHEMA = { name: "explain", schema: { type: "object", additionalPr
 
 export interface SearchResponse { query: string; rewritten: string | null; mode: "semantic" | "keyword"; results: ItemSummary[]; }
 
-export async function search(query: string, opts: { staff: boolean; limit?: number; explain?: boolean; userId?: string | null }): Promise<SearchResponse> {
+export async function search(query: string, opts: { staff: boolean; limit?: number; explain?: boolean; userId?: string | null; language?: ResourceLanguage }): Promise<SearchResponse> {
   const s = await getSettings();
   const db = getDb();
   const limit = opts.limit ?? 10;
@@ -39,12 +39,12 @@ export async function search(query: string, opts: { staff: boolean; limit?: numb
   // Hybrid: fuse semantic ranks with keyword (full-text) ranks by reciprocal rank fusion, so items that match on both rise.
   const q = [query, rewritten ?? "", ...keywords].filter(Boolean).join(" ");
   const ftsRows = await db.select({ id: items.id, rank: sql<number>`ts_rank_cd(${sql.raw('"items"."fts"')}, websearch_to_tsquery('english', ${q}))` }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id))
-    .where(and(visibleWhere(opts.staff), sql`${sql.raw('"items"."fts"')} @@ websearch_to_tsquery('english', ${q})`)).orderBy(sql`2 desc`).limit(60).catch(() => [] as { id: string; rank: number }[]);
+    .where(and(visibleWhere(opts.staff), languageWhere(opts.language), sql`${sql.raw('"items"."fts"')} @@ websearch_to_tsquery('english', ${q})`)).orderBy(sql`2 desc`).limit(60).catch(() => [] as { id: string; rank: number }[]);
   if (ranked.length === 0) {
     mode = "keyword";
     ranked = ftsRows.map((r) => ({ itemId: r.id, rel: Number(r.rank) }));
     if (ranked.length === 0) {
-      const like = await db.select({ id: items.id }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(visibleWhere(opts.staff), sql`lower(${items.title}) like ${"%" + query.toLowerCase() + "%"}`)).limit(30);
+      const like = await db.select({ id: items.id }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(visibleWhere(opts.staff), languageWhere(opts.language), sql`lower(${items.title}) like ${"%" + query.toLowerCase() + "%"}`)).limit(30);
       ranked = like.map((r) => ({ itemId: r.id, rel: 0.5 }));
     }
   } else {
@@ -53,7 +53,8 @@ export async function search(query: string, opts: { staff: boolean; limit?: numb
     ftsRows.forEach((r, i) => fused.set(r.id, (fused.get(r.id) ?? 0) + 0.8 / (30 + i)));
     ranked = [...fused.entries()].map(([itemId, rel]) => ({ itemId, rel })).sort((a, b) => b.rel - a.rel).slice(0, 60);
   }
-  const map = await itemsByIds(ranked.map((r) => r.itemId), opts.staff);
+  // Semantic hits are filtered here rather than in the vector index, so the language choice applies to every path.
+  const map = await itemsByIds(ranked.map((r) => r.itemId), opts.staff, opts.language);
   const inJob = new Set<string>();
   if (jobKey && ranked.length) {
     const rows = await db.select({ itemId: placements.itemId }).from(placements).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).innerJoin(jobs, eq(jobs.id, subjobs.jobId)).where(and(eq(jobs.key, jobKey), inArray(placements.itemId, ranked.map((r) => r.itemId))));

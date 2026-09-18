@@ -7,8 +7,39 @@ For Wildflower Foundation staff. Everything staff might want to change lives in 
 - **Start here**: a teacher leader picks their stage (Discovery, Visioning, Planning, Startup, Open) and sees the resources staff pinned or marked Essential for that stage, plus what the network is opening most.
 - **Feedback queue** (Staff, Feedback queue): notes sent from the Feedback button in the header. Each carries the page, a screenshot of the viewport, the browser, and the reporter. Set a status (open, in progress, resolved, dismissed) and keep staff notes; status changes are written to the activity log.
 - **Map**: Connected organized by job (form your nonprofit, build your board, find a space, and so on) and sub-job. Two clicks to any resource. Item pages show the full post, its files (streamed from Connected while it exists), and embedded Google files, with a link to the original in Connected.
-- **Search** and **Ask**: semantic search over everything indexed (including attachment and linked Google Doc text), with a one-line "why this matches", and a chat that answers only from Connected and cites the items it used.
+- **Search** and **Ask**: semantic search over everything indexed (including attachment and linked Google Doc text), with a one-line "why this matches", and a chat that answers only from Connected and cites the items it used. Ask also shows approved example questions, and the reader's own earlier questions with the answers they got.
+- **Questions queue** (Staff, Questions): the questions teacher leaders offered for staff review or offered to share publicly. See below.
+- **Language filter**: every page that lists resources carries an English / Spanish / All resources control. See below.
 - **Get feedback**: 26 material types (landlord letter, family handbook, budget, job posting, and more). Each has a "what good looks like" guide, linked Connected resources, and a review prompt. A teacher leader pastes or uploads a draft and gets a verdict, rubric scores, and specific feedback from the AI reviewer, which they can email to themselves or download.
+
+## How to read the Questions queue
+
+At the bottom of the Ask page a teacher leader can tick two boxes, both off by default:
+
+1. **"Let Wildflower Foundation staff review this question and answer to improve the tool."** The question lands in **Staff → Questions**.
+2. **"Share this question on this page as an example of what people are asking."** They then choose **Share anonymously** (the default) or **Share with my name**. The question lands in the same queue marked *waiting on approval*.
+
+**Staff → Questions** lists both kinds, newest first, with the asker, the answer that was given and its citations. Filter by **Unreviewed / Reviewed** and by share state. On each question you can:
+
+- **Add a note** — what the team learned, what to fix. Every note records who wrote it and when, and notes are kept, not overwritten.
+- **Mark reviewed** (or put it back in the queue). The queue defaults to Unreviewed, so it works as a worklist.
+- **Approve** or **Reject sharing** for a question the asker offered as an example. **Nothing is shown publicly until it is approved**, and only a question the asker actually offered can be approved. Approved questions appear under "What others are asking" on Ask, with the asker's name only if they chose that — otherwise "Anonymous". Rejecting an already-approved question takes it back off the page immediately.
+
+Every staff action here (note, review, approve, reject) is written to **Staff → Activity**.
+
+Teacher leaders see their own questions at the bottom of Ask whether or not they ticked anything. Each row opens to show the answer and its citations, and has a **Use this question** button that drops the question back into the ask box to edit and re-ask.
+
+## The English / Spanish language filter
+
+Every page that lists resources — Start here, Map (and sub-job pages), Search, and the resource lists on a material type — carries an **English / Spanish / All resources** control. The default is **All resources**.
+
+- The choice is remembered per person: it is stored on their user record, so it follows them to another computer. Signed-out browsers fall back to local storage.
+- Changing it anywhere applies it everywhere, until they change it again.
+- Each item's language is detected during indexing from its title, categories and body. Content labelled "Español" or "Spanish" in the title or category is treated as Spanish; otherwise a deterministic word-frequency check decides.
+- Items whose language cannot be determined are marked **unknown** and appear only under **All resources**. Nothing is ever lost — switching back to All shows everything.
+- A material type whose linked resources are all in the other language shows a note saying so rather than an empty list.
+
+The detector runs offline and costs nothing. To re-detect everything after a change to the detector, run `pnpm backfill:language --all` (see below).
 
 ## How to re-index Connected
 
@@ -17,6 +48,7 @@ The indexer logs in to Connected with the Bloomfire API key and the login email 
 - It runs automatically every night at 03:10 UTC.
 - To run it now: **Staff → Overview → Re-index now**. "Full re-index" re-fetches every item even if Connected says it has not changed (use after changing the embedding model or if something looks stale). Progress and the log show on the same page.
 - Items that disappear from Connected are marked removed and drop out of every view. Unpublished or group-restricted items are never indexed.
+- Each item's language (English, Spanish, or unknown) is detected on every re-index. Existing items are filled in by the one-off `pnpm backfill:language`, so no re-index is needed just for language.
 - Google files shared as "anyone with the link" are read without credentials. Private ones are read through the service account (`GOOGLE_SERVICE_ACCOUNT_JSON`), acting as `GOOGLE_IMPERSONATE_EMAIL` when domain-wide delegation is authorized, otherwise as itself (which reaches shared drives it is a member of). Re-index after changing either.
 
 ## How to curate the best resources
@@ -80,6 +112,15 @@ Set in the Replit app's Secrets (not in code):
 
 Run `node scripts/check-secrets.mjs` in the Repl shell to verify every secret against its service without printing values.
 
+## One-off maintenance commands
+
+| Command | What it does |
+| --- | --- |
+| `pnpm backfill:language` | Fills in the language of every already-indexed item still marked unknown, using the same detector the indexer uses. Safe to re-run; it never touches Connected and never re-indexes. |
+| `pnpm backfill:language --all` | Re-detects the language of every item, including ones already marked English or Spanish. Use after changing the detector. |
+
 ## Deploying changes
 
 GitHub `main` is the source of truth. Replit pulls from it; the post-merge hook installs dependencies, runs migrations and the idempotent seed, and builds. Publishing to wfwisdom.replit.app is done from Replit (Deploy). Before merging to main, run `pnpm typecheck`, `pnpm test`, and `pnpm build`.
+
+After deploying the Questions and language release, run `pnpm backfill:language` once in the Repl shell. The migration itself already marks items whose title or category says "Español"/"Spanish"; the backfill catches the rest. Until it runs, items read as *unknown* and show only under **All resources**.
