@@ -1,0 +1,57 @@
+import { env } from "../env.js";
+
+const PERSON = "id,first_name,last_name";
+const CONTENT = "contents(id,type,media_type,publish_state,title,description,original_file_name,text_body,content_url,original_content_type,original_file_size,has_audio_transcript,audio_transcript(id,transcript,job_status),url,updated_at)";
+const COMMON = `author(${PERSON}),categories(id,name),keywords(id,name),series(id,title),likes_count,views_count,popularity,followers_count,comments_count,published_at,updated_at,created_at,public,published,post_body,url,taxa(name,id,name_path,taxonomy_name)`;
+export const POST_FIELDS = `id,title,description,contribution_type,featured,${COMMON},${CONTENT},contents_count`;
+export const SERIES_FIELDS = `id,title,description,${COMMON},posts(id,title),posts_count`;
+export const QUESTION_FIELDS = `id,name,question,description,explanation,${COMMON},answers(id,text,body,created_at,likes_count,author(${PERSON})),answers_count,accepted(id)`;
+
+export interface BfPerson { id: number; first_name?: string; last_name?: string }
+export interface BfContent { id: number; type: string; media_type?: string | null; title?: string | null; description?: string | null; original_file_name?: string | null; text_body?: string | null; content_url?: string | null; original_content_type?: string | null; original_file_size?: number | null; has_audio_transcript?: boolean; audio_transcript?: { transcript?: string | null } | null; url?: string | null; updated_at?: string }
+export interface BfItem {
+  id: number; title?: string; name?: string; question?: string; description?: string | null; explanation?: string | null; post_body?: string | null; url?: string;
+  author?: BfPerson | null; categories?: { id: string; name: string }[]; series?: { id: number; title: string }[]; posts?: { id: number; title: string }[];
+  likes_count?: number; views_count?: number; comments_count?: number; published_at?: string | null; updated_at?: string; public?: boolean; published?: boolean;
+  taxa?: { name: string; id: string; name_path: string[]; taxonomy_name: string }[]; contents?: BfContent[]; answers?: { text?: string | null; body?: string | null; author?: BfPerson | null }[];
+}
+
+export class Bloomfire {
+  private token: string | null = null;
+  constructor(private base = env.bloomfireBase) {}
+
+  async login(): Promise<void> {
+    if (!env.bloomfireKey || !env.bloomfireEmail) throw new Error("BLOOMFIRE_API_KEY and BLOOMFIRE_LOGIN_EMAIL must be set");
+    const r = await fetch(`${this.base}/api/v2/login`, { method: "POST", headers: { "content-type": "application/json", "bloomfire-requested-fields": "session_token" }, body: JSON.stringify({ email: env.bloomfireEmail, api_key: env.bloomfireKey }) });
+    if (!r.ok) throw new Error(`Bloomfire login failed: ${r.status} ${(await r.text()).slice(0, 200)}`);
+    const d = await r.json() as { session_token?: string };
+    if (!d.session_token) throw new Error("Bloomfire login returned no session token");
+    this.token = d.session_token;
+  }
+  private async get<T>(path: string, fields?: string, tries = 3): Promise<T> {
+    if (!this.token) await this.login();
+    let last: unknown;
+    for (let i = 0; i < tries; i++) {
+      try {
+        const headers: Record<string, string> = { Authorization: `Bloomfire-Session-Token ${this.token}`, Accept: "application/json" };
+        if (fields) headers["bloomfire-requested-fields"] = fields;
+        const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 120_000);
+        const r = await fetch(`${this.base}/api/v2${path}`, { headers, signal: ctrl.signal }).finally(() => clearTimeout(t));
+        if (r.status === 401) { await this.login(); throw new Error("re-auth"); }
+        if (!r.ok) throw new Error(`Bloomfire ${path}: ${r.status}`);
+        return await r.json() as T;
+      } catch (e) { last = e; await new Promise((r) => setTimeout(r, 1500 * (i + 1))); }
+    }
+    throw last instanceof Error ? last : new Error(String(last));
+  }
+  listPosts() { return this.get<{ id: number; updated_at: string }[]>("/posts"); }
+  listSeries() { return this.get<{ id: number; updated_at: string }[]>("/series"); }
+  listQuestions() { return this.get<{ id: number; updated_at: string }[]>("/questions"); }
+  post(id: number) { return this.get<BfItem>(`/posts/${id}`, POST_FIELDS); }
+  series(id: number) { return this.get<BfItem>(`/series/${id}`, SERIES_FIELDS); }
+  question(id: number) { return this.get<BfItem>(`/questions/${id}`, QUESTION_FIELDS); }
+  async download(url: string): Promise<Buffer> {
+    const r = await fetch(url); if (!r.ok) throw new Error(`download ${r.status}`);
+    return Buffer.from(await r.arrayBuffer());
+  }
+}

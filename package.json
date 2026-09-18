@@ -1,0 +1,22 @@
+{
+  "name": "wfwisdom",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @wfw/api --filter @wfw/web dev",
+    "build": "pnpm -r --filter @wfw/shared --filter @wfw/db --filter @wfw/web --filter @wfw/api build",
+    "deploy:build": "pnpm build",
+    "deploy:start": "pnpm db:migrate && pnpm start",
+    "start": "pnpm --filter @wfw/api start",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @wfw/db generate",
+    "db:migrate": "pnpm --filter @wfw/db migrate",
+    "db:seed": "pnpm --filter @wfw/db seed",
+    "index": "pnpm --filter @wfw/api index",
+    "check:secrets": "node scripts/check-secrets.mjs"
+  },
+  "engines": { "node": ">=22" }
+}

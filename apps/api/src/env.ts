@@ -1,0 +1,16 @@
+export const env = {
+  get nodeEnv() { return process.env.NODE_ENV ?? "development"; },
+  get isProd() { return (process.env.NODE_ENV ?? "development") === "production"; },
+  get port() { return Number(process.env.PORT ?? 8080); },
+  get appBaseUrl() { return (process.env.APP_BASE_URL ?? "http://localhost:5173").replace(/\/$/, ""); },
+  get sessionSecret() { const s = process.env.SESSION_SECRET; if (!s || s.length < 16) throw new Error("SESSION_SECRET must be set (32+ chars)"); return s; },
+  get googleClientId() { return process.env.GOOGLE_CLIENT_ID ?? ""; },
+  get googleClientSecret() { return process.env.GOOGLE_CLIENT_SECRET ?? ""; },
+  get openaiKey() { return process.env.OPENAI_API_KEY ?? ""; },
+  get bloomfireKey() { return process.env.BLOOMFIRE_API_KEY ?? ""; },
+  get bloomfireEmail() { return process.env.BLOOMFIRE_LOGIN_EMAIL ?? ""; },
+  get bloomfireBase() { return (process.env.BLOOMFIRE_BASE_URL ?? "https://connected.wildflowerschools.org").replace(/\/$/, ""); },
+  get resendKey() { return process.env.RESEND_API_KEY ?? ""; },
+  get mailFrom() { return process.env.MAIL_FROM ?? "Wildflower Wisdom <wisdom@wildflowerschools.org>"; },
+  get googleServiceAccountJson() { return process.env.GOOGLE_SERVICE_ACCOUNT_JSON ?? ""; },
+};

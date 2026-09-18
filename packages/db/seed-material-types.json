@@ -1,0 +1,1002 @@
+[
+ {
+  "key": "landlord_letter",
+  "name": "Letter or pitch to a landlord",
+  "short": "A letter or the cover note on a pitch deck to a property owner or broker",
+  "job": "space",
+  "guide": "**Purpose.** Persuade a property owner or broker to take a meeting and to see a small Montessori school as a good tenant: stable, community-building, and easy to work with. This letter (or the cover note on a pitch deck) is usually the first thing a landlord learns about you and about Wildflower.\n\n**Audience.** A landlord, property manager, or commercial broker who has probably never heard of Wildflower or Montessori, who cares first about reliability of rent, fit-out risk, licensing and zoning hassle, and how the tenant will affect the building and the neighbors.\n\n**Must-have elements.**\n1. Who you are, in one or two human sentences: your name, your training, and why you are opening a school in this neighborhood.\n2. What the school is, concretely: a one- or two-classroom Montessori school for a stated age range and number of children (for example, 16 to 24 children ages 3 to 6), with a small team of adults, quiet during the day, open roughly 8 to 4.\n3. What Wildflower is, in two sentences, and what backing it provides (a national network of 70+ schools, training, startup support, access to startup loans), without implying the Foundation is the tenant or guarantor.\n4. What you need in a space: square footage range, ground floor and street-facing (shopfront), natural light, access to outdoor space or a nearby park, two bathrooms or the ability to add them, and any licensing-driven needs. State the target opening date and a realistic lease start.\n5. Why this is good for the landlord: a long-term, mission-driven tenant; a daily flow of families that enlivens a block; a tenant who takes care of the space because the environment is the pedagogy.\n6. A clear, small ask: a 20-minute call or a walk-through, with your phone and email.\n\n**Common mistakes.**\n- Leading with Montessori philosophy instead of with what the landlord needs to know. Philosophy belongs in one warm sentence, not three paragraphs.\n- Internal jargon (TL, ETL, SSJ, hub, Ops Guide, Sunlight Loan) that means nothing outside the network.\n- Vagueness about size, children, hours, and timeline, which reads as inexperience.\n- Overpromising on financing (\"Wildflower will guarantee the lease\"). Lease guaranties from the Foundation are rare and conditional; do not offer one.\n- Hiding the licensing and fit-out conversation. Landlords respect a tenant who names it and has a plan.\n- A letter with no ask, or with an ask that is too big (\"sign a five-year lease\").\n- Length. One page. Landlords skim.\n\n**Tone.** Warm, confident, and businesslike. First person. You are a professional proposing a partnership, not asking a favor. Specific numbers beat adjectives.\n\n**Wildflower-specific considerations.**\n- The shopfront principle is a selling point: say that you want to be visible and part of the street, and that families walk.\n- Say you are forming (or have formed) an independent nonprofit; the school, not the Foundation, will be the tenant.\n- If you have a real estate attorney or a facilities team member, name that; it signals seriousness.\n- Pair the letter with the Real Estate Pitch Deck or Landlord Brochure from Connected rather than repeating everything in prose.",
+  "rubric": [
+   [
+    "Clarity of the ask and next step",
+    "The landlord knows exactly what is being requested and how to respond."
+   ],
+   [
+    "Concrete picture of the tenant",
+    "Ages, number of children, hours, team size, opening date, and space needs are stated plainly."
+   ],
+   [
+    "Landlord's perspective",
+    "The letter answers what a property owner cares about: reliability, fit-out, licensing, neighbors, term."
+   ],
+   [
+    "Wildflower and school story",
+    "Wildflower and the school are explained briefly and accurately for an outsider, without jargon or overclaiming support."
+   ],
+   [
+    "Voice and length",
+    "Warm, first-person, professional, about one page, free of sales language."
+   ]
+  ],
+  "prompt_notes": "This is a letter or the cover message for a pitch deck to a property owner or broker. Judge it against the must-have elements in the guide. Treat any statement that the Foundation guarantees leases, pays rent, or is the tenant as a factual problem to flag. If the letter is longer than about one page, say what to cut. If the school's numbers (children, ages, square footage, date) are absent, that is the top priority.",
+  "links": [
+   4583329,
+   5589224,
+   4529451,
+   4807564,
+   4915175,
+   4583411,
+   4530868
+  ]
+ },
+ {
+  "key": "enrollment_email",
+  "name": "Enrollment marketing email",
+  "short": "An email to prospective families with one clear next step",
+  "job": "market",
+  "guide": "**Purpose.** Get a prospective family to take one next step: come to an info session, book a visit, or start an application. One email, one step.\n\n**Audience.** A parent or caregiver of a young child who is weighing options, probably on a phone, probably in 30 seconds. They care about safety, whether their child will be known and loved, cost, schedule, location, and whether families like theirs belong there.\n\n**Must-have elements.**\n1. A subject line that says what this is and for whom (\"Open house Saturday for families of 3 to 6 year olds in Roxbury\").\n2. The one thing you want them to do, stated near the top and again at the end, with a link and a date.\n3. Two or three concrete, sensory details of life in the classroom, written as what children do, not what the school provides.\n4. The practical facts: ages served, hours, location (neighborhood, not just address), start date, and how tuition works, including that tuition is flexible or income-based if it is.\n5. Who you are, by name, with one line about your training and why you started the school.\n6. A photo or two that meet the Wildflower photo guidelines, if the email supports it.\n\n**Common mistakes.**\n- Selling the philosophy in the abstract (\"authentic Montessori education that nurtures the whole child\") instead of showing a moment (\"a three-year-old pouring water for a friend at snack\").\n- Several asks in one email (apply, follow us, donate, RSVP).\n- Leaving out tuition or the flexible tuition approach, which makes lower-income families assume they cannot afford it.\n- Urgency theater: all caps, \"limited spots!!!\", countdowns.\n- Wildflower jargon and acronyms.\n- No name and no face. Families choose a person.\n- Length. Under 200 words of body text.\n\n**Tone.** Warm, plain, personal, in the teacher leader's first-person voice. Reads like a note from a neighbor who happens to be a Montessori guide.\n\n**Wildflower-specific considerations.**\n- Use the Wildflower Style Guide colors, fonts, and approved photos; use the Canva templates from the Enrollment Playbook where available.\n- Flexible tuition is a value, not a discount; say it that way (\"tuition is based on family income so that the school can serve a community as diverse as our neighborhood\").\n- Mixed-age classrooms and the two-classroom scale are features families like; name them.\n- Never make promises about outcomes (\"reading by four\").",
+  "rubric": [
+   [
+    "One clear call to action",
+    "A single next step with a link, date, and place, stated at the top and the end."
+   ],
+   [
+    "Concrete and sensory",
+    "The email shows real classroom moments rather than abstract philosophy."
+   ],
+   [
+    "Practical facts present",
+    "Ages, hours, location, start date, and how tuition works are all there."
+   ],
+   [
+    "Inclusive and honest",
+    "Language welcomes a diverse community, names flexible tuition where applicable, and avoids overclaiming or urgency theater."
+   ],
+   [
+    "Voice, brevity, and subject line",
+    "Personal first-person voice, under about 200 words, subject line says what and for whom."
+   ]
+  ],
+  "prompt_notes": "This is a marketing email to prospective families. If the email has more than one call to action, that is the top priority. If tuition or the flexible tuition approach is absent and the school uses one, flag it as an equity problem, not a marketing nit. Check the subject line. Suggest at most one rewritten paragraph as an example of showing a classroom moment.",
+  "links": [
+   4656623,
+   4657338,
+   4531030,
+   4473006,
+   6066353,
+   4531171,
+   4657368
+  ]
+ },
+ {
+  "key": "tuition_policy",
+  "name": "Tuition and financial aid policy",
+  "short": "The written policy that tells families how tuition and financial aid work",
+  "job": "finance",
+  "guide": "**Purpose.** Tell families, in writing, what school costs, how each family's tuition is set, what is included, when and how it is paid, and what happens if circumstances change. A good policy makes the school's equity commitment operational and protects both the family and the school from surprises.\n\n**Audience.** Families reading before they enroll (often anxious about money), board members approving it, and the teacher leaders who will have to apply it consistently. It may also be read by loan or grant reviewers.\n\n**Must-have elements.**\n1. The model, named: flexible (income-based, tiered) tuition or fixed tuition with financial aid, and one plain paragraph on why the school chose it.\n2. The tuition levels or the formula, and what they are based on (for example, HUD area median income bands for household size, or a percentage of adjusted gross income with a cap).\n3. How a family's level is determined: what the family provides (a self-reported income form, a tax return with sensitive data redacted, or a third-party tool), who reviews it, and how long it takes.\n4. What tuition includes and excludes (materials, snack, aftercare, field trips), with any extra fees indexed the same way as tuition.\n5. Payment terms: schedule, methods, deposit, late payment handling, refund and withdrawal terms, and sibling considerations.\n6. What happens when a family's circumstances change during the year, and how to ask for a review.\n7. Confidentiality: who sees financial information and how it is stored.\n8. Any state subsidy, voucher, or child care assistance the school accepts and how it interacts with the school's tuition.\n\n**Common mistakes.**\n- Vague eligibility (\"aid available for qualifying families\") with no criteria, form, or timeline.\n- Language that ranks families (\"full-pay families\", \"scholarship kids\").\n- A formula that is not sustainable: the policy should reflect the budget's mix of levels (Wildflower's loan criteria expect roughly a third of children at levels accessible to low-income families and a third at moderate levels).\n- Hidden fees that are not indexed, which quietly undoes the equity of the tiers.\n- No process for changed circumstances, and no confidentiality statement.\n- Legal and tax statements written as certainties (\"tuition is tax-deductible\", \"we are a voucher-eligible school\") that have not been verified.\n- Length and structure: a policy is a reference document; use headings, short paragraphs, and a table for levels.\n\n**Tone.** Clear, calm, respectful, and specific. It should read as a promise to the community, not fine print. Plain words over financial jargon; define any term you must use.\n\n**Wildflower-specific considerations.**\n- Most Wildflower schools use flexible tuition; Connected's Flexible Tuition Model Overview and the Tiered Income-Based Tuition Calculator are the standard starting points.\n- The board approves the policy; teacher leaders apply it. Say who can adjust an individual award.\n- Radical transparency: many schools publish their budget or their tiers; consider saying so.\n- Coordinate the policy with the enrollment agreement so they do not contradict each other.",
+  "rubric": [
+   [
+    "Model and levels are explicit",
+    "The tuition approach is named and the levels or formula are stated with their basis."
+   ],
+   [
+    "Process is clear and fair",
+    "Families know what to provide, who decides, how long it takes, and how to request a review."
+   ],
+   [
+    "Complete terms",
+    "Inclusions, fees, payment schedule, deposit, refund and withdrawal, sibling and changed-circumstance handling are covered."
+   ],
+   [
+    "Equity and dignity of language",
+    "No ranking of families; flexible tuition framed as a shared value; extra fees indexed."
+   ],
+   [
+    "Structure and readability",
+    "Headings, a table for levels, short paragraphs, defined terms, no unverified legal or tax claims."
+   ]
+  ],
+  "prompt_notes": "This is a written tuition and financial aid policy. Check each must-have element and list the missing ones explicitly. Do not evaluate whether specific legal, tax, subsidy, or voucher statements are correct; flag them for verification. If the policy names dollar amounts, do not judge whether they are the right amounts, but do check that the structure (levels, basis, caps, indexing of fees) is coherent and that the equity commitment is operational rather than aspirational.",
+  "links": [
+   4396562,
+   4639886,
+   5394462,
+   4697236,
+   4697237,
+   4560242,
+   4425988
+  ]
+ },
+ {
+  "key": "school_one_pager",
+  "name": "School one-pager",
+  "short": "A single page that says who you are, what the school is, and how to get in touch",
+  "job": "market",
+  "guide": "**Purpose.** Give a prospective family, partner, funder, or landlord the whole picture of your school on one page they can read in a minute and forward to someone else.\n\n**Audience.** Anyone meeting the school for the first time: families at a fair, a community organization, a potential board member, a funder. Assume no knowledge of Montessori or Wildflower.\n\n**Must-have elements.**\n1. School name, neighborhood, ages served, opening date or year founded, and the teacher leaders' names with a sentence on their training.\n2. Two or three sentences on what a day looks like for a child, written as what children do.\n3. One sentence each on Montessori and on Wildflower, in plain words.\n4. How tuition works, including flexible or income-based tuition if the school uses it.\n5. The one next step for the reader (visit, info session, apply) with a link, email, and phone.\n6. Wildflower and school logos and one or two photos that follow the Style Guide.\n\n**Common mistakes.**\n- Cramming: more than about 250 words, or type below 10 point.\n- Philosophy paragraphs instead of concrete details.\n- No call to action, or three of them.\n- Leaving tuition out.\n- Stock photos or photos that do not meet the Style Guide.\n- Jargon (TL, SSJ, hub).\n\n**Tone.** Warm, specific, confident. First person plural ('we') from the teacher leaders.\n\n**Wildflower-specific considerations.**\n- Use the Marketing Starter Kit templates and the Style Guide fonts and colors.\n- Flexible tuition is a value; say why the school does it.\n- Name the neighborhood and that families walk; the shopfront is part of the story.",
+  "rubric": [
+   [
+    "One-minute clarity",
+    "A stranger knows what, who, where, when, and how much after one read."
+   ],
+   [
+    "Concrete classroom picture",
+    "Shows what children do rather than describing philosophy."
+   ],
+   [
+    "Call to action",
+    "One clear next step with contact details."
+   ],
+   [
+    "Inclusive and honest",
+    "Names how tuition works; welcomes a diverse community; no overclaiming."
+   ],
+   [
+    "Design and length",
+    "Fits one page, follows the Style Guide, no jargon."
+   ]
+  ],
+  "prompt_notes": "This is a one-page overview. Judge density first: if it would not fit on one page at readable size, that is the top priority. Then check for the one next step and for tuition.",
+  "links": [
+   4531162,
+   4473006,
+   4657338,
+   4656632,
+   4643370,
+   4811468
+  ]
+ },
+ {
+  "key": "info_session_deck",
+  "name": "Family information session deck",
+  "short": "Slides for a live or virtual session for prospective families",
+  "job": "market",
+  "guide": "**Purpose.** Help families decide, in 30 to 45 minutes, whether this school is right for their child, and leave knowing exactly how to apply.\n\n**Audience.** Prospective parents and caregivers, many attending after work with a child on their lap. Some know Montessori well; most do not.\n\n**Must-have elements.**\n1. An opening that introduces the teacher leaders as people: name, training, why this school.\n2. A short, concrete tour of the day, ideally with photos or a short video of children at work.\n3. What Montessori means for their child at this age, in three or four plain points, and what mixed ages mean.\n4. The practical section: ages, hours, calendar, location, before and after care, what is included.\n5. How tuition works, with the flexible tuition tiers or the process to determine a family's level, and any subsidies accepted.\n6. How to apply, the timeline, and who to contact, on its own slide and repeated at the end.\n7. Time for questions, with the most common questions answered proactively (safety, potty training, food, screens, outdoor time).\n\n**Common mistakes.**\n- Text-heavy slides read aloud.\n- Skipping tuition or leaving it for the end when half the room has left.\n- Promising outcomes ('reading by four').\n- No faces: families choose the adults in the room.\n- More than 20 slides.\n- Jargon.\n\n**Tone.** Personal, calm, and honest. The teacher leaders speak in the first person.\n\n**Wildflower-specific considerations.**\n- Start from the Family Information Session Deck Template and the Slide Deck Templates series.\n- Use approved photos and the Style Guide.\n- Explain flexible tuition as a shared community practice.",
+  "rubric": [
+   [
+    "Structure and pacing",
+    "A clear arc from who we are to how to apply in about 20 slides."
+   ],
+   [
+    "Concrete and visual",
+    "Shows children at work; short text; photos follow the Style Guide."
+   ],
+   [
+    "Practical facts and tuition",
+    "Hours, calendar, ages, inclusions, and how tuition is set are all present and clear."
+   ],
+   [
+    "Application path",
+    "One slide on how and when to apply, with contact, repeated at the end."
+   ],
+   [
+    "Voice and honesty",
+    "First-person, warm, no outcome promises, anticipates common family questions."
+   ]
+  ],
+  "prompt_notes": "The draft may arrive as slide text or an outline. Judge it as a deck: sequence, one idea per slide, and whether tuition and the application step are present and early enough. Do not ask for more slides than 20.",
+  "links": [
+   4656601,
+   4531162,
+   4473006,
+   4657338,
+   4531009,
+   6066353
+  ]
+ },
+ {
+  "key": "family_handbook",
+  "name": "Family handbook",
+  "short": "The handbook families receive when they enroll",
+  "job": "enroll",
+  "guide": "**Purpose.** Set expectations for the whole year in one place so that families know how the school runs and the teacher leaders can point to it instead of re-deciding things one family at a time.\n\n**Audience.** Enrolled families, reading once at enrollment and again when something comes up. Licensing reviewers may also read it.\n\n**Must-have elements.**\n1. Who we are: mission, the teacher leaders, the board, and how decisions get made at the school.\n2. The daily rhythm and calendar: hours, arrival and pickup, closures, before and after care.\n3. Enrollment and tuition basics with a pointer to the tuition and financial aid policy.\n4. Health and safety: illness, medication, allergies, emergencies, mandated reporting, licensing requirements for your state.\n5. Classroom life: what to bring, clothing, food and snack, toileting, rest, screens, birthdays, outdoor time.\n6. Communication: how and when families hear from the school, conferences, Transparent Classroom, how to raise a concern.\n7. Family participation, volunteering, and community norms, including the school's anti-bias commitments.\n8. Withdrawal, dismissal, and the school's conflict resolution approach.\n\n**Common mistakes.**\n- Copying another school's handbook without changing state-specific licensing sections.\n- Rules with no reasons; families follow expectations they understand.\n- Contradicting the enrollment agreement or the tuition policy.\n- Legal or licensing claims that have not been verified.\n- Length without structure: use headings and a table of contents.\n\n**Tone.** Warm, clear, respectful of families as partners. Reasons before rules.\n\n**Wildflower-specific considerations.**\n- Five example handbooks in Connected (Snapdragon, Wild Rose, Snowdrop, Sweet Pea, Magnolia Blossom) show the range; do not copy their licensing sections.\n- Describe the advice process and conflict resolution as the school practices them.\n- Say how the school lives its equity commitments day to day.",
+  "rubric": [
+   [
+    "Completeness",
+    "All eight must-have areas are covered or explicitly deferred to another document."
+   ],
+   [
+    "Clarity and reasons",
+    "Expectations are explained, not just stated; headings and structure make it findable."
+   ],
+   [
+    "Consistency",
+    "Does not contradict the enrollment agreement or tuition policy; state requirements are addressed, not copied."
+   ],
+   [
+    "Wildflower voice and values",
+    "Teacher-led, community-embedded, equity commitments are visible in practice, not slogans."
+   ],
+   [
+    "Verified claims",
+    "Legal, licensing, and health statements are flagged for verification rather than asserted."
+   ]
+  ],
+  "prompt_notes": "Handbooks are long; review the structure and the must-have coverage first, then sample the tone in two or three sections. List missing sections explicitly. Do not assess whether state-specific licensing statements are correct; flag them.",
+  "links": [
+   4560248,
+   4560255,
+   4560250,
+   4560253,
+   4770402,
+   4560237,
+   4560247
+  ]
+ },
+ {
+  "key": "family_letter",
+  "name": "Family communication letter",
+  "short": "Acceptance, waitlist, re-enrollment, or tuition-change letters to families",
+  "job": "enroll",
+  "guide": "**Purpose.** Tell a family something that matters (you are in, you are on the waitlist, it is time to re-enroll, tuition is changing) clearly and kindly, with the exact next step.\n\n**Audience.** One family, reading on a phone, often anxious. They need the decision, the reason if there is one, the deadline, and what to do.\n\n**Must-have elements.**\n1. The news in the first two sentences.\n2. The exact next step, deadline, and how to do it (link, form, meeting).\n3. For waitlist letters: where they stand and what happens next, honestly.\n4. For tuition changes: the amount, when it takes effect, why, and an invitation to talk if it creates hardship.\n5. For re-enrollment: what is new this year and what is unchanged.\n6. A person's name and a way to reply.\n\n**Common mistakes.**\n- Burying the news under pleasantries.\n- Vague deadlines ('soon').\n- Sending tuition changes without an offer to talk.\n- Legal-sounding language in a letter that should sound like a person.\n- Forgetting that a waitlisted family may read it as a rejection.\n\n**Tone.** Warm, direct, personal. Written by a teacher leader, signed by name.\n\n**Wildflower-specific considerations.**\n- Connected has example letters from Wildflower Montessori, Wild Rose, and Alyssum for accepted, waitlisted, and re-enrollment cases, and tips for tuition-change communication.\n- Flexible tuition changes should be framed as the school keeping its commitment to accessibility.",
+  "rubric": [
+   [
+    "News first",
+    "The decision or change is clear within two sentences."
+   ],
+   [
+    "Next step",
+    "Deadline and action are specific and easy to do."
+   ],
+   [
+    "Kindness and honesty",
+    "Tone respects the family and does not overpromise (especially waitlists)."
+   ],
+   [
+    "Completeness for the letter type",
+    "The must-have elements for this kind of letter are present."
+   ],
+   [
+    "Voice",
+    "Sounds like a person, signed by name, no legal boilerplate."
+   ]
+  ],
+  "prompt_notes": "Identify which kind of letter this is (accepted, waitlist, re-enrollment, tuition change, other) and review against that kind's must-haves. Keep line notes short; these are short documents.",
+  "links": [
+   4395486,
+   4395534,
+   4395960,
+   4395489,
+   4395953,
+   4395982,
+   4560242,
+   4786856
+  ]
+ },
+ {
+  "key": "school_budget",
+  "name": "School budget",
+  "short": "A startup or annual operating budget, usually a spreadsheet with notes",
+  "job": "finance",
+  "guide": "**Purpose.** Show that the school can pay for itself: what comes in, what goes out, what the assumptions are, and what happens if enrollment or tuition is lower than hoped.\n\n**Audience.** The board approving it, the teacher leaders living with it, and Wildflower loan or grant reviewers.\n\n**Must-have elements.**\n1. Enrollment assumptions by month or by year, with the mix of tuition levels if flexible tuition is used.\n2. Revenue lines: tuition by level, subsidies and vouchers, fundraising, grants, loans, with the basis for each.\n3. Expense lines: teacher leader compensation and benefits, assistants, rent and occupancy, materials, insurance, licensing, bookkeeping, network contribution, contingency.\n4. Startup budgets: one-time costs (fit-out, furniture, materials, deposits) separated from operating costs, and the funding plan for them.\n5. Cash flow by month for the first year, showing the low point.\n6. A short notes page stating every assumption and the sensitivity: what if enrollment is 20% lower, what if tuition is 10% lower.\n7. Reserve or contingency and the plan to build one.\n\n**Common mistakes.**\n- Enrollment at capacity from month one.\n- Teacher leader salaries set below a living wage to make the numbers work.\n- Missing benefits, payroll taxes, or the network contribution.\n- No cash flow view; an annual total hides a spring shortfall.\n- Flexible tuition modeled at the top tier only.\n- Numbers with no assumptions written down.\n\n**Tone.** Precise, plain, and honest about uncertainty. Assumptions are written in sentences next to the numbers.\n\n**Wildflower-specific considerations.**\n- Start from School Startup Budget Tools and the Budget Planning Exercises; the 5 Big Levers post explains what moves the budget.\n- Loan criteria expect roughly a third of children at low-income-accessible levels and a third at moderate levels; model that mix.\n- Sample board budget summaries in Connected show what a board expects to see.",
+  "rubric": [
+   [
+    "Assumptions are explicit",
+    "Enrollment, tuition mix, and every major line have a stated basis."
+   ],
+   [
+    "Completeness",
+    "Revenue and expense lines cover the must-have list, including benefits, contribution, and contingency."
+   ],
+   [
+    "Cash flow and timing",
+    "Monthly view exists and the low point is visible and funded."
+   ],
+   [
+    "Sustainability and values",
+    "Compensation is livable, flexible tuition mix is realistic, and equity commitments are funded not assumed."
+   ],
+   [
+    "Presentation",
+    "A board member can follow it; totals reconcile; notes page exists."
+   ]
+  ],
+  "prompt_notes": "The draft may be a pasted table or a description of a spreadsheet. Do not recompute arithmetic in detail, but check that categories are present, assumptions are stated, and the flexible tuition mix and cash flow are modeled. Never state what a specific rent or salary should be; ask for the basis.",
+  "links": [
+   4612223,
+   4537747,
+   4420775,
+   4585190,
+   4989772,
+   4989785,
+   4420882,
+   5640141
+  ]
+ },
+ {
+  "key": "board_role",
+  "name": "Board role description and recruitment outreach",
+  "short": "A role description for board members and the note you send to invite someone",
+  "job": "board",
+  "guide": "**Purpose.** Tell a prospective board member what the job is, what it asks of them, and why it matters, so the right people say yes for the right reasons.\n\n**Audience.** A community member, parent, or professional you are inviting, who may never have served on a board.\n\n**Must-have elements.**\n1. What a Wildflower school board is and is not: the teacher leaders run the school; the board holds fiduciary and governance responsibility and supports.\n2. Specific responsibilities: meetings per year, committees, fundraising expectations if any, term length.\n3. Skills and perspectives the board is seeking now (the skills matrix), and why this person.\n4. Time expectation per month, honestly.\n5. How the board makes decisions (advice process, consent, votes) and the relationship to the teacher leaders.\n6. The next step: a conversation, materials to read, a timeline.\n7. For the outreach note: why them, one paragraph, and a specific ask for a call.\n\n**Common mistakes.**\n- Vague 'help guide the school' language.\n- Hiding the fundraising or time expectation.\n- Describing a conventional school board that overrides teachers.\n- No term length.\n- Outreach that reads as a mass email.\n\n**Tone.** Respectful, clear, honest about the ask. Personal in the outreach note.\n\n**Wildflower-specific considerations.**\n- Connected's Role of the Board Member Sample, Talking Points for a Potential Board Member, Board Skills Matrix, and Interview Questions and Scoring Rubric are the starting points.\n- Say how the board relates to self-management and the advice process.\n- The Wildflower Network Membership Agreement sets some board expectations; refer to it accurately or flag for verification.",
+  "rubric": [
+   [
+    "Clarity of the role",
+    "Responsibilities, time, term, and meetings are specific."
+   ],
+   [
+    "Teacher-led framing",
+    "The board's relationship to the teacher leaders is accurate for a Wildflower school."
+   ],
+   [
+    "Honesty of the ask",
+    "Fundraising and time expectations are stated plainly."
+   ],
+   [
+    "Fit and why-them",
+    "The skills sought and the reason for approaching this person are specific."
+   ],
+   [
+    "Next step and voice",
+    "A clear next step; personal, warm outreach; no jargon."
+   ]
+  ],
+  "prompt_notes": "The draft may contain a role description, an outreach note, or both. Review each part against its must-haves. Flag any statement about legal duties or the membership agreement for verification rather than judging it.",
+  "links": [
+   4677422,
+   4677395,
+   4694578,
+   5896552,
+   4528508,
+   4693482,
+   5896518,
+   4732858
+  ]
+ },
+ {
+  "key": "board_resolution",
+  "name": "Board resolution",
+  "short": "A resolution for the board to adopt",
+  "job": "board",
+  "guide": "**Purpose.** Record a board decision in a form that is clear, complete, and usable later by a bank, auditor, licensor, or the IRS.\n\n**Audience.** Board members voting on it, and the outside parties who will rely on it later.\n\n**Must-have elements.**\n1. A title that names the decision.\n2. Recitals ('Whereas') that give the context in two to four short statements.\n3. The resolution itself ('Resolved') stating exactly what is authorized, by whom, with amounts, names, and dates where relevant.\n4. Who is authorized to act and any limits.\n5. Adoption details: date, meeting, votes, and the secretary's certification or signature block.\n6. A reference to the bylaws provision or policy it relies on, if applicable.\n\n**Common mistakes.**\n- Vague authorization ('to do what is necessary').\n- Missing amounts, names, or dates.\n- Mixing several unrelated decisions in one resolution.\n- No certification block.\n- Copying a sample without changing the school's name and specifics.\n\n**Tone.** Formal but plain. Short sentences. No unnecessary legal flourish.\n\n**Wildflower-specific considerations.**\n- Connected has a 32-resolution library and Tips on Writing a Board Resolution; start from the closest sample.\n- Use the Secretary's Certificate sample for certification.\n- Keep resolutions consistent with the school's bylaws and fiscal policies.",
+  "rubric": [
+   [
+    "Precision",
+    "Amounts, names, dates, and authorities are exact."
+   ],
+   [
+    "Structure",
+    "Title, recitals, resolved clauses, adoption, and certification are present."
+   ],
+   [
+    "Single decision",
+    "One resolution, one decision."
+   ],
+   [
+    "Consistency",
+    "Aligns with bylaws and policies; references them correctly."
+   ],
+   [
+    "Plain formality",
+    "Formal without legalese; readable by an outside party."
+   ]
+  ],
+  "prompt_notes": "Compare to the structure of the Connected samples. Flag any legal sufficiency question (for example whether a resolution satisfies a bank or the IRS) for verification; do not rule on it.",
+  "links": [
+   5237934,
+   4710341,
+   4710599,
+   4710581,
+   4530389,
+   4545411,
+   4710587,
+   4710334
+  ]
+ },
+ {
+  "key": "job_posting",
+  "name": "Job posting",
+  "short": "A posting for an assistant, guide, co-teacher leader, or other role",
+  "job": "team",
+  "guide": "**Purpose.** Attract the right candidates and set honest expectations so the people who apply are the people you want to hire.\n\n**Audience.** Job seekers scanning many postings, often on a phone. Montessori-trained candidates and career changers alike.\n\n**Must-have elements.**\n1. Role title in plain words, and whether it is full or part time, hours, and start date.\n2. What the person will actually do in a day, concretely.\n3. Who the school is: teacher-led, small, the neighborhood, the ages served, one sentence on Wildflower.\n4. Qualifications, separated into required and welcome, with Montessori training named specifically if required.\n5. Pay range and benefits, stated.\n6. The school's commitment to a diverse team and an inclusive hiring process, in plain words.\n7. How to apply, what to send, the timeline, and who to contact.\n\n**Common mistakes.**\n- No pay range.\n- A laundry list of qualifications that screens out good people.\n- Generic 'dynamic team player' language.\n- Legal or immigration statements that have not been verified.\n- No sense of what the day is like.\n\n**Tone.** Warm, honest, specific. Sounds like the people they would work with.\n\n**Wildflower-specific considerations.**\n- Connected's Hiring: School Job Posting Templates and Job Posting Websites list are the starting points.\n- Say what self-management means for this role in practice.\n- Refer to the Wildflower salary guidance for the pay range; do not invent numbers.",
+  "rubric": [
+   [
+    "Concrete role",
+    "A candidate can picture the day and the hours."
+   ],
+   [
+    "Honest terms",
+    "Pay range, benefits, start date, and schedule are stated."
+   ],
+   [
+    "Inclusive and specific qualifications",
+    "Required vs welcome are separated; nothing screens out unnecessarily."
+   ],
+   [
+    "School story",
+    "Teacher-led, small, neighborhood, and Wildflower are explained briefly and accurately."
+   ],
+   [
+    "Application path",
+    "How, what, when, and who are clear."
+   ]
+  ],
+  "prompt_notes": "Missing pay is the top priority if absent. Flag employment-law or visa statements for verification. Do not suggest pay figures.",
+  "links": [
+   4537658,
+   5414555,
+   4578578,
+   4541353,
+   4537668,
+   4541956,
+   4537678
+  ]
+ },
+ {
+  "key": "fundraising_letter",
+  "name": "Fundraising appeal letter",
+  "short": "A letter or email asking for a gift",
+  "job": "fund",
+  "guide": "**Purpose.** Move a reader who cares about the school or the community to give a specific amount for a specific reason, now.\n\n**Audience.** Current families, alumni families, neighbors, and friends of the teacher leaders. Some can give a lot; most will give a little.\n\n**Must-have elements.**\n1. A specific, concrete story from the classroom in the first paragraph.\n2. What the money is for, stated plainly, with the goal amount and the deadline.\n3. A direct ask with suggested amounts and what each does.\n4. Why now.\n5. How to give (link, check, matching gifts) and that gifts are tax-deductible only if verified.\n6. Who is asking, by name, and a thank-you in advance.\n\n**Common mistakes.**\n- Opening with the organization's history instead of a child.\n- No specific amount or purpose.\n- Guilt or scarcity language.\n- Multiple asks in one letter.\n- Overstating the school's size or impact.\n\n**Tone.** Warm, direct, grateful, specific. First person from a teacher leader.\n\n**Wildflower-specific considerations.**\n- Preparing Your Story for Fundraising, the Fundraising Marketing Material Template, and the Giving Tuesday posts in Connected are the starting points.\n- Say how gifts support flexible tuition and access if that is the purpose.\n- Use the Gift Acknowledgement Letter Template after the gift.",
+  "rubric": [
+   [
+    "Story first",
+    "Opens with a specific classroom moment."
+   ],
+   [
+    "Specific ask",
+    "Amount, purpose, deadline, and suggested gifts are clear."
+   ],
+   [
+    "One ask",
+    "Single action, easy to take."
+   ],
+   [
+    "Honesty",
+    "Tax and impact statements are accurate or flagged; no guilt or scarcity."
+   ],
+   [
+    "Voice",
+    "Personal, grateful, signed by name."
+   ]
+  ],
+  "prompt_notes": "Flag any tax-deductibility statement for verification. If there is no specific ask, that is the top priority.",
+  "links": [
+   4425661,
+   4434164,
+   4408826,
+   4425579,
+   5423175,
+   4411992,
+   5223336
+  ]
+ },
+ {
+  "key": "business_plan",
+  "name": "Business plan or mission clarity narrative",
+  "short": "The narrative that explains the school as a venture: mission, model, market, team, finances",
+  "job": "fund",
+  "guide": "**Purpose.** Explain, to someone who has never met you, what the school is, why it will work in this place, and what it needs, in a way that supports a loan, a grant, a lease, or a board's confidence.\n\n**Audience.** Loan and grant reviewers, potential board members, landlords, and the teacher leaders themselves as a plan of record.\n\n**Must-have elements.**\n1. Mission and vision in a paragraph each, specific to this school and neighborhood.\n2. The model: ages, size, mixed-age classrooms, teacher-led, shopfront, and what makes it a Wildflower school.\n3. The community and the need: who lives here, what families are looking for, what exists already.\n4. The team: teacher leaders, board, partners, and support from the Wildflower network.\n5. Operations plan: space, licensing, timeline to open, systems.\n6. Marketing and enrollment plan with targets by month.\n7. Financial summary with startup costs, funding sources, operating budget, and a break-even view.\n8. Risks and how the school will respond.\n\n**Common mistakes.**\n- Generic mission language.\n- No numbers or targets.\n- Ignoring the competition or existing options.\n- Treating Wildflower support as guaranteed funding.\n- Length without a summary.\n\n**Tone.** Confident, specific, honest about risk. Written for a reader outside the network.\n\n**Wildflower-specific considerations.**\n- Start from the Template Business Plan, Business Plan Worksheet, and Mission Clarity Worksheet in Connected.\n- Explain the flexible tuition model and the diverse enrollment commitment as part of the model, not as an aside.\n- Describe Wildflower loans and support accurately and conditionally.",
+  "rubric": [
+   [
+    "Specificity",
+    "Mission, community, and numbers are specific to this school and place."
+   ],
+   [
+    "Completeness",
+    "All eight sections are present or explicitly deferred."
+   ],
+   [
+    "Financial coherence",
+    "Startup costs, funding, budget, and break-even hang together."
+   ],
+   [
+    "Honesty about risk and support",
+    "Risks are named; network support is described accurately."
+   ],
+   [
+    "Readability",
+    "A summary exists; a reader outside Wildflower can follow it."
+   ]
+  ],
+  "prompt_notes": "Long documents: review structure and completeness first, then sample specificity. Do not judge financial figures; check that they are present, sourced, and coherent. Flag legal or funding-eligibility claims for verification.",
+  "links": [
+   5019960,
+   5920980,
+   5920969,
+   4585190,
+   4423064,
+   4718445
+  ]
+ },
+ {
+  "key": "grant_narrative",
+  "name": "Grant application narrative",
+  "short": "The narrative sections of a grant application",
+  "job": "fund",
+  "guide": "**Purpose.** Win a grant by answering the funder's questions precisely, showing the need and the plan, and making the school's impact concrete.\n\n**Audience.** A program officer reading many applications, scoring against their own rubric.\n\n**Must-have elements.**\n1. Answers that follow the funder's questions and word limits exactly.\n2. Need statement grounded in this community with a few real numbers.\n3. The program: what the money does, for whom, by when, with measurable outcomes.\n4. Evidence: why Montessori and why this model, briefly and credibly.\n5. Organizational capacity: team, board, partners, network.\n6. Budget narrative that matches the budget.\n7. Equity and access made concrete (flexible tuition, diverse enrollment).\n\n**Common mistakes.**\n- Reusing text that does not answer the question asked.\n- Outcomes that cannot be measured.\n- Jargon the funder does not share.\n- Budget and narrative that disagree.\n- Claims about research or results that are not sourced.\n\n**Tone.** Clear, confident, specific, in the funder's language. No hype.\n\n**Wildflower-specific considerations.**\n- Grant Writing Resources and National and Local Grant Resources in Connected list sources and tips.\n- Describe the group exemption and nonprofit status accurately.\n- Do not claim Wildflower Foundation results as the school's own.",
+  "rubric": [
+   [
+    "Responsiveness",
+    "Each answer addresses the question asked, within limits."
+   ],
+   [
+    "Concrete need and plan",
+    "Numbers, timeline, and measurable outcomes are present."
+   ],
+   [
+    "Credibility",
+    "Claims are sourced or flagged; capacity is real."
+   ],
+   [
+    "Budget alignment",
+    "Narrative and budget match."
+   ],
+   [
+    "Equity made concrete",
+    "Access commitments are specific practices, not statements."
+   ]
+  ],
+  "prompt_notes": "If the funder's questions are not included, say so and review the narrative as a general case statement. Flag research claims and eligibility statements for verification.",
+  "links": [
+   5508925,
+   4434110,
+   4838065,
+   4832492,
+   4652002
+  ]
+ },
+ {
+  "key": "gift_acknowledgment",
+  "name": "Gift acknowledgment letter",
+  "short": "The thank-you and tax receipt sent after a gift",
+  "job": "fund",
+  "guide": "**Purpose.** Thank the donor personally and give them the written acknowledgment they need for their taxes, promptly.\n\n**Audience.** A donor who just gave, and their accountant next spring.\n\n**Must-have elements.**\n1. The donor's name, the gift amount or a description of an in-kind gift, and the date received.\n2. The statement of whether any goods or services were provided in exchange, as the IRS requires, if the school is a 501c3.\n3. The school's legal name and tax ID if it is a 501c3, or accurate wording if it is not yet.\n4. A specific, personal thank-you that says what the gift makes possible.\n5. A signature by name.\n6. Sent within days, not months.\n\n**Common mistakes.**\n- Missing the goods-and-services statement.\n- Wrong legal name or tax ID.\n- Generic thank-you.\n- Stating tax deductibility when the school's status is not confirmed.\n\n**Tone.** Warm and personal, with the required statement in plain words.\n\n**Wildflower-specific considerations.**\n- Start from the Gift Acknowledgement Letter Template in Connected.\n- Confirm the school's exemption status (group exemption or direct) before stating it.",
+  "rubric": [
+   [
+    "Required elements",
+    "Name, amount or description, date, goods-and-services statement, legal name and tax ID."
+   ],
+   [
+    "Accuracy of status",
+    "Tax-exempt statements match the school's real status or are flagged."
+   ],
+   [
+    "Personal thank-you",
+    "Specific about what the gift does."
+   ],
+   [
+    "Promptness and voice",
+    "Short, warm, signed by name."
+   ],
+   [
+    "Clarity",
+    "Readable by an accountant later."
+   ]
+  ],
+  "prompt_notes": "Flag every tax statement for verification with the Operations Guide or accountant; do not confirm exemption status yourself.",
+  "links": [
+   4411992,
+   4723015,
+   5019941,
+   4435648
+  ]
+ },
+ {
+  "key": "offer_letter",
+  "name": "Offer letter and employment agreement",
+  "short": "The letter offering a job and the agreement that follows",
+  "job": "team",
+  "guide": "**Purpose.** Make a clear, complete offer that the candidate can accept with confidence and that the school can stand behind.\n\n**Audience.** The candidate, and later an auditor, licensor, or lawyer.\n\n**Must-have elements.**\n1. Title, start date, schedule, full or part time, and reporting relationship.\n2. Pay (rate and pay period), benefits, paid time off, and any probationary period.\n3. What the role requires: certifications, background checks, licensing requirements for your state.\n4. At-will or contract terms, as verified with an attorney for your state.\n5. Expiration of the offer and how to accept.\n6. A warm opening and closing from the teacher leaders.\n\n**Common mistakes.**\n- Pay or schedule left vague.\n- Copying legal language from another state.\n- Promises about future raises or roles.\n- No expiration date on the offer.\n- Cold, purely legal tone in the letter part.\n\n**Tone.** The letter is warm and personal; the agreement is precise and plain.\n\n**Wildflower-specific considerations.**\n- Connected's Hiring: Employment Offer Letters and Contracts has templates; the Employee Handbook Annotated Template covers policies.\n- Use Wildflower salary guidance for pay decisions and say benefits accurately (Gusto, healthcare, retirement posts).",
+  "rubric": [
+   [
+    "Completeness",
+    "All must-have terms are present."
+   ],
+   [
+    "Precision",
+    "Pay, dates, schedule, and conditions are exact."
+   ],
+   [
+    "Legal caution",
+    "State-specific and at-will language is flagged for verification, not assumed."
+   ],
+   [
+    "Warmth",
+    "The letter welcomes a person, not a resource."
+   ],
+   [
+    "Consistency",
+    "Matches the job posting and the employee handbook."
+   ]
+  ],
+  "prompt_notes": "Flag every legal, immigration, licensing, or at-will statement for attorney verification. Do not suggest pay figures.",
+  "links": [
+   4537668,
+   4537953,
+   4541353,
+   4537694,
+   4734472,
+   4537678
+  ]
+ },
+ {
+  "key": "employee_handbook",
+  "name": "Employee handbook",
+  "short": "Policies and expectations for staff",
+  "job": "team",
+  "guide": "**Purpose.** Set clear, humane expectations for everyone who works at the school so that the school is fair, compliant, and consistent.\n\n**Audience.** Staff at hire and when something comes up; licensors and auditors.\n\n**Must-have elements.**\n1. Employment basics: classifications, schedules, pay practices, time off, leave, benefits.\n2. Conduct and expectations: professionalism, confidentiality, child safety, mandated reporting, technology use.\n3. How the school works: self-management, roles, the advice process, conflict resolution, performance conversations.\n4. Anti-discrimination, anti-harassment, and the school's anti-bias commitments with how to raise a concern.\n5. Health and safety and emergency procedures.\n6. Discipline and separation, with the school's approach.\n7. Acknowledgment page.\n\n**Common mistakes.**\n- Copying a conventional employer's handbook wholesale.\n- Policies that contradict self-management as actually practiced.\n- State-specific leave or wage statements that have not been verified.\n- Length without headings.\n\n**Tone.** Clear, respectful, consistent with how the school actually runs.\n\n**Wildflower-specific considerations.**\n- The Employee Handbook Annotated Template and Employee Handbook Examples in Connected are the starting points.\n- Describe roles and responsibilities and the advice process as the school practices them.\n- Reference the Network policies where they apply.",
+  "rubric": [
+   [
+    "Completeness",
+    "The seven areas are covered."
+   ],
+   [
+    "Consistency with practice",
+    "Self-management, roles, and conflict resolution match how the school runs."
+   ],
+   [
+    "Legal caution",
+    "State-specific statements are flagged for verification."
+   ],
+   [
+    "Clarity",
+    "Headings, plain words, findable."
+   ],
+   [
+    "Values in practice",
+    "Anti-bias and equity commitments are concrete."
+   ]
+  ],
+  "prompt_notes": "Review structure and coverage first; sample tone in two sections. Flag all legal statements for verification.",
+  "links": [
+   4537953,
+   4538065,
+   4514452,
+   5286844,
+   5286838,
+   4409945
+  ]
+ },
+ {
+  "key": "staffing_plan",
+  "name": "Staffing plan and compensation proposal",
+  "short": "The plan for who works at the school and how they are paid, often a board packet",
+  "job": "team",
+  "guide": "**Purpose.** Show the board and yourselves that the staffing model works: who is in the building each hour, what it costs, and how pay was set.\n\n**Audience.** The board approving compensation and the teacher leaders.\n\n**Must-have elements.**\n1. Roles, hours, and ratios by classroom and by time of day, including before and after care.\n2. Compensation for each role with the basis (Wildflower salary guidance, local benchmarks, budget).\n3. Benefits and payroll costs included.\n4. How compensation decisions are made and reviewed (the advice process, board approval).\n5. The tie to the budget and enrollment assumptions.\n6. A transition plan if roles change during the year.\n\n**Common mistakes.**\n- Ratios that do not meet licensing.\n- Benefits and payroll taxes omitted.\n- Teacher leader pay set by what is left over.\n- No basis for salary numbers.\n\n**Tone.** Precise and plain, with sentences explaining the numbers.\n\n**Wildflower-specific considerations.**\n- Staffing Plan: Considerations and Examples, the Salary Adjustment Board Packet, and the Salary Benchmark template in Connected are the starting points.\n- Use the Teacher Leader Salary Setting guidance; say the basis explicitly.",
+  "rubric": [
+   [
+    "Coverage and ratios",
+    "Every hour is staffed and ratios are addressed."
+   ],
+   [
+    "Complete costs",
+    "Benefits and payroll are included."
+   ],
+   [
+    "Basis for pay",
+    "Every number has a stated basis."
+   ],
+   [
+    "Decision process",
+    "How pay is set and reviewed is described."
+   ],
+   [
+    "Budget tie",
+    "Consistent with the budget."
+   ]
+  ],
+  "prompt_notes": "Do not judge specific pay numbers; check that each has a basis. Flag licensing ratio statements for verification.",
+  "links": [
+   4541956,
+   4541964,
+   4541922,
+   4541353,
+   4541873,
+   4636834,
+   4462304
+  ]
+ },
+ {
+  "key": "fiscal_policies",
+  "name": "Fiscal policies and procedures",
+  "short": "The board-adopted rules for handling money",
+  "job": "finance",
+  "guide": "**Purpose.** Protect the school's money and the people who handle it with clear controls a small team can actually follow.\n\n**Audience.** The board adopting it, the teacher leaders and bookkeeper following it, and auditors and funders relying on it.\n\n**Must-have elements.**\n1. Roles: who approves, who pays, who reconciles, and how a two-person team separates duties.\n2. Spending authority and limits, including what needs board approval.\n3. Banking, signatures, and cash handling.\n4. Budgeting, reporting cadence to the board, and variance review.\n5. Reimbursements, credit cards, and documentation.\n6. Fundraising receipts and restricted funds.\n7. Records retention, the 990, and the audit or review policy.\n8. Conflict of interest reference.\n\n**Common mistakes.**\n- Controls designed for a large organization that a two-person school cannot follow.\n- No spending limits.\n- Missing the reporting cadence to the board.\n- Copying without adapting the roles to the school's actual people.\n\n**Tone.** Plain and specific; every rule names who does what.\n\n**Wildflower-specific considerations.**\n- Start from the Annotated Wildflower Fiscal Policies and Procedures Template or the interim short version; Connected also has six external examples.\n- Tie to the Sensible Default Finance Roles and Responsibilities post.",
+  "rubric": [
+   [
+    "Separation of duties",
+    "Roles are assigned so no one person controls a transaction end to end."
+   ],
+   [
+    "Limits and approvals",
+    "Spending authority and board approval thresholds are explicit."
+   ],
+   [
+    "Completeness",
+    "The eight areas are covered."
+   ],
+   [
+    "Followable",
+    "A small team can actually do this."
+   ],
+   [
+    "Consistency",
+    "Matches bylaws, conflict of interest policy, and the budget process."
+   ]
+  ],
+  "prompt_notes": "Flag any statement about legal or audit requirements for verification. Emphasize followability for a two-person team.",
+  "links": [
+   4429118,
+   4802403,
+   4438291,
+   4438389,
+   4438418,
+   4438343,
+   4438353
+  ]
+ },
+ {
+  "key": "roles_responsibilities",
+  "name": "Roles and responsibilities agreement",
+  "short": "The document that says who does what at the school",
+  "job": "culture",
+  "guide": "**Purpose.** Make the invisible work visible so the teacher leaders, assistants, and board know who holds each responsibility and how it changes.\n\n**Audience.** The people at the school, and the board.\n\n**Must-have elements.**\n1. Every recurring responsibility, grouped by area (classroom, families, finance, facilities, compliance, board, community).\n2. The person or role that holds each one, and a backup where it matters.\n3. How the agreement is revisited (cadence, the advice process) and how a responsibility moves.\n4. Time expectations where they are uneven.\n5. What is shared and how decisions are made when it is.\n\n**Common mistakes.**\n- Vague responsibilities ('handles admin').\n- Everything on one person.\n- No cadence for revisiting.\n- Copying another school's list without adapting.\n\n**Tone.** Plain, specific, generous. It is a working agreement, not a job description.\n\n**Wildflower-specific considerations.**\n- The Roles and Responsibilities Process post and the school examples series (Magnolia Blossom, Sage, Ginkgo, Lirio) are the starting points.\n- Reference the Network Policy: Roles and Responsibilities Process.",
+  "rubric": [
+   [
+    "Completeness",
+    "Recurring responsibilities across all areas are listed."
+   ],
+   [
+    "Clear holders",
+    "Each responsibility names a holder and a backup where needed."
+   ],
+   [
+    "Balance",
+    "Load is visible and reasonably shared."
+   ],
+   [
+    "Living agreement",
+    "Revisit cadence and change process are stated."
+   ],
+   [
+    "Specificity",
+    "No vague catch-alls."
+   ]
+  ],
+  "prompt_notes": "The draft may be a table. Judge coverage and clarity of holders first.",
+  "links": [
+   4409945,
+   4530880,
+   4530889,
+   4530898,
+   4530892,
+   4530884,
+   5286844,
+   4438418
+  ]
+ },
+ {
+  "key": "safety_plan",
+  "name": "Safety and emergency plan",
+  "short": "The plan for emergencies, health, and daily safety",
+  "job": "license",
+  "guide": "**Purpose.** Make sure every adult in the building knows what to do when something goes wrong, and that licensing requirements are met.\n\n**Audience.** Staff, families, and the state licensor.\n\n**Must-have elements.**\n1. Emergency procedures: fire, shelter in place, lockdown, medical emergency, missing child, severe weather, with roles and meeting points.\n2. Health: illness exclusion, medication administration, allergies and anaphylaxis, injuries, incident reporting.\n3. Daily safety: arrival and dismissal, supervision and ratios, outdoor play and walks, transportation if any, visitors.\n4. Communication with families during and after an incident.\n5. Mandated reporting and child protection.\n6. Drills and their cadence, and where records are kept.\n7. State licensing requirements addressed, with the specific rule cited or flagged.\n\n**Common mistakes.**\n- Copying a plan from another state.\n- No roles named for emergencies.\n- Allergy plans missing or generic.\n- No family communication plan.\n\n**Tone.** Clear, procedural, calm. Checklists and numbered steps.\n\n**Wildflower-specific considerations.**\n- Connected's Safety and Emergency Plan Example from Capucine Montessori and Dandelion's Allergy Plan are examples; licensing series by state list requirements.\n- Walking to parks and outdoor time are core to Wildflower; the plan should cover them specifically.",
+  "rubric": [
+   [
+    "Completeness",
+    "All seven areas are covered."
+   ],
+   [
+    "Roles and steps",
+    "Each procedure names who does what, in order."
+   ],
+   [
+    "Wildflower-specific coverage",
+    "Walks, parks, shopfront arrival, and small-team realities are addressed."
+   ],
+   [
+    "Licensing awareness",
+    "State requirements are cited or flagged, not assumed."
+   ],
+   [
+    "Usability",
+    "Checklists and steps a person can follow under stress."
+   ]
+  ],
+  "prompt_notes": "Flag all licensing and legal statements for verification. Check for roles and for the Wildflower-specific situations.",
+  "links": [
+   4560237,
+   4560247,
+   4530829,
+   4530844,
+   4530938,
+   4596187,
+   4408798
+  ]
+ },
+ {
+  "key": "enrollment_agreement",
+  "name": "Enrollment agreement",
+  "short": "The contract a family signs to enroll",
+  "job": "enroll",
+  "guide": "**Purpose.** Set the terms of enrollment clearly so that both the family and the school know what they have agreed to.\n\n**Audience.** Families signing it; the school enforcing it; sometimes a mediator or court.\n\n**Must-have elements.**\n1. Child and family information, program, schedule, and dates.\n2. Tuition level, payment schedule, deposit, fees, and the pointer to the tuition policy.\n3. Withdrawal, notice, refunds, and dismissal terms.\n4. Health, emergency, photo, and pickup authorizations.\n5. Acknowledgment of the family handbook and key policies.\n6. Signatures and dates.\n\n**Common mistakes.**\n- Contradicting the tuition policy or handbook.\n- Legal terms copied from another state without review.\n- Missing withdrawal terms.\n- Language that treats families as adversaries.\n\n**Tone.** Clear, respectful, plain. Legal precision where it matters.\n\n**Wildflower-specific considerations.**\n- Connected's Enrollment Agreement Form and the charter and Spanish versions are the starting points; the Photo and Media Release Form is separate.\n- Flexible tuition levels should be stated per family in the agreement or in an attached award.",
+  "rubric": [
+   [
+    "Completeness",
+    "All six areas are present."
+   ],
+   [
+    "Consistency",
+    "Matches the tuition policy and handbook."
+   ],
+   [
+    "Clarity",
+    "Plain language; a family understands what they are signing."
+   ],
+   [
+    "Legal caution",
+    "State-specific terms are flagged for attorney verification."
+   ],
+   [
+    "Respectful tone",
+    "Partnership, not adversarial."
+   ]
+  ],
+  "prompt_notes": "Flag enforceability and state-law questions for verification. Check consistency with the tuition policy if both are known.",
+  "links": [
+   4396627,
+   4396656,
+   4396637,
+   4560228,
+   4396633,
+   4395976
+  ]
+ },
+ {
+  "key": "press_release",
+  "name": "Press release or opening announcement",
+  "short": "An announcement for local media and the community",
+  "job": "market",
+  "guide": "**Purpose.** Get a local outlet to tell your story accurately and get families in the neighborhood to notice.\n\n**Audience.** A local reporter or editor with two minutes, and neighbors who read it.\n\n**Must-have elements.**\n1. A headline that says what is happening, where, and when.\n2. The news in the first paragraph: who, what, where, when, why.\n3. A quote from a teacher leader that sounds like a person.\n4. Two or three facts that make it a story: the neighborhood, the model, the families, access.\n5. Boilerplate on the school and on Wildflower in two sentences each.\n6. Contact name, phone, email, and a photo offer.\n\n**Common mistakes.**\n- Burying the news.\n- Marketing language instead of facts.\n- Quotes that sound like a press office.\n- No contact or date.\n\n**Tone.** Factual, warm, quotable.\n\n**Wildflower-specific considerations.**\n- The New School Opening Media Kit and Using Local Media for Marketing in Connected are the starting points.\n- Describe Wildflower accurately: a network of teacher-led Montessori microschools.",
+  "rubric": [
+   [
+    "News first",
+    "The first paragraph carries the story."
+   ],
+   [
+    "Quotable and human",
+    "The quote sounds like a teacher leader."
+   ],
+   [
+    "Facts",
+    "Concrete details make it a story."
+   ],
+   [
+    "Boilerplate and contact",
+    "Accurate boilerplate and complete contact."
+   ],
+   [
+    "Voice",
+    "Factual and warm, no marketing adjectives."
+   ]
+  ],
+  "prompt_notes": "Review as a journalist would: is the news clear in the first paragraph, and is there a usable quote?",
+  "links": [
+   4811468,
+   4657506,
+   4652215,
+   4588104
+  ]
+ },
+ {
+  "key": "board_minutes",
+  "name": "Board meeting agenda and minutes",
+  "short": "The agenda for a board meeting and the minutes that record it",
+  "job": "board",
+  "guide": "**Purpose.** Run a focused meeting and leave a record that shows what was decided, by whom, and why.\n\n**Audience.** Board members, and later anyone who needs to know what the board decided.\n\n**Must-have elements.**\n1. Agenda: date, time, place, attendance expectations, items with time boxes, consent agenda, decisions needed, and preparation materials.\n2. Minutes: date, attendance, quorum, each agenda item with the decision and vote, resolutions adopted, actions with owners and dates, next meeting.\n3. Minutes record decisions, not debate transcripts.\n4. Approval of prior minutes.\n5. Signature or approval record.\n\n**Common mistakes.**\n- Agendas with no decisions needed listed.\n- Minutes that are transcripts.\n- Missing quorum and votes.\n- Actions without owners.\n\n**Tone.** Concise, factual, consistent.\n\n**Wildflower-specific considerations.**\n- Connected's Board Meeting Agenda Template, Minutes Tips, Consent Agenda post, and Annual Board Meeting Topics Planner are the starting points.\n- Use the Outline for First Four Board Meetings for a new school.",
+  "rubric": [
+   [
+    "Agenda focus",
+    "Decisions needed and time boxes are clear."
+   ],
+   [
+    "Minutes as record",
+    "Decisions, votes, quorum, and actions with owners."
+   ],
+   [
+    "Completeness",
+    "Required elements present."
+   ],
+   [
+    "Concision",
+    "No transcript."
+   ],
+   [
+    "Consistency",
+    "Matches templates and prior practice."
+   ]
+  ],
+  "prompt_notes": "The draft may contain an agenda, minutes, or both. Judge each against its must-haves.",
+  "links": [
+   4545411,
+   4732887,
+   5920843,
+   5920957,
+   4545401,
+   4778622,
+   4732858
+  ]
+ },
+ {
+  "key": "community_letter",
+  "name": "Community letter on a difficult event",
+  "short": "A letter to families after a hard event in the world or the community",
+  "job": "enroll",
+  "guide": "**Purpose.** Say something true and caring to families at a moment when silence would be felt, in a way that reflects the school's values and does not overreach.\n\n**Audience.** Families of young children, with a range of identities and views, reading in a hard week.\n\n**Must-have elements.**\n1. Name the event plainly and early.\n2. What the school believes and how it shows up for children, consistent with Wildflower's anti-bias commitments.\n3. What the school is doing this week, concretely, for children and families.\n4. Resources for families and an invitation to talk.\n5. A human signature.\n\n**Common mistakes.**\n- Vague language that avoids naming what happened.\n- Speaking for the whole community's views.\n- Performative statements with no action.\n- Length.\n\n**Tone.** Honest, warm, grounded, brief.\n\n**Wildflower-specific considerations.**\n- The George Floyd letter example and community statements in Connected show how schools have done this.\n- Ground the letter in the school's stated commitments and the community norms.",
+  "rubric": [
+   [
+    "Names the event",
+    "Plain and early."
+   ],
+   [
+    "Values and action",
+    "Commitments are tied to concrete steps."
+   ],
+   [
+    "Care for families",
+    "Resources and an invitation to talk."
+   ],
+   [
+    "Humility",
+    "Does not speak for everyone; does not overreach."
+   ],
+   [
+    "Brevity and voice",
+    "Short, human, signed."
+   ]
+  ],
+  "prompt_notes": "Be especially careful to preserve the writer's voice here. Suggest, do not replace.",
+  "links": [
+   4566697,
+   4566707,
+   4409924,
+   4589738,
+   4566714
+  ]
+ },
+ {
+  "key": "school_name_proposal",
+  "name": "School name proposal",
+  "short": "The proposal for a new school's name, following the naming process",
+  "job": "market",
+  "guide": "**Purpose.** Choose a name that tells the school's story, fits Wildflower's naming conventions, and does not collide with a school already in the network.\n\n**Audience.** The teacher leaders, their Operations Guide, and the advice givers.\n\n**Must-have elements.**\n1. The proposed name and two alternates, with the flower or meaning and why it fits this school and community.\n2. A check against the Wildflower School Names list for the same or similar flower, and the advice process step if there is a collision.\n3. How the name works in the school's languages and in the neighborhood.\n4. Domain and social handle availability.\n5. Logo direction, referencing the Style Guide.\n\n**Common mistakes.**\n- Skipping the names list check.\n- A name that only makes sense to the founders.\n- No alternates.\n\n**Tone.** Short and clear.\n\n**Wildflower-specific considerations.**\n- Use the Wildflower School Name Selection Proposal Template and check the School Names list; follow the advice process for similar names.\n- See the Wildflower School Logo Design post.",
+  "rubric": [
+   [
+    "Story fit",
+    "The name's meaning fits this school and place."
+   ],
+   [
+    "Network check",
+    "Names list checked; collision handled via the advice process."
+   ],
+   [
+    "Practicality",
+    "Languages, domain, and handles considered."
+   ],
+   [
+    "Alternates",
+    "Two alternates with reasons."
+   ],
+   [
+    "Brevity",
+    "Fits the template."
+   ]
+  ],
+  "prompt_notes": "Check that the names list step is present; if not, that is the top priority.",
+  "links": [
+   4530761,
+   4530755,
+   4542149,
+   4473006
+  ]
+ }
+]

@@ -1,0 +1,64 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import type { SessionUser } from "@wfw/shared";
+import { api } from "./api";
+import { Shell } from "./components/Shell";
+import { Loading } from "./components/ui";
+import { AdminLayout } from "./pages/admin/AdminLayout";
+import { AdminOverview } from "./pages/admin/Overview";
+import { AdminTaxonomy } from "./pages/admin/Taxonomy";
+import { AdminCuration } from "./pages/admin/Curation";
+import { AdminRetirement } from "./pages/admin/Retirement";
+import { AdminTypes, AdminTypeEditor } from "./pages/admin/Types";
+import { AdminBasePrompt } from "./pages/admin/BasePrompt";
+import { AdminSubmissions, AdminSubmissionDetail } from "./pages/admin/Submissions";
+import { AdminSettings } from "./pages/admin/Settings";
+import { AdminActivity } from "./pages/admin/Activity";
+import { Ask } from "./pages/Ask";
+import { Home } from "./pages/Home";
+import { ItemPage } from "./pages/Item";
+import { Landing } from "./pages/Landing";
+import { MapPage, SubjobPage } from "./pages/Map";
+import { Materials, MaterialType } from "./pages/Materials";
+import { MyDrafts, SubmissionPage } from "./pages/Submissions";
+import { SearchPage } from "./pages/Search";
+
+export default function App() {
+  const qc = useQueryClient(); const loc = useLocation();
+  const me = useQuery({ queryKey: ["me"], queryFn: () => api.get<{ user: SessionUser | null }>("/api/me") });
+  if (me.isLoading) return <div className="wf-page"><Loading what="Signing you in" /></div>;
+  const user = me.data?.user ?? null;
+  if (!user) return <Routes><Route path="*" element={<Landing next={loc.pathname + loc.search} />} /></Routes>;
+  return (
+    <Routes>
+      <Route element={<Shell user={user} onSignOut={() => qc.setQueryData(["me"], { user: null })} />}>
+        <Route index element={<Home />} />
+        <Route path="map" element={<MapPage />} />
+        <Route path="map/:key" element={<SubjobPage />} />
+        <Route path="item/:id" element={<ItemPage />} />
+        <Route path="search" element={<SearchPage />} />
+        <Route path="ask" element={<Ask />} />
+        <Route path="materials" element={<Materials />} />
+        <Route path="materials/:key" element={<MaterialType />} />
+        <Route path="my" element={<MyDrafts />} />
+        <Route path="drafts/:id" element={<SubmissionPage />} />
+        {user.role === "staff" ? (
+          <Route path="admin" element={<AdminLayout />}>
+            <Route index element={<AdminOverview />} />
+            <Route path="taxonomy" element={<AdminTaxonomy />} />
+            <Route path="curation" element={<AdminCuration />} />
+            <Route path="retirement" element={<AdminRetirement />} />
+            <Route path="types" element={<AdminTypes />} />
+            <Route path="types/:id" element={<AdminTypeEditor />} />
+            <Route path="base-prompt" element={<AdminBasePrompt />} />
+            <Route path="submissions" element={<AdminSubmissions />} />
+            <Route path="submissions/:id" element={<AdminSubmissionDetail />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="activity" element={<AdminActivity />} />
+          </Route>
+        ) : null}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}
