@@ -1,6 +1,6 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
-import { and, asc, auditLog, basePromptVersions, desc, eq, getDb, indexRuns, itemMeta, items, jobs, materialTypeVersions, materialTypes, placements, sql, submissions, subjobs, typeResources, users, chatTurns, searchLog } from "@wfw/db";
+import { and, asc, auditLog, inArray, basePromptVersions, desc, eq, getDb, indexRuns, itemMeta, items, jobs, materialTypeVersions, materialTypes, placements, sql, submissions, subjobs, typeResources, users, chatTurns, searchLog } from "@wfw/db";
 import { SETTING_DEFAULTS, STAGES, type ReviewResult, type Settings } from "@wfw/shared";
 import { actor, requireStaff } from "../auth.js";
 import { respondJson } from "../lib/openai.js";
@@ -112,7 +112,7 @@ adminRouter.get("/items", async (req, res) => {
   if (filter === "linkonly") conds.push(eq(items.linkOnly, true));
   const rows = await db.select({ ...itemSelect, pinnedStage: itemMeta.pinnedStage, pinnedPosition: itemMeta.pinnedPosition, staffNote: itemMeta.staffNote, hasText: items.hasText }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(...conds)).orderBy(desc(sql`coalesce(${itemMeta.score},0)`), desc(items.views)).limit(size).offset(page * size);
   const ids = rows.map((r) => r.id);
-  const pl = ids.length ? await db.select({ itemId: placements.itemId, key: subjobs.key, name: subjobs.name, isPrimary: placements.isPrimary, position: placements.position }).from(placements).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).where(sql`${placements.itemId} = any(${ids}::uuid[])`) : [];
+  const pl = ids.length ? await db.select({ itemId: placements.itemId, key: subjobs.key, name: subjobs.name, isPrimary: placements.isPrimary, position: placements.position }).from(placements).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).where(inArray(placements.itemId, ids)) : [];
   res.json({ items: rows.map((r) => ({ ...toSummary(r as ItemRow), hidden: r.hidden, pinnedStage: r.pinnedStage, pinnedPosition: r.pinnedPosition, staffNote: r.staffNote, reviewStatus: r.reviewStatus, hasText: r.hasText, placements: pl.filter((p) => p.itemId === r.id) })), page, size });
 });
 adminRouter.patch("/items/:id/meta", async (req, res) => {
