@@ -10,6 +10,10 @@ import { recomputeScores } from "./score.js";
 import { loadVectors } from "./vectors.js";
 
 let running: Promise<void> | null = null;
+/** Runs left in "running" by a process that died are marked failed so the admin page does not show them as live. */
+export async function markStaleRuns(): Promise<void> {
+  await getDb().update(indexRuns).set({ status: "failed", error: "Interrupted by a restart", finishedAt: new Date() }).where(eq(indexRuns.status, "running"));
+}
 export function isIndexing(): boolean { return running !== null; }
 
 type Kind = "post" | "series" | "question";
@@ -76,6 +80,7 @@ async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) =
 export async function runReindex(triggeredBy: string, opts: { full?: boolean; limit?: number } = {}): Promise<string> {
   if (running) throw new Error("A re-index is already running");
   const db = getDb();
+  await markStaleRuns();
   const [run] = await db.insert(indexRuns).values({ kind: "reindex", triggeredBy }).returning({ id: indexRuns.id });
   const runId = run!.id;
   const lines: string[] = [];

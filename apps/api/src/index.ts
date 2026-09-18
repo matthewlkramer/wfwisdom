@@ -22,6 +22,7 @@ import { submissionsRouter } from "./routes/submissions.js";
 import { typesRouter } from "./routes/types.js";
 import { startScheduler } from "./scheduler.js";
 import { loadVectors } from "./services/vectors.js";
+import { markStaleRuns } from "./services/indexer.js";
 import { getSettings } from "./settings.js";
 
 const app = express();
@@ -64,6 +65,7 @@ app.use(errorHandler);
 
 const server = app.listen(env.port, "0.0.0.0", () => {
   logger.info({ port: env.port, env: env.nodeEnv }, "Wildflower Wisdom API listening");
+  void markStaleRuns().catch((e) => logger.warn({ err: (e as Error).message }, "stale run cleanup failed"));
   void loadVectors().catch((e) => logger.warn({ err: (e as Error).message }, "vector load failed"));
   startScheduler();
 });

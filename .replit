@@ -1,6 +1,6 @@
-modules = ["nodejs-22", "postgresql-16"]
+modules = ["nodejs-22"]
 
-run = "pnpm dev"
+run = "corepack pnpm@10.33.0 preview"
 
 [deployment]
 run = ["corepack", "pnpm@10.33.0", "deploy:start"]
@@ -8,12 +8,8 @@ build = ["corepack", "pnpm@10.33.0", "deploy:build"]
 deploymentTarget = "autoscale"
 
 [[ports]]
-localPort = 5173
-externalPort = 80
-
-[[ports]]
 localPort = 8080
-externalPort = 8080
+externalPort = 80
 
 [workflows]
 runButton = "Project"
@@ -33,8 +29,8 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "corepack pnpm@10.33.0 dev"
-waitForPort = 5173
+args = "corepack pnpm@10.33.0 preview"
+waitForPort = 8080
 
 [workflows.workflow.metadata]
 outputType = "console"
@@ -44,4 +40,4 @@ channel = "stable-25_05"
 
 [postMerge]
 path = "scripts/post-merge.sh"
-timeoutMs = 300000
+timeoutMs = 600000

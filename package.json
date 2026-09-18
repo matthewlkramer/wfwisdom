@@ -8,7 +8,7 @@
     "dev": "pnpm --parallel --filter @wfw/api --filter @wfw/web dev",
     "build": "pnpm -r --filter @wfw/shared --filter @wfw/db --filter @wfw/web --filter @wfw/api build",
     "deploy:build": "pnpm build",
-    "deploy:start": "pnpm db:migrate && pnpm start",
+    "deploy:start": "pnpm db:migrate && pnpm db:seed && pnpm start",
     "start": "pnpm --filter @wfw/api start",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
@@ -16,7 +16,13 @@
     "db:migrate": "pnpm --filter @wfw/db migrate",
     "db:seed": "pnpm --filter @wfw/db seed",
     "index": "pnpm --filter @wfw/api index",
-    "check:secrets": "node scripts/check-secrets.mjs"
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "preview": "pnpm build && pnpm deploy:start"
   },
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
 }

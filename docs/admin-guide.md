@@ -1,0 +1,82 @@
+# Wildflower Wisdom: admin guide
+
+For Wildflower Foundation staff. Everything staff might want to change lives in the database and is edited in the app under **Staff** (visible to accounts on the wildflowerschools.org Google Workspace). Nothing below requires a code change.
+
+## What the site is
+
+- **Start here**: a teacher leader picks their stage (Discovery, Visioning, Planning, Startup, Open) and sees the resources staff pinned or marked Essential for that stage, plus what the network is opening most.
+- **Map**: Connected organized by job (form your nonprofit, build your board, find a space, and so on) and sub-job. Two clicks to any resource. Every item links back to Connected; the site never shows a full Connected post.
+- **Search** and **Ask**: semantic search over everything indexed (including attachment and linked Google Doc text), with a one-line "why this matches", and a chat that answers only from Connected and cites the items it used.
+- **Get feedback**: 26 material types (landlord letter, family handbook, budget, job posting, and more). Each has a "what good looks like" guide, linked Connected resources, and a review prompt. A teacher leader pastes or uploads a draft and gets a verdict, rubric scores, and specific feedback from the AI reviewer, which they can email to themselves or download.
+
+## How to re-index Connected
+
+The indexer logs in to Connected with the Bloomfire API key and the login email in the secrets, pulls every post, series, and question, downloads attachments and extracts their text, fetches the text of linked Google Docs, Sheets, and Slides, embeds what changed, writes two-sentence summaries, and recomputes helpfulness scores.
+
+- It runs automatically every night at 03:10 UTC.
+- To run it now: **Staff → Overview → Re-index now**. "Full re-index" re-fetches every item even if Connected says it has not changed (use after changing the embedding model or if something looks stale). Progress and the log show on the same page.
+- Items that disappear from Connected are marked removed and drop out of every view. Unpublished or group-restricted items are never indexed.
+- Google files shared as "anyone with the link" are read without credentials. To read private ones, set `GOOGLE_SERVICE_ACCOUNT_JSON` (a service account key with read access to the relevant Drive folders) and re-index.
+
+## How to curate the best resources
+
+**Staff → Curation** lists every item with its score, views, and placements. Per item you can:
+
+- Mark **Essential** or **Staff pick**. Both show a badge everywhere the item appears and rank above unmarked items.
+- **Pin to a stage** with a position. Pinned items lead the Start here list for that stage, in your order.
+- **Hide** an item from teacher-leader views (staff still see it).
+- Add a **Dated** label (for example "Dated 2021"). The item stays searchable but leaves Start here and Most used.
+- Change **placements**: which sub-jobs it appears in and which is primary. Items can live in several places.
+
+Overrides outrank the computed score and survive re-indexing. The score itself is 40% curation, 35% usage (Connected views per month blended with wfwisdom clicks and helpful votes as they accumulate), 25% freshness (with templates, policies, and definitions decaying at half speed). Weights and the freshness ladder are in **Settings**. Scores recompute monthly, after every re-index, and on demand from Overview.
+
+**Staff → Retirement queue** holds items the classifier flagged as dated after each re-index. Nothing is hidden until a person decides: Keep, Label as dated, or Hide. Every decision records who made it.
+
+**Staff → Taxonomy** renames, reorders, moves, adds, and merges jobs and sub-jobs. A job can be marked "Foundation staff" (shown last and labeled) or hidden from teacher leaders. Sub-jobs carry the stages they light up in.
+
+## How to add a material type
+
+**Staff → Material types → Add a material type**. Give it a key (lowercase), a name, the job it belongs to, the "what good looks like" guide in Markdown (purpose, audience, must-have elements, common mistakes, tone, Wildflower-specific considerations), and a rubric of up to eight criteria with what a 5 looks like. Then open it to add reviewer notes and link Connected resources (searched from the index). Deactivate a type to hide it without deleting its history.
+
+## How to tune a prompt
+
+Every review is built from three editable parts:
+
+1. **Base prompt** (Staff → Base prompt): the Wildflower voice, values, and the rules the reviewer follows for every type. Saving creates a new version; every review records which version it used.
+2. **The type's guide, rubric, and reviewer notes** (Staff → Material types → the type). Saving content changes creates a new version. Version history shows every version, who saved it and why, and can restore any of them.
+3. **Linked resources** for the type, which the reviewer may recommend and nothing else.
+
+At run time the app also retrieves the Connected passages most relevant to the draft so the reviewer can check claims against Wildflower source material.
+
+Use **Test the prompt** on the type page to run a sample draft through the full review, including unsaved edits, and see verdict, scores, feedback, time, and cost. Test runs appear in the submission log marked "test" and do not count against user limits.
+
+Model and reasoning effort are set globally in Settings and can be overridden per type.
+
+## How to read the submission log
+
+**Staff → Submission log** shows every draft with the submitter's name and email, the type and version, the verdict, and cost. Open one to see the full feedback beside the draft as submitted. Drafts a writer marked "contributed" are ones they offered as examples for other teams. Use the log to follow up with teams and to spot where a guide or rubric needs tuning. **Staff → Activity** shows recent searches, questions (including the ones Connected did not cover, which point to gaps), staff changes, and users.
+
+## Cost controls
+
+Settings holds the per-account and global daily review limits, the chat limits, the upload size and draft length caps, and the review output cap. The **kill switch** on Overview pauses all AI features at once. Worst-case daily spend at the default limits is about $36 (120 reviews at the caps); typical use is a small fraction. Overview shows today's usage and spend.
+
+## Secrets and how to rotate keys
+
+Set in the Replit app's Secrets (not in code):
+
+| Secret | Purpose | To rotate |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | Reviews, search, chat, embeddings | Create a new key at platform.openai.com, paste it, restart the app, then delete the old key. |
+| `BLOOMFIRE_API_KEY` and `BLOOMFIRE_LOGIN_EMAIL` | Indexer login to Connected | Bloomfire Settings → Integrations (Owner role) regenerates the key. The email is any Bloomfire account the indexer logs in as; a dedicated account is better than a person's. |
+| `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` | Google sign-in | Google Cloud Console → Credentials → the OAuth client. Add a new secret, paste it, restart, then remove the old one. Redirect URIs must include `https://wfwisdom.replit.app/api/auth/google/callback` and the development URL. |
+| `RESEND_API_KEY` | "Email me this feedback" | Resend dashboard → API keys. `MAIL_FROM` sets the sender (a verified wildflowerschools.org address). |
+| `SESSION_SECRET` | Signs session cookies | Any 64 random characters. Rotating it signs everyone out. |
+| `DATABASE_URL` | Replit Postgres | Managed by Replit. |
+| `APP_BASE_URL` | The public URL, used for OAuth redirects and email links | `https://wfwisdom.replit.app` in production. |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` (optional) | Read private Google Docs during indexing | Create a service account, share the Drive folders with its email, paste the JSON key. |
+
+Run `node scripts/check-secrets.mjs` in the Repl shell to verify every secret against its service without printing values.
+
+## Deploying changes
+
+GitHub `main` is the source of truth. Replit pulls from it; the post-merge hook installs dependencies, runs migrations and the idempotent seed, and builds. Publishing to wfwisdom.replit.app is done from Replit (Deploy). Before merging to main, run `pnpm typecheck`, `pnpm test`, and `pnpm build`.
