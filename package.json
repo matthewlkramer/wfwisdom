@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm --parallel --filter @wfw/api --filter @wfw/web dev",
     "build": "pnpm -r --filter @wfw/shared --filter @wfw/db --filter @wfw/web --filter @wfw/api build",
-    "deploy:build": "pnpm build",
+    "deploy:build": "pnpm install --frozen-lockfile && pnpm build",
     "deploy:start": "pnpm db:migrate && pnpm db:seed && pnpm start",
     "start": "pnpm --filter @wfw/api start",
     "typecheck": "pnpm -r typecheck",
