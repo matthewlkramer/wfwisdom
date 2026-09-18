@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import type { ItemSummary, SchoolMaterial } from "@wfw/shared";
 import { ApiError, api, fmtDate } from "../api";
 import { ErrorState, ItemCard, Loading, Markdown, State } from "../components/ui";
+import { LanguageFilter, langParam, useLanguage } from "../language";
 
 type TypeRow = { id: string; key: string; name: string; shortDescription: string | null; jobKey: string | null };
 
@@ -63,8 +64,9 @@ type TypeDetail = { type: { id: string; key: string; name: string; shortDescript
 /** The writing workspace: guide on demand, a big writing box, objectives and resources alongside. */
 export function MaterialType() {
   const { key } = useParams(); const nav = useNavigate(); const [sp] = useSearchParams(); const parentId = sp.get("resubmit") ?? undefined;
-  const q = useQuery({ queryKey: ["type", key], queryFn: () => api.get<TypeDetail>(`/api/types/${key}`) });
-  const sug = useQuery({ queryKey: ["type-suggested", key], queryFn: () => api.get<{ items: ItemSummary[]; basedOn: string[] }>(`/api/types/${key}/suggested`) });
+  const { language } = useLanguage();
+  const q = useQuery({ queryKey: ["type", key, language], queryFn: () => api.get<TypeDetail>(`/api/types/${key}?${langParam(language)}`) });
+  const sug = useQuery({ queryKey: ["type-suggested", key, language], queryFn: () => api.get<{ items: ItemSummary[]; basedOn: string[] }>(`/api/types/${key}/suggested?${langParam(language)}`) });
   const mats = useQuery({ queryKey: ["my-materials"], queryFn: () => api.get<{ materials: SchoolMaterial[] }>("/api/me/materials") });
   const [mode, setMode] = useState<"write" | "upload" | "link">("write");
   const [guideOpen, setGuideOpen] = useState(false);
@@ -125,7 +127,7 @@ export function MaterialType() {
         <aside className="workspace-side">
           <div className="wf-card wf-card-section"><h3 style={{ marginTop: 0 }}>Objectives</h3><p className="muted" style={{ fontSize: ".82rem", marginTop: -2 }}>What the reviewer looks for.</p><ol className="objectives">{type.rubric.map((c) => <li key={c.criterion}><strong>{c.criterion}.</strong> {c.description}</li>)}</ol></div>
           {sug.data?.items.length ? <div><div className="wf-section-header" style={{ margin: "0 0 8px" }}><h3 style={{ margin: 0 }}><Sparkles size={16} style={{ verticalAlign: "-2px" }} /> Suggested for your school</h3></div><p className="muted" style={{ fontSize: ".8rem", margin: "0 0 8px" }}>Picked from what you shared: {sug.data.basedOn.slice(0, 3).join(", ")}.</p><div style={{ display: "grid", gap: 10 }}>{sug.data.items.map((r) => <ItemCard key={r.id} item={r} context={{ from: "type-suggested", type: key }} showWhy={false} />)}</div></div> : null}
-          <div><div className="wf-section-header" style={{ margin: "0 0 8px" }}><h3 style={{ margin: 0 }}>Use these as you write</h3></div>{resources.length ? <div style={{ display: "grid", gap: 10 }}>{resources.map((r) => <ItemCard key={r.id} item={r} context={{ from: "type", type: key }} showWhy={false} />)}</div> : <p className="muted">No linked resources yet.</p>}</div>
+          <div><div className="wf-section-header" style={{ margin: "0 0 8px" }}><h3 style={{ margin: 0 }}>Use these as you write</h3><LanguageFilter /></div>{resources.length ? <div style={{ display: "grid", gap: 10 }}>{resources.map((r) => <ItemCard key={r.id} item={r} context={{ from: "type", type: key }} showWhy={false} />)}</div> : <p className="muted">{language === "all" ? "No linked resources yet." : "No linked resources in this language. Switch to All resources to see the rest."}</p>}</div>
         </aside>
       </div>
     </div>

@@ -9,7 +9,8 @@
     "start": "NODE_ENV=production tsx src/index.ts",
     "index": "tsx src/cli/index-now.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run src --passWithNoTests"
+    "test": "vitest run src --passWithNoTests",
+    "backfill:language": "tsx src/cli/backfill-language.ts"
   },
   "dependencies": {
     "@wfw/db": "workspace:*",
@@ -37,6 +38,8 @@
     "@types/node": "^22.15.0",
     "@types/pdf-parse": "^1.1.5",
     "@types/sanitize-html": "^2.16.1",
+    "@types/supertest": "^6.0.3",
+    "supertest": "^7.1.4",
     "tsx": "^4.21.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.4"

@@ -16,7 +16,8 @@
     "db:seed": "pnpm --filter @wfw/db seed",
     "index": "pnpm --filter @wfw/api index",
     "check:secrets": "node scripts/check-secrets.mjs",
-    "preview": "pnpm build && pnpm deploy:start"
+    "preview": "pnpm build && pnpm deploy:start",
+    "backfill:language": "pnpm --filter @wfw/api backfill:language"
   },
   "engines": {
     "node": ">=22"

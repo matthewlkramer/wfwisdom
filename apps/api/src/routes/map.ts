@@ -1,27 +1,33 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { z } from "zod";
 import { and, desc, eq, getDb, inArray, isNull, itemMeta, items, jobs, placements, signals, sql, subjobs, users } from "@wfw/db";
-import { STAGES, type JobSummary, type StageKey } from "@wfw/shared";
+import { STAGES, isResourceLanguage, type JobSummary, type ResourceLanguage, type StageKey } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { getSettings } from "../settings.js";
-import { itemsForSubjob, mostUsed, startHere, toSummary, itemSelect, type ItemRow, visibleWhere } from "../services/items.js";
+import { itemsForSubjob, languageWhere, mostUsed, startHere, toSummary, itemSelect, type ItemRow, visibleWhere } from "../services/items.js";
+import { extractPrimaryVideo, stripContentTokens } from "../lib/html.js";
+import { readerLanguage } from "../services/language-pref.js";
 
 export const mapRouter = Router();
 mapRouter.use(requireUser);
 const isStage = (s: unknown): s is StageKey => typeof s === "string" && STAGES.some((x) => x.key === s);
+/** The language filter comes from the query string; when it is missing we use what the reader last chose. */
+const requestLanguage = (req: Request): Promise<ResourceLanguage> =>
+  isResourceLanguage(req.query.lang) ? Promise.resolve(req.query.lang) : readerLanguage(req.user!.id);
 
 mapRouter.get("/", async (req, res) => {
   const staff = req.user!.role === "staff";
   const db = getDb();
   const js = await db.select().from(jobs).orderBy(jobs.sort);
   const ss = await db.select().from(subjobs).orderBy(subjobs.sort);
-  const counts = await db.select({ subjobId: placements.subjobId, n: sql<number>`count(*)::int` }).from(placements).innerJoin(items, eq(items.id, placements.itemId)).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(visibleWhere(staff)).groupBy(placements.subjobId);
+  const lang = await requestLanguage(req);
+  const counts = await db.select({ subjobId: placements.subjobId, n: sql<number>`count(*)::int` }).from(placements).innerJoin(items, eq(items.id, placements.itemId)).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(visibleWhere(staff), languageWhere(lang))).groupBy(placements.subjobId);
   const cmap = new Map(counts.map((c) => [c.subjobId, c.n]));
-  const stageRows = await db.execute(sql`select s as stage, count(distinct i.id)::int as n from items i join item_meta m on m.item_id = i.id cross join lateral unnest(m.stages) as s where i.removed_at is null and coalesce(m.hidden, false) = false ${staff ? sql`` : sql`and not exists (select 1 from placements p join subjobs sj on sj.id = p.subjob_id join jobs j on j.id = sj.job_id where p.item_id = i.id and p.is_primary and j.staff_only)`} group by s`);
+  const stageRows = await db.execute(sql`select s as stage, count(distinct i.id)::int as n from items i join item_meta m on m.item_id = i.id cross join lateral unnest(m.stages) as s where i.removed_at is null and coalesce(m.hidden, false) = false ${lang === "all" ? sql`` : sql`and i.language = ${lang}`} ${staff ? sql`` : sql`and not exists (select 1 from placements p join subjobs sj on sj.id = p.subjob_id join jobs j on j.id = sj.job_id where p.item_id = i.id and p.is_primary and j.staff_only)`} group by s`);
   const stageCounts = Object.fromEntries((stageRows.rows as { stage: string; n: number }[]).map((r) => [r.stage, r.n]));
   const out: JobSummary[] = js.filter((j) => staff || !j.hidden).map((j) => ({ id: j.id, key: j.key, name: j.name, description: j.description, staffOnly: j.staffOnly, hidden: j.hidden,
     subjobs: ss.filter((s) => s.jobId === j.id).map((s) => ({ id: s.id, key: s.key, name: s.name, description: s.description, stages: s.stages as StageKey[], itemCount: cmap.get(s.id) ?? 0 })) }));
-  res.json({ jobs: out, stages: STAGES, stageCounts });
+  res.json({ jobs: out, stages: STAGES, stageCounts, language: lang });
 });
 
 mapRouter.get("/home", async (req, res) => {
@@ -30,8 +36,9 @@ mapRouter.get("/home", async (req, res) => {
   const stage = isStage(req.query.stage) ? req.query.stage : null;
   const [u] = await getDb().select({ stage: users.stage }).from(users).where(eq(users.id, req.user!.id));
   const effective = stage ?? (isStage(u?.stage) ? u!.stage as StageKey : null);
-  const [start, used] = await Promise.all([effective ? startHere(effective, staff, s.startHereCap) : Promise.resolve([]), mostUsed(staff, 8)]);
-  res.json({ stage: effective, startHere: start, mostUsed: used, stages: STAGES });
+  const lang = await requestLanguage(req);
+  const [start, used] = await Promise.all([effective ? startHere(effective, staff, s.startHereCap, lang) : Promise.resolve([]), mostUsed(staff, 8, lang)]);
+  res.json({ stage: effective, startHere: start, mostUsed: used, stages: STAGES, language: lang });
 });
 
 mapRouter.post("/stage", async (req, res) => {
@@ -49,7 +56,8 @@ mapRouter.get("/job/:key", async (req, res) => {
   if (!j || (j.hidden && !staff)) { res.status(404).json({ error: "Not found" }); return; }
   const ss = await db.select().from(subjobs).where(eq(subjobs.jobId, j.id)).orderBy(subjobs.sort);
   const perSub = Number(req.query.limit ?? 3);
-  const out = await Promise.all(ss.map(async (sj) => { const list = await itemsForSubjob(sj.id, staff); return { id: sj.id, key: sj.key, name: sj.name, description: sj.description, stages: sj.stages as StageKey[], itemCount: list.length, items: list.slice(0, perSub) }; }));
+  const lang = await requestLanguage(req);
+  const out = await Promise.all(ss.map(async (sj) => { const list = await itemsForSubjob(sj.id, staff, lang); return { id: sj.id, key: sj.key, name: sj.name, description: sj.description, stages: sj.stages as StageKey[], itemCount: list.length, items: list.slice(0, perSub) }; }));
   res.json({ job: { id: j.id, key: j.key, name: j.name, description: j.description, staffOnly: j.staffOnly }, subjobs: out });
 });
 
@@ -59,7 +67,7 @@ mapRouter.get("/subjob/:key", async (req, res) => {
   const [s] = await db.select({ id: subjobs.id, key: subjobs.key, name: subjobs.name, description: subjobs.description, stages: subjobs.stages, jobId: subjobs.jobId }).from(subjobs).where(eq(subjobs.key, String(req.params.key)));
   if (!s) { res.status(404).json({ error: "Not found" }); return; }
   const [j] = await db.select().from(jobs).where(eq(jobs.id, s.jobId));
-  const list = await itemsForSubjob(s.id, staff);
+  const list = await itemsForSubjob(s.id, staff, await requestLanguage(req));
   res.json({ subjob: { ...s, stages: s.stages as StageKey[] }, job: j ? { id: j.id, key: j.key, name: j.name } : null, items: list });
 });
 
@@ -76,8 +84,10 @@ mapRouter.get("/item/:id", async (req, res) => {
   const byId = new Map(children.map((c) => [c.sourceId, c]));
   const contents = childIds.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => !!c).map((c) => toSummary(c as ItemRow));
   // Items with no stored HTML yet (indexed before full content landed) fall back to their plain text.
-  const bodyHtml = r.bodyHtml ?? (r.bodyText ? `<p>${r.bodyText.split(/\n{2,}/).slice(0, 80).map((p) => p.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!))).join("</p><p>")}</p>` : "");
-  res.json({ item: { ...toSummary(r as ItemRow), authorName: r.authorName, publishedAt: r.publishedAt, categories: r.categories, audiences: r.audiences, bodyHtml, attachments: r.attachmentsFull.map((a) => ({ id: a.id, name: a.name, type: a.type, bytes: a.bytes, mime: a.mime ?? null })), linkedDocs: r.linkedDocs.map((d) => ({ url: d.url, kind: d.kind, status: d.status })), contents }, placements: pl, votes: { yes: votes?.yes ?? 0, no: votes?.no ?? 0, mine: mine[0]?.kind ?? null } });
+  const raw = r.bodyHtml ?? (r.bodyText ? `<p>${r.bodyText.split(/\n{2,}/).slice(0, 80).map((p) => p.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!))).join("</p><p>")}</p>` : "");
+  // Stripped at read time so items indexed before the fix never show a raw [content|NNNN|] token.
+  const { html: withoutVideo, video } = extractPrimaryVideo(stripContentTokens(raw), r.attachmentsFull);
+  res.json({ item: { ...toSummary(r as ItemRow), authorName: r.authorName, publishedAt: r.publishedAt, categories: r.categories, audiences: r.audiences, bodyHtml: withoutVideo, primaryVideo: video, attachments: r.attachmentsFull.map((a) => ({ id: a.id, name: a.name, type: a.type, bytes: a.bytes, mime: a.mime ?? null })), linkedDocs: r.linkedDocs.map((d) => ({ url: d.url, kind: d.kind, status: d.status })), contents }, placements: pl, votes: { yes: votes?.yes ?? 0, no: votes?.no ?? 0, mine: mine[0]?.kind ?? null } });
 });
 
 /** Resolve a Connected post/series/question id to the wfwisdom item (used for links inside imported content). */

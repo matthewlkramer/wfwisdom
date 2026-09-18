@@ -8,6 +8,7 @@ const SECTIONS: Record<string, [string, string]> = {
   "base-prompt": ["Base prompt", "The shared reviewer instructions every material type builds on."],
   submissions: ["Submission log", "Every draft reviewed, with who sent it, cost, and the verdict."],
   feedback: ["Feedback queue", "Notes sent from the Feedback button, with page and screenshot."],
+  questions: ["Questions", "Questions asked on Ask whose asker offered them for staff review or as a public example."],
   settings: ["Settings", "Models, limits, scoring weights, and the staff domain."],
   activity: ["Activity", "Searches, chat, and staff changes."],
 };

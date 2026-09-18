@@ -1,6 +1,10 @@
 // Types shared by the API and the web app. Keep this file dependency-free.
+export * from "./language.js";
+export * from "./linkify.js";
+import type { ItemLanguage, ResourceLanguage } from "./language.js";
+
 export type Role = "teacher_leader" | "staff";
-export interface SessionUser { id: string; email: string; name: string; role: Role; }
+export interface SessionUser { id: string; email: string; name: string; role: Role; resourceLanguage: ResourceLanguage; }
 export type StageKey = "discovery" | "visioning" | "planning" | "startup" | "open";
 export const STAGES: { key: StageKey; name: string; description: string }[] = [
   { key: "discovery", name: "Discovery", description: "Exploring whether to open a Wildflower school" },
@@ -14,7 +18,7 @@ export interface ItemSummary {
   id: string; title: string; url: string; kind: "post" | "series" | "question";
   description: string | null; summary: string | null; contentType: string | null;
   updatedAt: string | null; views: number; score: number; curation: Curation; dated: string | null;
-  linkOnly: boolean; attachmentCount: number; seriesTitles: string[]; why?: string | null;
+  linkOnly: boolean; attachmentCount: number; seriesTitles: string[]; language: ItemLanguage; why?: string | null;
 }
 export interface SubjobSummary { id: string; key: string; name: string; description: string | null; stages: StageKey[]; itemCount: number; }
 export interface JobSummary { id: string; key: string; name: string; description: string | null; staffOnly: boolean; hidden: boolean; subjobs: SubjobSummary[]; }
@@ -59,3 +63,17 @@ export interface FeedbackResult {
 export interface FeedbackListResult { feedback: FeedbackResult[]; pagination: { page: number; limit: number; total: number; pageCount: number } }
 
 export interface SchoolMaterial { id: string; kind: "file" | "link"; title: string; filename: string | null; url: string | null; charCount: number; status: string; createdAt: string }
+
+export type ShareAttribution = "anonymous" | "name";
+export type ShareStatus = "none" | "pending" | "approved" | "rejected";
+/** What the asker chose when they sent the question, stored on the chat turn. */
+export interface AskOptions { staffReview: boolean; share: boolean; shareAttribution: ShareAttribution }
+export interface Citation { itemId: string; title: string; url: string }
+/** One of the signed-in user's own earlier questions, shown at the bottom of Ask. */
+export interface MyQuestion { id: string; question: string; answer: string | null; citations: Citation[]; covered: boolean | null; createdAt: string; staffReviewRequested: boolean; share: { requested: boolean; attribution: ShareAttribution; status: ShareStatus } }
+/** An approved shared question, shown publicly on Ask. Only carries a name when the asker chose to. */
+export interface SharedExample { id: string; question: string; answer: string | null; citations: Citation[]; askerName: string | null; createdAt: string }
+export interface QuestionNote { id: string; body: string; authorName: string; createdAt: string }
+/** A question in the staff Questions queue. */
+export interface StaffQuestion extends MyQuestion { askerName: string; askerEmail: string; reviewedBy: string | null; reviewedAt: string | null; shareDecidedBy: string | null; shareDecidedAt: string | null; notes: QuestionNote[] }
+export interface StaffQuestionListResult { questions: StaffQuestion[]; pagination: { page: number; limit: number; total: number; pageCount: number } }

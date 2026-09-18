@@ -395,3 +395,14 @@ details > summary { cursor: pointer; color: var(--teal-deep); font-weight: 600; 
 .draft-chain-actions { display: flex; flex-direction: column; gap: 8px; align-items: stretch; text-align: center; }
 @media (max-width: 1000px) { .workspace, .review-layout, .verdict-strip { grid-template-columns: 1fr; } .verdict-strip-objectives { border-left: 0; padding-left: 0; } .review-pane { position: static; max-height: none; } .stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .draft-chain { flex-direction: column; align-items: stretch; } }
 .wf-card-button > span { display: block; }
+
+/* Ask: sharing choices, shared examples, and the asker's own history */
+.ask-options { display: grid; gap: 6px; margin-top: 10px; }
+.ask-check { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .85rem; color: var(--wf-text); }
+.ask-check.indent { margin-left: 24px; }
+.ask-check input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; }
+.ask-check select { border: 1px solid var(--wf-border); border-radius: var(--wf-control-radius); padding: 5px 8px; background: white; }
+.question-row { display: grid; gap: 8px; padding: 14px 16px; }
+.question-row > summary { display: block; font-weight: 600; color: var(--wf-text); }
+.question-row > summary .wf-status { margin-left: 8px; }
+.question-answer { border-top: 1px solid var(--wf-border); padding-top: 10px; margin-top: 8px; font-size: .92rem; }

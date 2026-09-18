@@ -1,22 +1,45 @@
 import { Router } from "express";
 import { z } from "zod";
 import { getDb, searchLog } from "@wfw/db";
+import { isResourceLanguage, type ResourceLanguage } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { search } from "../services/search.js";
 import { answer } from "../services/chat.js";
+import { listMyQuestions, listSharedExamples } from "../services/questions.js";
+import { readerLanguage } from "../services/language-pref.js";
 import { checkChatAllowed, LimitError } from "../services/limits.js";
+
+export const chatSchema = z.object({
+  conversationId: z.string().uuid(),
+  question: z.string().min(2).max(1500),
+  history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(4000) })).max(12).default([]),
+  // Both boxes on the Ask page are unchecked by default, so both default to false here.
+  staffReview: z.boolean().default(false),
+  share: z.boolean().default(false),
+  shareAttribution: z.enum(["anonymous", "name"]).default("anonymous"),
+});
+
 export const searchRouter = Router();
 searchRouter.use(requireUser);
 searchRouter.get("/", async (req, res) => {
   const q = String(req.query.q ?? "").trim().slice(0, 300);
-  if (q.length < 2) { res.json({ query: q, rewritten: null, mode: "keyword", results: [] }); return; }
-  const r = await search(q, { staff: req.user!.role === "staff", limit: 12, explain: req.query.explain !== "0", userId: req.user!.id });
+  const language: ResourceLanguage = isResourceLanguage(req.query.lang) ? req.query.lang : await readerLanguage(req.user!.id);
+  if (q.length < 2) { res.json({ query: q, rewritten: null, mode: "keyword", results: [], language }); return; }
+  const r = await search(q, { staff: req.user!.role === "staff", limit: 12, explain: req.query.explain !== "0", userId: req.user!.id, language });
   await getDb().insert(searchLog).values({ userId: req.user!.id, query: q, rewritten: r.rewritten, mode: r.mode, resultCount: r.results.length });
-  res.json(r);
+  res.json({ ...r, language });
 });
 searchRouter.post("/chat", async (req, res) => {
-  const body = z.object({ conversationId: z.string().uuid(), question: z.string().min(2).max(1500), history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(4000) })).max(12).default([]) }).parse(req.body);
+  const body = chatSchema.parse(req.body);
   try { await checkChatAllowed(req.user!.id); } catch (e) { if (e instanceof LimitError) { res.status(429).json({ error: e.message, code: e.code }); return; } throw e; }
-  const r = await answer(req.user!.id, body.conversationId, body.question, body.history, req.user!.role === "staff");
+  const r = await answer(req.user!.id, body.conversationId, body.question, body.history, req.user!.role === "staff", { staffReview: body.staffReview, share: body.share, shareAttribution: body.shareAttribution });
   res.json(r);
+});
+/** The signed-in user's own earlier questions, newest first. */
+searchRouter.get("/chat/mine", async (req, res) => {
+  res.json({ questions: await listMyQuestions(req.user!.id, 25) });
+});
+/** Questions staff approved for sharing, shown as examples on Ask. */
+searchRouter.get("/chat/examples", async (_req, res) => {
+  res.json({ examples: await listSharedExamples(6) });
 });

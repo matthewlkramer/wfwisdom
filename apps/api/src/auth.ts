@@ -2,7 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import { and, eq, getDb, gt, sessions, users } from "@wfw/db";
-import type { SessionUser } from "@wfw/shared";
+import { isResourceLanguage, type SessionUser } from "@wfw/shared";
 import { env } from "./env.js";
 import { getSettings } from "./settings.js";
 
@@ -82,9 +82,9 @@ export async function resolveUser(req: Request, _res: Response, next: NextFuncti
   try {
     const id = unsign(parseCookies(req)[COOKIE]);
     if (id) {
-      const rows = await getDb().select({ id: users.id, email: users.email, name: users.name, role: users.role }).from(sessions).innerJoin(users, eq(sessions.userId, users.id)).where(and(eq(sessions.id, id), gt(sessions.expiresAt, new Date()))).limit(1);
+      const rows = await getDb().select({ id: users.id, email: users.email, name: users.name, role: users.role, resourceLanguage: users.resourceLanguage }).from(sessions).innerJoin(users, eq(sessions.userId, users.id)).where(and(eq(sessions.id, id), gt(sessions.expiresAt, new Date()))).limit(1);
       const u = rows[0];
-      if (u) req.user = { id: u.id, email: u.email, name: u.name, role: u.role === "staff" ? "staff" : "teacher_leader" };
+      if (u) req.user = { id: u.id, email: u.email, name: u.name, role: u.role === "staff" ? "staff" : "teacher_leader", resourceLanguage: isResourceLanguage(u.resourceLanguage) ? u.resourceLanguage : "all" };
     }
   } catch (e) { (req as { log?: { warn: (o: unknown, m: string) => void } }).log?.warn({ err: e }, "session lookup failed"); }
   next();
