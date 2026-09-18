@@ -35,4 +35,4 @@ The pulled catalog itself (`catalog_full.json`, `attachment_text.json`) is not c
 - Base prompt: the reviewer may judge legal/financial claims when the answer is clearly documented in the Wildflower source material provided (so reviews retrieve relevant Connected passages).
 - SSJ stage names. Bloomfire indexer logs in as Matt's account for now. Resend for outbound email (`RESEND_API_KEY`). Foundation-internal posts shown with a label.
 - Models: luna for rewrites, explanations, summaries, and chat answers (see `model_compare.json`); sol for reviews.
-- Culture is split into two jobs (self-management practices; liberation and equity). All 26 material types ship at launch. Outbound email via SendGrid (`SENDGRID_API_KEY`), not Resend.
+- Culture is split into two jobs (self-management practices; liberation and equity). All 26 material types ship at launch. Outbound email via Resend (`RESEND_API_KEY`); the SendGrid key in the workspace is revoked and unused.

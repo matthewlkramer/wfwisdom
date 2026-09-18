@@ -40,8 +40,18 @@ async function checkGoogle() {
   if (j.error === "redirect_uri_mismatch") return bad("GOOGLE_CLIENT_ID", "credentials fine but the production redirect URI is not registered on the client");
   return bad("GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET", `unexpected response ${r.status} ${j.error ?? ""} ${j.error_description ?? ""}`);
 }
+async function checkResend() {
+  const key = env("RESEND_API_KEY"); if (!key) return missing("RESEND_API_KEY");
+  // A lookup of a nonexistent email id returns 404 for a valid key and 401 for an invalid one, without sending anything.
+  const r = await withTimeout(fetch("https://api.resend.com/emails/00000000-0000-0000-0000-000000000000", { headers: { Authorization: `Bearer ${key}` } }));
+  if (r.status === 401 || r.status === 403) return bad("RESEND_API_KEY", `HTTP ${r.status}: ${(await r.text()).slice(0, 120)}`);
+  const d = await withTimeout(fetch("https://api.resend.com/domains", { headers: { Authorization: `Bearer ${key}` } }));
+  if (!d.ok) return ok("RESEND_API_KEY", `valid (sending-only key; cannot list domains, HTTP ${d.status})`);
+  const domains = ((await d.json()).data ?? []).map((x) => `${x.name} (${x.status})`);
+  return ok("RESEND_API_KEY", `valid; domains: ${domains.join(", ") || "none added yet (only onboarding@resend.dev can send)"}`);
+}
 async function checkSendGrid() {
-  const key = env("SENDGRID_API_KEY"); if (!key) return missing("SENDGRID_API_KEY");
+  const key = env("SENDGRID_API_KEY"); if (!key) return results.push("INFO  SENDGRID_API_KEY: not set (not needed; Resend is the mailer)");
   const r = await withTimeout(fetch("https://api.sendgrid.com/v3/scopes", { headers: { Authorization: `Bearer ${key}` } }));
   if (!r.ok) return bad("SENDGRID_API_KEY", `HTTP ${r.status}`);
   const scopes = (await r.json()).scopes ?? [];
@@ -68,7 +78,7 @@ function checkSession() {
 function checkOptional() {
   for (const k of ["APP_BASE_URL", "STAFF_DOMAIN", "GOOGLE_SERVICE_ACCOUNT_JSON"]) env(k) ? ok(k, "set") : results.push(`INFO  ${k}: not set (optional; defaults apply)`);
 }
-await Promise.allSettled([checkOpenAI(), checkBloomfire(), checkGoogle(), checkSendGrid(), checkDatabase()]).then((rs) => rs.forEach((r) => r.status === "rejected" && bad("check", r.reason?.message ?? String(r.reason))));
+await Promise.allSettled([checkOpenAI(), checkBloomfire(), checkGoogle(), checkResend(), checkSendGrid(), checkDatabase()]).then((rs) => rs.forEach((r) => r.status === "rejected" && bad("check", r.reason?.message ?? String(r.reason))));
 checkSession(); checkOptional();
 console.log(results.sort().join("\n"));
 process.exit(results.some((l) => l.startsWith("FAIL") || l.startsWith("MISSING")) ? 1 : 0);
