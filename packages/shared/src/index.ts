@@ -34,6 +34,7 @@ export interface ReviewResult {
 export interface Settings {
   killSwitch: boolean; reviewModel: string; reviewEffort: string; assistModel: string; chatModel: string; embeddingModel: string;
   reviewsPerAccountPerDay: number; reviewsPerDayGlobal: number; chatTurnsPerAccountPerDay: number; chatTurnsPerDayGlobal: number;
+  draftsPerAccountPerDay: number; draftsPerDayGlobal: number;
   maxUploadBytes: number; maxDraftChars: number; maxReviewOutputTokens: number;
   scoreWeights: { curation: number; usage: number; freshness: number }; freshnessLadder: number[]; evergreenContentTypes: string[];
   startHereCap: number; signalBlendCeiling: number; signalHalfLifeDays: number; staffDomain: string;
@@ -41,6 +42,7 @@ export interface Settings {
 export const SETTING_DEFAULTS: Settings = {
   killSwitch: false, reviewModel: "gpt-5.6-sol", reviewEffort: "medium", assistModel: "gpt-5.6-luna", chatModel: "gpt-5.6-luna", embeddingModel: "text-embedding-3-small",
   reviewsPerAccountPerDay: 8, reviewsPerDayGlobal: 120, chatTurnsPerAccountPerDay: 300, chatTurnsPerDayGlobal: 3000,
+  draftsPerAccountPerDay: 10, draftsPerDayGlobal: 150,
   maxUploadBytes: 5 * 1024 * 1024, maxDraftChars: 30000, maxReviewOutputTokens: 4000,
   scoreWeights: { curation: 0.4, usage: 0.35, freshness: 0.25 }, freshnessLadder: [1, 0.8, 0.6, 0.4, 0.25], evergreenContentTypes: ["template", "policy", "definition"],
   startHereCap: 7, signalBlendCeiling: 0.6, signalHalfLifeDays: 90, staffDomain: "wildflowerschools.org",
@@ -55,3 +57,5 @@ export interface FeedbackResult {
   resolvedAt: string | null; createdAt: string; updatedAt: string; reporterName: string; reporterEmail: string;
 }
 export interface FeedbackListResult { feedback: FeedbackResult[]; pagination: { page: number; limit: number; total: number; pageCount: number } }
+
+export interface SchoolMaterial { id: string; kind: "file" | "link"; title: string; filename: string | null; url: string | null; charCount: number; status: string; createdAt: string }

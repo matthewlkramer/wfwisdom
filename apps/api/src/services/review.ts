@@ -4,6 +4,7 @@ import { OpenAIError, respondJson } from "../lib/openai.js";
 import { logger } from "../logger.js";
 import { getSettings } from "../settings.js";
 import { retrievePassages } from "./search.js";
+import { schoolContext } from "./school.js";
 
 export const REVIEW_SCHEMA = { name: "review", schema: { type: "object", additionalProperties: false,
   required: ["verdict", "one_thing", "summary", "rubric", "strengths", "priority_changes", "line_notes", "example_rewrites", "questions_for_writer", "verify_with_humans", "recommended_resources", "nits"],
@@ -28,7 +29,7 @@ export async function currentBasePrompt(): Promise<{ version: number; text: stri
   return { version: row.version, text: row.text };
 }
 
-export async function buildSystemPrompt(typeId: string, draft: string, opts: { basePrompt?: string; guide?: string; rubric?: { criterion: string; description: string }[]; reviewerNotes?: string } = {}): Promise<{ system: string; typeName: string; typeVersion: number; baseVersion: number; resources: { title: string; url: string }[] }> {
+export async function buildSystemPrompt(typeId: string, draft: string, opts: { basePrompt?: string; guide?: string; rubric?: { criterion: string; description: string }[]; reviewerNotes?: string; userId?: string | null } = {}): Promise<{ system: string; typeName: string; typeVersion: number; baseVersion: number; resources: { title: string; url: string }[] }> {
   const db = getDb();
   const [t] = await db.select().from(materialTypes).where(eq(materialTypes.id, typeId));
   if (!t) throw new Error("Unknown material type");
@@ -38,13 +39,14 @@ export async function buildSystemPrompt(typeId: string, draft: string, opts: { b
   // Retrieve Connected passages relevant to the draft so the reviewer can check claims against Wildflower source material.
   let passages: { title: string; url: string; text: string }[] = [];
   try { passages = (await retrievePassages(`${t.name}: ${draft.slice(0, 1500)}`, true, 5)).map((p) => ({ title: p.title, url: p.url, text: p.text.slice(0, 1500) })); } catch (e) { logger.warn({ err: (e as Error).message }, "passage retrieval for review failed"); }
+  const school = opts.userId ? await schoolContext(opts.userId).catch(() => ({ count: 0, titles: [], text: "" })) : { count: 0, titles: [], text: "" };
   const system = `${base.text}
 
 === Material type: ${t.name} ===
 What good looks like (the standard for this type):
 ${opts.guide ?? t.guideMd}
 
-Rubric for this type (score each 1-5):
+Objectives for this type (score how well the draft meets each, 1-5; these are called "objectives" when shown to the writer):
 ${rubric}
 
 Reviewer notes for this type:
@@ -52,6 +54,9 @@ ${opts.reviewerNotes ?? t.reviewerNotes}
 
 Connected resources you may recommend (only these):
 ${res.map((r) => `- ${r.title} — ${r.url}`).join("\n") || "(none linked yet)"}
+
+About the writer's school (documents and links they shared; use them to check facts, tailor suggestions, and notice when the draft contradicts them):
+${school.text || "(nothing shared yet)"}
 
 Wildflower source material retrieved for this draft (use it to check claims; cite the item title when you rely on it):
 ${passages.map((p) => `--- ${p.title} (${p.url})\n${p.text}`).join("\n\n") || "(none)"}
@@ -68,7 +73,7 @@ export async function runReview(submissionId: string): Promise<void> {
   const model = t?.model || s.reviewModel; const effort = (t?.reasoningEffort || s.reviewEffort) as "low" | "medium" | "high";
   await db.update(submissions).set({ status: "running", model, reasoningEffort: effort }).where(eq(submissions.id, submissionId));
   try {
-    const built = await buildSystemPrompt(sub.typeId, sub.draftText);
+    const built = await buildSystemPrompt(sub.typeId, sub.draftText, { userId: sub.userId });
     const r = await respondJson<ReviewResult>({ model, effort, maxOutput: s.maxReviewOutputTokens, system: built.system, user: `Here is the draft submitted as a '${built.typeName}'. Review it.\n\n---\n${sub.draftText}\n---`, schema: REVIEW_SCHEMA, timeoutMs: 300_000 });
     await db.update(submissions).set({ status: "done", review: r.data, verdict: r.data.verdict, usage: r.usage as unknown as Record<string, number>, costUsd: r.cost.toFixed(5), completedAt: new Date(), basePromptVersion: built.baseVersion }).where(eq(submissions.id, submissionId));
   } catch (e) {

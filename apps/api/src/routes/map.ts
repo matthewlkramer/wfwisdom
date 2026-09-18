@@ -17,9 +17,11 @@ mapRouter.get("/", async (req, res) => {
   const ss = await db.select().from(subjobs).orderBy(subjobs.sort);
   const counts = await db.select({ subjobId: placements.subjobId, n: sql<number>`count(*)::int` }).from(placements).innerJoin(items, eq(items.id, placements.itemId)).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(visibleWhere(staff)).groupBy(placements.subjobId);
   const cmap = new Map(counts.map((c) => [c.subjobId, c.n]));
+  const stageRows = await db.execute(sql`select s as stage, count(distinct i.id)::int as n from items i join item_meta m on m.item_id = i.id cross join lateral unnest(m.stages) as s where i.removed_at is null and coalesce(m.hidden, false) = false ${staff ? sql`` : sql`and not exists (select 1 from placements p join subjobs sj on sj.id = p.subjob_id join jobs j on j.id = sj.job_id where p.item_id = i.id and p.is_primary and j.staff_only)`} group by s`);
+  const stageCounts = Object.fromEntries((stageRows.rows as { stage: string; n: number }[]).map((r) => [r.stage, r.n]));
   const out: JobSummary[] = js.filter((j) => staff || !j.hidden).map((j) => ({ id: j.id, key: j.key, name: j.name, description: j.description, staffOnly: j.staffOnly, hidden: j.hidden,
     subjobs: ss.filter((s) => s.jobId === j.id).map((s) => ({ id: s.id, key: s.key, name: s.name, description: s.description, stages: s.stages as StageKey[], itemCount: cmap.get(s.id) ?? 0 })) }));
-  res.json({ jobs: out, stages: STAGES });
+  res.json({ jobs: out, stages: STAGES, stageCounts });
 });
 
 mapRouter.get("/home", async (req, res) => {
@@ -37,6 +39,18 @@ mapRouter.post("/stage", async (req, res) => {
   if (body.stage !== null && !isStage(body.stage)) { res.status(400).json({ error: "Unknown stage" }); return; }
   await getDb().update(users).set({ stage: body.stage }).where(eq(users.id, req.user!.id));
   res.json({ ok: true });
+});
+
+/** One job with its sub-jobs and the top few resources in each, for the explorer view. */
+mapRouter.get("/job/:key", async (req, res) => {
+  const staff = req.user!.role === "staff";
+  const db = getDb();
+  const [j] = await db.select().from(jobs).where(eq(jobs.key, String(req.params.key)));
+  if (!j || (j.hidden && !staff)) { res.status(404).json({ error: "Not found" }); return; }
+  const ss = await db.select().from(subjobs).where(eq(subjobs.jobId, j.id)).orderBy(subjobs.sort);
+  const perSub = Number(req.query.limit ?? 3);
+  const out = await Promise.all(ss.map(async (sj) => { const list = await itemsForSubjob(sj.id, staff); return { id: sj.id, key: sj.key, name: sj.name, description: sj.description, stages: sj.stages as StageKey[], itemCount: list.length, items: list.slice(0, perSub) }; }));
+  res.json({ job: { id: j.id, key: j.key, name: j.name, description: j.description, staffOnly: j.staffOnly }, subjobs: out });
 });
 
 mapRouter.get("/subjob/:key", async (req, res) => {

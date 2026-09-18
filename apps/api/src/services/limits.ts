@@ -1,4 +1,4 @@
-import { and, chatTurns, eq, getDb, gt, sql, submissions } from "@wfw/db";
+import { and, chatTurns, draftGenerations, eq, getDb, gt, sql, submissions } from "@wfw/db";
 import { getSettings } from "../settings.js";
 
 function startOfDayUtc(): Date { const d = new Date(); d.setUTCHours(0, 0, 0, 0); return d; }
@@ -21,6 +21,21 @@ export async function checkChatAllowed(userId: string): Promise<void> {
   if ((mine?.n ?? 0) >= s.chatTurnsPerAccountPerDay) throw new LimitError("You have reached today's chat limit.", "account_limit");
   const [all] = await db.select({ n: sql<number>`count(*)::int` }).from(chatTurns).where(gt(chatTurns.createdAt, since));
   if ((all?.n ?? 0) >= s.chatTurnsPerDayGlobal) throw new LimitError("Today's chat capacity has been reached.", "global_limit");
+}
+export async function checkDraftAllowed(userId: string): Promise<void> {
+  const s = await getSettings();
+  if (s.killSwitch) throw new LimitError("AI features are paused right now.", "kill_switch");
+  const db = getDb(); const since = startOfDayUtc();
+  const [mine] = await db.select({ n: sql<number>`count(*)::int` }).from(draftGenerations).where(and(eq(draftGenerations.userId, userId), gt(draftGenerations.createdAt, since)));
+  if ((mine?.n ?? 0) >= s.draftsPerAccountPerDay) throw new LimitError(`You have used today's ${s.draftsPerAccountPerDay} drafts. The limit resets at midnight UTC.`, "account_limit");
+  const [all] = await db.select({ n: sql<number>`count(*)::int` }).from(draftGenerations).where(gt(draftGenerations.createdAt, since));
+  if ((all?.n ?? 0) >= s.draftsPerDayGlobal) throw new LimitError("Today's drafting capacity for the whole site has been reached.", "global_limit");
+}
+export async function reviewsLeftToday(userId: string): Promise<{ reviews: number; drafts: number }> {
+  const s = await getSettings(); const db = getDb(); const since = startOfDayUtc();
+  const [r] = await db.select({ n: sql<number>`count(*)::int` }).from(submissions).where(and(eq(submissions.userId, userId), gt(submissions.createdAt, since), sql`${submissions.source} <> 'test'`));
+  const [d] = await db.select({ n: sql<number>`count(*)::int` }).from(draftGenerations).where(and(eq(draftGenerations.userId, userId), gt(draftGenerations.createdAt, since)));
+  return { reviews: Math.max(0, s.reviewsPerAccountPerDay - (r?.n ?? 0)), drafts: Math.max(0, s.draftsPerAccountPerDay - (d?.n ?? 0)) };
 }
 export async function usageToday(): Promise<{ reviews: number; chatTurns: number; reviewCost: number; chatCost: number }> {
   const db = getDb(); const since = startOfDayUtc();

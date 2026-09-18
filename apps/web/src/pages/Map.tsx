@@ -1,28 +1,59 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import type { ItemSummary, JobSummary, StageKey } from "@wfw/shared";
+import { useEffect } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { STAGES, type ItemSummary, type JobSummary, type StageKey } from "@wfw/shared";
 import { api } from "../api";
-import { ErrorState, ItemGrid, Loading } from "../components/ui";
+import { ErrorState, ItemCard, ItemGrid, Loading } from "../components/ui";
 
-type MapData = { jobs: JobSummary[]; stages: { key: StageKey; name: string }[] };
+type MapData = { jobs: JobSummary[]; stages: { key: StageKey; name: string; blurb?: string }[]; stageCounts: Record<string, number> };
+type JobData = { job: { key: string; name: string; description: string | null; staffOnly: boolean }; subjobs: { key: string; name: string; description: string | null; stages: StageKey[]; itemCount: number; items: ItemSummary[] }[] };
+const isStage = (s: string | null): s is StageKey => !!s && STAGES.some((x) => x.key === s);
+
+/** The map: a stage rail on top, jobs on the left, and the selected job's sub-jobs with their best resources on the right. */
 export function MapPage() {
+  const [sp, setSp] = useSearchParams();
+  const stage = isStage(sp.get("stage")) ? (sp.get("stage") as StageKey) : "";
   const m = useQuery({ queryKey: ["map"], queryFn: () => api.get<MapData>("/api/map") });
-  const [stage, setStage] = useState<StageKey | "">("");
+  const jobs = (m.data?.jobs ?? []).filter((j) => !stage || j.subjobs.some((s) => s.stages.includes(stage)));
+  const jobKey = sp.get("job") && jobs.some((j) => j.key === sp.get("job")) ? sp.get("job")! : jobs[0]?.key ?? "";
+  const j = useQuery({ queryKey: ["map-job", jobKey], queryFn: () => api.get<JobData>(`/api/map/job/${jobKey}`), enabled: !!jobKey });
+  useEffect(() => { document.getElementById("map-detail")?.scrollTo?.(0, 0); }, [jobKey]);
   if (m.isLoading) return <div className="wf-page"><Loading /></div>;
   if (m.error) return <div className="wf-page"><ErrorState error={m.error} retry={() => m.refetch()} /></div>;
-  const jobs = m.data!.jobs.filter((j) => !stage || j.subjobs.some((s) => s.stages.includes(stage)));
+  const set = (patch: Record<string, string>) => { const next = new URLSearchParams(sp); for (const [k, v] of Object.entries(patch)) { if (v) next.set(k, v); else next.delete(k); } setSp(next, { replace: true }); };
+  const counts = m.data!.stageCounts ?? {};
+  const visibleSubs = (j.data?.subjobs ?? []).filter((s) => !stage || s.stages.includes(stage));
   return (
     <div className="wf-page">
-      <div className="wf-page-header"><div><h1>The map</h1><p>Everything in Connected, organized by the job in front of you. Two clicks to any resource. Filter by your stage to see only what applies now.</p></div>
-        <div className="wf-record-actions"><div className="segmented" role="radiogroup" aria-label="Stage filter"><button className={stage === "" ? "active" : ""} onClick={() => setStage("")}>All stages</button>{m.data!.stages.map((s) => <button key={s.key} className={stage === s.key ? "active" : ""} onClick={() => setStage(s.key)}>{s.name}</button>)}</div></div></div>
-      <div className="wf-card-grid wide">
-        {jobs.map((j) => <section key={j.id} className={`wf-card wf-card-section job-card${j.staffOnly ? " staff-only" : ""}`}><h2 className="wf-card-title">{j.name}{j.staffOnly ? <span className="wf-status" style={{ marginLeft: 8 }}>Foundation staff</span> : null}</h2>{j.description ? <p className="item-summary">{j.description}</p> : null}
-          <ul>{j.subjobs.filter((s) => !stage || s.stages.includes(stage)).map((s) => <li key={s.id}><Link to={`/map/${s.key}`}><span>{s.name}</span><span>{s.itemCount}</span></Link></li>)}</ul></section>)}
+      <div className="wf-page-header"><div><p className="eyebrow">The map</p><h1>{stage ? `What is in front of you in ${STAGES.find((s) => s.key === stage)?.name}` : "Everything, organized by the job in front of you"}</h1><p>Pick a stage to narrow the map to what applies now. Pick a job to see its sub-jobs with the best resources in each.</p></div></div>
+      <div className="stage-rail" role="radiogroup" aria-label="Stage">
+        <button className={stage === "" ? "active" : ""} onClick={() => set({ stage: "" })}><strong>All stages</strong><span>{Object.values(counts).length ? "every resource" : ""}</span></button>
+        {STAGES.map((s) => <button key={s.key} className={stage === s.key ? "active" : ""} onClick={() => set({ stage: s.key })}><strong>{s.name}</strong><span>{counts[s.key] ?? 0} resources</span></button>)}
+      </div>
+      <div className="map-explorer">
+        <nav className="map-jobs" aria-label="Jobs">
+          <div className="map-jobs-label">Jobs</div>
+          {jobs.map((jb) => <button key={jb.key} className={jb.key === jobKey ? "active" : ""} onClick={() => set({ job: jb.key })}><span>{jb.name}</span><span className="count">{jb.subjobs.filter((s) => !stage || s.stages.includes(stage)).reduce((a, s) => a + s.itemCount, 0)}</span></button>)}
+        </nav>
+        <div id="map-detail" className="map-detail">
+          {j.isLoading || !j.data ? <Loading /> : (
+            <>
+              <div className="map-detail-header"><h2>{j.data.job.name}{j.data.job.staffOnly ? <span className="wf-status" style={{ marginLeft: 10 }}>Foundation staff</span> : null}</h2>{j.data.job.description ? <p className="muted">{j.data.job.description}</p> : null}</div>
+              {visibleSubs.map((s) => (
+                <section key={s.key} className="map-subjob">
+                  <div className="map-subjob-head"><div><Link to={`/map/${s.key}`} className="map-subjob-title">{s.name}</Link>{s.stages.length ? <span className="muted"> · {s.stages.map((k) => STAGES.find((x) => x.key === k)?.name ?? k).join(" · ")}</span> : null}</div><Link to={`/map/${s.key}`} className="map-subjob-all">All {s.itemCount} resource{s.itemCount === 1 ? "" : "s"} →</Link></div>
+                  {s.items.length ? <div className="wf-card-grid three">{s.items.map((it) => <ItemCard key={it.id} item={it} context={{ from: "map", subjob: s.key }} showWhy={false} />)}</div> : <p className="muted" style={{ margin: "4px 0 0" }}>Nothing placed here yet.</p>}
+                </section>
+              ))}
+              {!visibleSubs.length ? <p className="muted">No sub-jobs of this job apply in this stage.</p> : null}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
 export function SubjobPage() {
   const { key } = useParams();
   const q = useQuery({ queryKey: ["subjob", key], queryFn: () => api.get<{ subjob: { key: string; name: string; description: string | null; stages: StageKey[] }; job: { key: string; name: string } | null; items: ItemSummary[] }>(`/api/map/subjob/${key}`) });
@@ -31,8 +62,8 @@ export function SubjobPage() {
   const d = q.data!;
   return (
     <div className="wf-page">
-      <Link to="/map" className="wf-page-back">← Map{d.job ? ` · ${d.job.name}` : ""}</Link>
-      <div className="wf-page-header"><div><h1>{d.subjob.name}</h1><p>{d.items.length} resource{d.items.length === 1 ? "" : "s"}, best first. Staff picks and Essentials are marked.{d.subjob.stages.length ? ` Relevant in: ${d.subjob.stages.join(", ")}.` : ""}</p></div></div>
+      <Link to={d.job ? `/map?job=${d.job.key}` : "/map"} className="wf-page-back">← Map{d.job ? ` · ${d.job.name}` : ""}</Link>
+      <div className="wf-page-header"><div><h1>{d.subjob.name}</h1><p>{d.items.length} resource{d.items.length === 1 ? "" : "s"}, best first. Staff picks and Essentials are marked.{d.subjob.stages.length ? ` Relevant in: ${d.subjob.stages.map((k) => STAGES.find((x) => x.key === k)?.name ?? k).join(", ")}.` : ""}</p></div></div>
       <ItemGrid items={d.items} context={{ from: "map", subjob: d.subjob.key }} empty="No resources placed here yet." />
     </div>
   );

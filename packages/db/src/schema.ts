@@ -298,3 +298,30 @@ export const appFeedback = pgTable("app_feedback", {
   check("app_feedback_context_size", sql`pg_column_size(${t.context}) <= 20480`),
   check("app_feedback_screenshot_size", sql`${t.screenshotDataUrl} IS NULL OR octet_length(${t.screenshotDataUrl}) <= 1000000`),
 ]);
+
+/** Documents and links a teacher leader shares about their school; reviews and drafting use them as context. */
+export const userMaterials = pgTable("user_materials", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(), // file | link
+  title: text("title").notNull(),
+  filename: text("filename"),
+  url: text("url"),
+  text: text("text").notNull(),
+  charCount: integer("char_count").notNull(),
+  status: text("status").notNull().default("ok"), // ok | private | error
+  createdAt: now(),
+}, (t) => [index("user_materials_user_idx").on(t.userId)]);
+
+/** Each "Draft it for me" call, for limits and cost tracking. */
+export const draftGenerations = pgTable("draft_generations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  typeId: uuid("type_id").notNull().references(() => materialTypes.id),
+  model: text("model"),
+  charCount: integer("char_count").notNull().default(0),
+  usage: jsonb("usage").$type<Record<string, number>>(),
+  costUsd: numeric("cost_usd", { precision: 10, scale: 5 }),
+  error: text("error"),
+  createdAt: now(),
+}, (t) => [index("draft_generations_user_idx").on(t.userId, t.createdAt)]);
