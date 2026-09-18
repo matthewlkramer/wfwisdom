@@ -20,4 +20,8 @@ export const env = {
   get resendKey() { return process.env.RESEND_API_KEY ?? ""; },
   get mailFrom() { return process.env.MAIL_FROM ?? "Wildflower Wisdom <wisdom@wildflowerschools.org>"; },
   get googleServiceAccountJson() { return process.env.GOOGLE_SERVICE_ACCOUNT_JSON ?? ""; },
+  /** Domain user the service account acts as (domain-wide delegation). Empty = act as the service account itself. */
+  get googleImpersonateEmail() { return process.env.GOOGLE_IMPERSONATE_EMAIL?.trim() ?? ""; },
+  /** The "Wildflower Wisdom" shared drive that holds native content. */
+  get googleSharedDriveId() { return process.env.GOOGLE_SHARED_DRIVE_ID?.trim() ?? ""; },
 };

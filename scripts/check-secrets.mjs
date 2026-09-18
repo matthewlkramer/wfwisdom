@@ -2,6 +2,7 @@
 // Verifies every secret wfwisdom needs against its real service. Prints one line per secret.
 // Never prints secret values. Run: node scripts/check-secrets.mjs
 import net from "node:net";
+import { createSign } from "node:crypto";
 const results = [];
 const ok = (name, msg) => results.push(`OK    ${name}: ${msg}`);
 const bad = (name, msg) => results.push(`FAIL  ${name}: ${msg}`);
@@ -71,14 +72,54 @@ async function checkDatabase() {
   try { const { default: pg } = await import("pg"); const c = new pg.Client({ connectionString: url, ssl: u.hostname.includes("localhost") ? undefined : { rejectUnauthorized: false } }); await c.connect(); const r = await c.query("select version()"); await c.end(); return ok("DATABASE_URL", `connected; ${r.rows[0].version.split(",")[0]}`); }
   catch (e) { return e?.code === "ERR_MODULE_NOT_FOUND" ? ok("DATABASE_URL", `host ${u.hostname}:${port} reachable (pg driver not installed yet, login untested)`) : bad("DATABASE_URL", `connect failed: ${e.message}`); }
 }
+
+async function saToken(sa, scope, sub) {
+  const now = Math.floor(Date.now() / 1000);
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const claims = { iss: sa.client_email, scope, aud: sa.token_uri ?? "https://oauth2.googleapis.com/token", iat: now, exp: now + 600 };
+  if (sub) claims.sub = sub;
+  const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64(claims)}`;
+  const sig = createSign("RSA-SHA256").update(unsigned).sign(sa.private_key, "base64url");
+  const r = await withTimeout(fetch(sa.token_uri ?? "https://oauth2.googleapis.com/token", { method: "POST", body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${unsigned}.${sig}` }) }));
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(`${j.error ?? r.status}: ${j.error_description ?? ""}`.trim());
+  return j.access_token;
+}
+async function checkGoogleDrive() {
+  const raw = env("GOOGLE_SERVICE_ACCOUNT_JSON"); if (!raw) return results.push("INFO  GOOGLE_SERVICE_ACCOUNT_JSON: not set (optional; private Google files and the shared drive are unreachable)");
+  let sa; try { sa = JSON.parse(raw); } catch { return bad("GOOGLE_SERVICE_ACCOUNT_JSON", "not valid JSON; paste the whole key file"); }
+  if (!sa.client_email || !sa.private_key) return bad("GOOGLE_SERVICE_ACCOUNT_JSON", "JSON lacks client_email/private_key; this is not a service account key file");
+  const SCOPE = "https://www.googleapis.com/auth/drive";
+  let direct; try { direct = await saToken(sa, SCOPE, null); ok("GOOGLE_SERVICE_ACCOUNT_JSON", `key accepted; service account ${sa.client_email}`); }
+  catch (e) { return bad("GOOGLE_SERVICE_ACCOUNT_JSON", `Google rejected the key: ${e.message}`); }
+  const sub = env("GOOGLE_IMPERSONATE_EMAIL");
+  let asUser = null;
+  if (!sub) results.push("INFO  GOOGLE_IMPERSONATE_EMAIL: not set (optional; private My Drive files stay unreadable)");
+  else {
+    try { asUser = await saToken(sa, SCOPE, sub); const a = await withTimeout(fetch("https://www.googleapis.com/drive/v3/about?fields=user", { headers: { Authorization: `Bearer ${asUser}` } })); const u = (await a.json()).user;
+      ok("GOOGLE_IMPERSONATE_EMAIL", `domain-wide delegation works; acting as ${u?.emailAddress ?? sub}`); }
+    catch (e) { bad("GOOGLE_IMPERSONATE_EMAIL", `delegation not authorized yet for ${sub} (${e.message}). Check the client ID and scope under Domain-wide delegation; propagation can take a while. Shared-drive access still works directly.`); }
+  }
+  const driveId = env("GOOGLE_SHARED_DRIVE_ID");
+  if (!driveId) return results.push("INFO  GOOGLE_SHARED_DRIVE_ID: not set (optional until native content lands)");
+  for (const [label, token] of [["service account", direct], ["impersonated user", asUser]]) {
+    if (!token) continue;
+    const r = await withTimeout(fetch(`https://www.googleapis.com/drive/v3/drives/${encodeURIComponent(driveId)}?fields=id,name,capabilities(canAddChildren,canListChildren)`, { headers: { Authorization: `Bearer ${token}` } }));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { bad("GOOGLE_SHARED_DRIVE_ID", `${label} cannot open shared drive ${driveId}: ${j.error?.message ?? r.status}`); continue; }
+    const f = await withTimeout(fetch(`https://www.googleapis.com/drive/v3/files?corpora=drive&driveId=${encodeURIComponent(driveId)}&includeItemsFromAllDrives=true&supportsAllDrives=true&pageSize=1&fields=files(id)`, { headers: { Authorization: `Bearer ${token}` } }));
+    const listed = f.ok ? "can list files" : `cannot list files (HTTP ${f.status})`;
+    (j.capabilities?.canAddChildren ? ok : bad)("GOOGLE_SHARED_DRIVE_ID", `${label} opens "${j.name}"; ${listed}; ${j.capabilities?.canAddChildren ? "can add files" : "CANNOT add files (needs Content manager or Manager)"}`);
+  }
+}
 function checkSession() {
   const s = env("SESSION_SECRET"); if (!s) return missing("SESSION_SECRET");
   return s.length >= 32 ? ok("SESSION_SECRET", `${s.length} chars`) : bad("SESSION_SECRET", `only ${s.length} chars; use 64`);
 }
 function checkOptional() {
-  for (const k of ["APP_BASE_URL", "STAFF_DOMAIN", "GOOGLE_SERVICE_ACCOUNT_JSON"]) env(k) ? ok(k, "set") : results.push(`INFO  ${k}: not set (optional; defaults apply)`);
+  for (const k of ["APP_BASE_URL", "STAFF_DOMAIN"]) env(k) ? ok(k, "set") : results.push(`INFO  ${k}: not set (optional; defaults apply)`);
 }
-await Promise.allSettled([checkOpenAI(), checkBloomfire(), checkGoogle(), checkResend(), checkSendGrid(), checkDatabase()]).then((rs) => rs.forEach((r) => r.status === "rejected" && bad("check", r.reason?.message ?? String(r.reason))));
+await Promise.allSettled([checkOpenAI(), checkBloomfire(), checkGoogle(), checkResend(), checkSendGrid(), checkDatabase(), checkGoogleDrive()]).then((rs) => rs.forEach((r) => r.status === "rejected" && bad("check", r.reason?.message ?? String(r.reason))));
 checkSession(); checkOptional();
 console.log(results.sort().join("\n"));
 process.exit(results.some((l) => l.startsWith("FAIL") || l.startsWith("MISSING")) ? 1 : 0);

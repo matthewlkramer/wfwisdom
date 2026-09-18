@@ -16,7 +16,7 @@ The indexer logs in to Connected with the Bloomfire API key and the login email 
 - It runs automatically every night at 03:10 UTC.
 - To run it now: **Staff → Overview → Re-index now**. "Full re-index" re-fetches every item even if Connected says it has not changed (use after changing the embedding model or if something looks stale). Progress and the log show on the same page.
 - Items that disappear from Connected are marked removed and drop out of every view. Unpublished or group-restricted items are never indexed.
-- Google files shared as "anyone with the link" are read without credentials. To read private ones, set `GOOGLE_SERVICE_ACCOUNT_JSON` (a service account key with read access to the relevant Drive folders) and re-index.
+- Google files shared as "anyone with the link" are read without credentials. Private ones are read through the service account (`GOOGLE_SERVICE_ACCOUNT_JSON`), acting as `GOOGLE_IMPERSONATE_EMAIL` when domain-wide delegation is authorized, otherwise as itself (which reaches shared drives it is a member of). Re-index after changing either.
 
 ## How to curate the best resources
 
@@ -73,7 +73,9 @@ Set in the Replit app's Secrets (not in code):
 | `SESSION_SECRET` | Signs session cookies | Any 64 random characters. Rotating it signs everyone out. |
 | `DATABASE_URL` | Replit Postgres | Managed by Replit. |
 | `APP_BASE_URL` | The public URL, used for OAuth redirects and email links | `https://wfwisdom.replit.app` in production. |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` (optional) | Read private Google Docs during indexing | Create a service account, share the Drive folders with its email, paste the JSON key. |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Read private Google files; read and write the Wisdom shared drive | Google Cloud console: IAM & Admin, Service Accounts, Keys, Add key (JSON). Paste the whole file. To rotate: add a new key, replace the secret, delete the old key. |
+| `GOOGLE_IMPERSONATE_EMAIL` | Domain user the service account acts as (domain-wide delegation) | A real licensed user, not an alias. Authorize the service account's client ID for scope `https://www.googleapis.com/auth/drive` in Google Admin, Security, API controls, Domain-wide delegation. |
+| `GOOGLE_SHARED_DRIVE_ID` | The "Wildflower Wisdom" shared drive | The id after `/folders/` in the shared drive's URL. Add the service account's email and the impersonated user as Managers. |
 
 Run `node scripts/check-secrets.mjs` in the Repl shell to verify every secret against its service without printing values.
 

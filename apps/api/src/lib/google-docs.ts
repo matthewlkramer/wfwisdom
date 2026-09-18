@@ -2,21 +2,41 @@ import { createSign } from "node:crypto";
 import { env } from "../env.js";
 import { normalizeWs } from "./text.js";
 
-let saToken: { token: string; exp: number } | null = null;
-async function serviceAccountToken(): Promise<string | null> {
-  if (!env.googleServiceAccountJson) return null;
-  if (saToken && saToken.exp > Date.now() + 60_000) return saToken.token;
+const tokens = new Map<string, { token: string; exp: number }>();
+const DRIVE_RO = "https://www.googleapis.com/auth/drive.readonly";
+const DRIVE_RW = "https://www.googleapis.com/auth/drive";
+
+async function mintToken(scope: string, sub: string | null): Promise<string> {
   const sa = JSON.parse(env.googleServiceAccountJson) as { client_email: string; private_key: string; token_uri?: string };
   const now = Math.floor(Date.now() / 1000);
   const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
-  const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64({ iss: sa.client_email, scope: "https://www.googleapis.com/auth/drive.readonly", aud: sa.token_uri ?? "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600 })}`;
+  const claims: Record<string, unknown> = { iss: sa.client_email, scope, aud: sa.token_uri ?? "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600 };
+  if (sub) claims.sub = sub;
+  const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64(claims)}`;
   const sig = createSign("RSA-SHA256").update(unsigned).sign(sa.private_key, "base64url");
   const r = await fetch(sa.token_uri ?? "https://oauth2.googleapis.com/token", { method: "POST", body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${unsigned}.${sig}` }) });
-  if (!r.ok) throw new Error(`service account token failed: ${r.status}`);
+  if (!r.ok) throw new Error(`service account token failed (${sub ? "as " + sub : "direct"}): ${r.status} ${(await r.text()).slice(0, 200)}`);
   const d = await r.json() as { access_token: string; expires_in: number };
-  saToken = { token: d.access_token, exp: Date.now() + d.expires_in * 1000 };
-  return saToken.token;
+  tokens.set(`${scope}|${sub ?? ""}`, { token: d.access_token, exp: Date.now() + d.expires_in * 1000 });
+  return d.access_token;
 }
+
+/**
+ * Access token for Google Drive. With GOOGLE_IMPERSONATE_EMAIL set (domain-wide delegation) the token acts as that
+ * user, which reaches private files in the domain; if delegation is not (yet) authorized it falls back to acting as
+ * the service account itself, which still reaches shared drives the account is a member of.
+ */
+export async function driveToken(write = false): Promise<string | null> {
+  if (!env.googleServiceAccountJson) return null;
+  const scope = write ? DRIVE_RW : DRIVE_RO;
+  const sub = env.googleImpersonateEmail || null;
+  const cached = tokens.get(`${scope}|${sub ?? ""}`) ?? (sub ? tokens.get(`${scope}|`) : undefined);
+  if (cached && cached.exp > Date.now() + 60_000) return cached.token;
+  if (sub) { try { return await mintToken(scope, sub); } catch (e) { console.warn(`[google] impersonation unavailable, using the service account directly: ${(e as Error).message}`); } }
+  return mintToken(scope, null);
+}
+
+async function serviceAccountToken(): Promise<string | null> { return driveToken(false).catch(() => null); }
 
 const EXPORT: Record<string, { pub: string; mime: string }> = {
   document: { pub: "export?format=txt", mime: "text/plain" },
