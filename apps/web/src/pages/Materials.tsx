@@ -51,7 +51,7 @@ export function Materials() {
   const other = types.filter((t) => !jobs.some((j) => j.key === t.jobKey));
   return (
     <div className="wf-page">
-      <div className="wf-page-header"><div><h1>Get feedback on a draft</h1><p>Pick the kind of document you are working on. You will see what good looks like, the Connected resources that help, a place to write or upload, and a reviewer that reads it against Wildflower's guidance.</p></div><div className="wf-record-actions"><Link to="/my">My drafts</Link></div></div>
+      <div className="wf-page-header"><div><h1>Draft documents</h1><p>Pick the kind of document you are working on. You will see what good looks like, the Connected resources that help, a place to write or upload, and a reviewer that reads it against Wildflower's guidance.</p></div><div className="wf-record-actions"><Link to="/my">My drafts</Link></div></div>
       <SchoolMaterials compact />
       {[...groups, ...(other.length ? [{ job: { key: "other", name: "Other" }, types: other }] : [])].map((g) => <section key={g.job.key}><div className="wf-section-header"><h2>{g.job.name}</h2></div><div className="wf-card-grid">{g.types.map((t) => <Link key={t.id} to={`/materials/${t.key}`} className="wf-card wf-card-record wf-card-button"><span className="wf-card-title">{t.name}</span>{t.shortDescription ? <span className="muted" style={{ fontSize: ".875rem" }}>{t.shortDescription}</span> : null}</Link>)}</div></section>)}
     </div>
@@ -82,7 +82,7 @@ export function MaterialType() {
   const canSubmit = mode === "write" ? text.trim().length >= 40 : mode === "upload" ? !!file : docUrl.trim().length > 10;
   return (
     <div className="wf-page">
-      <Link to="/materials" className="wf-page-back">← Get feedback</Link>
+      <Link to="/materials" className="wf-page-back">← Draft documents</Link>
       <div className="wf-page-header"><div><h1>{type.name}</h1>{type.shortDescription ? <p>{type.shortDescription}</p> : null}</div>
         <div className="wf-record-actions"><button type="button" onClick={() => setGuideOpen(!guideOpen)} aria-expanded={guideOpen}>{guideOpen ? "Hide the guide" : "What good looks like"}</button><button className="primary-button" disabled={!canSubmit || submit.isPending} onClick={() => submit.mutate()}>{submit.isPending ? "Sending…" : "Get feedback"}</button></div></div>
       {guideOpen ? <section className="wf-card wf-card-section guide-panel"><Markdown text={type.guideMd} /></section> : null}

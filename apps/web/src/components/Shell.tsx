@@ -11,7 +11,7 @@ const workspace: NavItem[] = [
   { to: "/", label: "Start here", icon: Compass, end: true },
   { to: "/map", label: "Map", icon: MapIcon },
   { to: "/ask", label: "Ask", icon: MessagesSquare },
-  { to: "/materials", label: "Get feedback", icon: Sparkles },
+  { to: "/materials", label: "Draft documents", icon: Sparkles },
   { to: "/my", label: "My drafts", icon: PenLine },
 ];
 const staff: NavItem[] = [
