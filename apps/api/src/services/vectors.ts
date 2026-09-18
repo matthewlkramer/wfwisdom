@@ -21,16 +21,19 @@ export async function loadVectors(force = false): Promise<void> {
 }
 export function vectorCount(): number { return entries.length; }
 
-/** Cosine similarity search returning the best chunk per item. */
+/** Cosine similarity search per item: half the item's head chunk (title, description, opening) and half its best chunk,
+ *  so long documents that mention everything do not outrank focused ones. */
 export function searchVectors(query: number[], k = 40): { itemId: string; chunkId: string; score: number }[] {
   const q = Float32Array.from(query); let n = 0; for (const x of q) n += x * x; n = Math.sqrt(n) || 1;
-  const best = new Map<string, { chunkId: string; score: number }>();
+  const best = new Map<string, { chunkId: string; max: number; head: number }>();
   for (const e of entries) {
     let dot = 0; const v = e.vec; const len = Math.min(v.length, q.length);
     for (let i = 0; i < len; i++) dot += (v[i] ?? 0) * (q[i] ?? 0);
     const s = dot / n;
-    const cur = best.get(e.itemId);
-    if (!cur || s > cur.score) best.set(e.itemId, { chunkId: e.chunkId, score: s });
+    const cur = best.get(e.itemId) ?? { chunkId: e.chunkId, max: -1, head: -1 };
+    if (s > cur.max) { cur.max = s; cur.chunkId = e.chunkId; }
+    if (e.ord === 0) cur.head = s;
+    best.set(e.itemId, cur);
   }
-  return [...best.entries()].map(([itemId, b]) => ({ itemId, ...b })).sort((a, b) => b.score - a.score).slice(0, k);
+  return [...best.entries()].map(([itemId, b]) => ({ itemId, chunkId: b.chunkId, score: b.head >= 0 ? 0.5 * b.head + 0.5 * b.max : b.max })).sort((a, b) => b.score - a.score).slice(0, k);
 }
