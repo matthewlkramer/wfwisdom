@@ -14,7 +14,12 @@ export function getPool(): pg.Pool {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL is not set");
     const local = /localhost|127\.0\.0\.1|@helium/.test(url);
-    pool = new pg.Pool({ connectionString: url, max: 8, ssl: local ? undefined : { rejectUnauthorized: false } });
+    pool = new pg.Pool({ connectionString: url, max: 8, keepAlive: true, ssl: local ? undefined : { rejectUnauthorized: false } });
+    // A managed Postgres drops idle connections whenever it restarts or scales ("terminating
+    // connection due to administrator command"). pg reports that by emitting 'error' on the pool,
+    // and an unhandled 'error' event takes the whole process down. Log it and carry on: pg discards
+    // the broken client, and the next query opens a fresh one.
+    pool.on("error", (err: Error) => { console.error(`[db] idle client dropped, recovering: ${err.message}`); });
   }
   return pool;
 }
