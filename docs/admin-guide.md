@@ -35,12 +35,13 @@ Every page that lists resources — Start here, Map (and sub-job pages), Search,
 
 - The choice is remembered per person: it is stored on their user record, so it follows them to another computer. Signed-out browsers fall back to local storage.
 - Changing it anywhere applies it everywhere, until they change it again.
-- Each item's language is detected during indexing from its title, categories and body. Content labelled "Español" or "Spanish" in the title or category is treated as Spanish; otherwise a deterministic word-frequency check decides. Accented characters only back up a Spanish verdict, never create one, so an English staffing roster or release form full of Spanish surnames is not filed as Spanish.
-- Anything that check is not certain about goes to the assist model for a one-word answer. Only two things stand on their own: a hand-written "Español"/"Spanish" label, and a decisive margin over a good amount of text. A verdict reached on thin evidence is checked too, not just an outright "unknown", because those are the ones the offline pass gets wrong. Each check costs about $0.00005. It honours the kill switch, and if the model is paused, unreachable or answers with nonsense the offline verdict stands, so nothing is ever made worse by it.
-- Items whose language cannot be determined are marked **unknown** and appear only under **All resources**. Nothing is ever lost — switching back to All shows everything.
+- Each item's language is decided during indexing by the assist model, which reads the opening 200 words of the item's title and body along with its categories. It is told to judge the writing rather than the names in it, so an English staffing roster or release form carrying Spanish surnames is not filed as Spanish, and to treat an "Español"/"Spanish" label in the title or category as Spanish.
+- Each check costs about $0.00005, so re-checking the whole library is about five cents. It honours the kill switch.
+- If the check cannot run — kill switch on, the model unreachable, a nonsense answer — the item keeps whatever language it already had. A failed check never overwrites a good answer, so a run that hits a rate limit can simply be repeated.
+- Items the model cannot place are marked **unknown** and appear only under **All resources**. Nothing is ever lost — switching back to All shows everything.
 - A material type whose linked resources are all in the other language shows a note saying so rather than an empty list.
 
-The detector runs offline and costs nothing. To re-detect everything after a change to the detector, run `pnpm backfill:language --all` (see below).
+To re-check everything, run `pnpm backfill:language --all` (see below).
 
 ## How to re-index Connected
 
@@ -49,7 +50,7 @@ The indexer logs in to Connected with the Bloomfire API key and the login email 
 - It runs automatically every night at 03:10 UTC.
 - To run it now: **Staff → Overview → Re-index now**. "Full re-index" re-fetches every item even if Connected says it has not changed (use after changing the embedding model or if something looks stale). Progress and the log show on the same page.
 - Items that disappear from Connected are marked removed and drop out of every view. Unpublished or group-restricted items are never indexed.
-- Each item's language (English, Spanish, or unknown) is detected on every re-index. Existing items are filled in by the one-off `pnpm backfill:language`, so no re-index is needed just for language.
+- Each item's language (English, Spanish, or unknown) is decided on every re-index, for the items that changed. Existing items are filled in by the one-off `pnpm backfill:language`, so no re-index is needed just for language.
 - Google files shared as "anyone with the link" are read without credentials. Private ones are read through the service account (`GOOGLE_SERVICE_ACCOUNT_JSON`), acting as `GOOGLE_IMPERSONATE_EMAIL` when domain-wide delegation is authorized, otherwise as itself (which reaches shared drives it is a member of). Re-index after changing either.
 
 ## How to curate the best resources
@@ -117,10 +118,9 @@ Run `node scripts/check-secrets.mjs` in the Repl shell to verify every secret ag
 
 | Command | What it does |
 | --- | --- |
-| `pnpm backfill:language` | Fills in the language of every already-indexed item still marked unknown, using the same detector the indexer uses. Safe to re-run; it never touches Connected and never re-indexes. |
-| `pnpm backfill:language --all` | Re-detects the language of every item, including ones already marked English or Spanish. Use after changing the detector. |
-| `pnpm backfill:language --no-ai` | Offline detector only, no model calls and no cost. Use to see what the deterministic pass alone would do. |
-| `pnpm backfill:language --all --dry-run` | Reports what it would change and how many model calls it would make, at roughly $0.00005 each, without writing anything or spending anything. Run this first if you want the cost up front. |
+| `pnpm backfill:language` | Decides the language of every already-indexed item still marked unknown, using the same model check the indexer runs. Safe to re-run; it never touches Connected and never re-indexes. |
+| `pnpm backfill:language --all` | Re-checks every item, including ones already marked English or Spanish. About five cents and a minute or two for the whole library. |
+| `pnpm backfill:language --all --dry-run` | Reports how many items would be checked and what it would cost, without writing anything or spending anything. Run this first if you want the cost up front. |
 
 ## Deploying changes
 

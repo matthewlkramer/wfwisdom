@@ -1,51 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { detectLanguage, isResourceLanguage, linkifyParts } from "@wfw/shared";
+import { firstWords, isItemLanguage, isResourceLanguage, linkifyParts } from "@wfw/shared";
 
-describe("detectLanguage", () => {
-  it("treats an Español label in the title as a strong signal", () => {
-    expect(detectLanguage({ title: "Guía de inicio (Español)", body: "" })).toBe("es");
-    expect(detectLanguage({ title: "Enrollment guide - Spanish", body: "" })).toBe("es");
+describe("firstWords", () => {
+  it("returns the opening n words", () => {
+    expect(firstWords("one two three four five", 3)).toBe("one two three");
   });
-  it("treats a Spanish category as a strong signal even when the body is short", () => {
-    expect(detectLanguage({ title: "Guia", categories: ["Resources > Español"], body: "" })).toBe("es");
+  it("keeps text shorter than the limit whole", () => {
+    expect(firstWords("one two", 10)).toBe("one two");
   });
-  it("reads plain English prose", () => {
-    expect(detectLanguage({ title: "Board meeting agenda", body: "This is the agenda for the first board meeting of the school. The board will review the budget and approve the lease that the teachers have prepared for their families." })).toBe("en");
+  it("collapses newlines and runs of whitespace into single spaces", () => {
+    expect(firstWords("one\n\ntwo   three\tfour", 3)).toBe("one two three");
   });
-  it("reads plain Spanish prose with no label at all", () => {
-    expect(detectLanguage({ title: "Agenda de la reunion", body: "Esta es la agenda de la primera reunion del consejo de la escuela. Los maestros y las familias van a revisar el presupuesto, y tambien el contrato que preparamos para las escuelas." })).toBe("es");
-  });
-  it("uses accented characters as evidence for Spanish", () => {
-    expect(detectLanguage({ title: "Comunicación", body: "La comunicación con las familias es fundamental para el año escolar. Cada niño y su familia reciben información sobre el día." })).toBe("es");
-  });
-  it("returns unknown for an item with almost no text", () => {
-    expect(detectLanguage({ title: "Form", body: "" })).toBe("unknown");
-    expect(detectLanguage({ title: "", body: "" })).toBe("unknown");
-  });
-  it("returns unknown rather than guessing when the two are too close", () => {
-    expect(detectLanguage({ title: "Untitled upload", body: "Wildflower Montessori 2024 2025 budget v3 xlsx download pdf" })).toBe("unknown");
-  });
-  it("does not read an English document as Spanish because of Spanish surnames", () => {
-    // A staffing roster or a release form carries accented names but no Spanish function words.
-    // Weighting those accents used to file it as Spanish outright.
-    expect(detectLanguage({ title: "22-23 Staffing Schedule", body: "Room Lead Assistant Hours for the year. Primary A Maria Gonzalez and Ana Pe\u00f1a work with the children from 8:00 to 3:00, and Jose Ramirez and Sofia N\u00fa\u00f1ez are with the other families." })).not.toBe("es");
-    expect(detectLanguage({ title: "School Photo & Media Release Form", body: "I grant permission for photographs of my child Ana Pe\u00f1a to be used by the school, and I have read the terms that are set out for families in this form." })).toBe("en");
-  });
-
-  it("still reads real Spanish, where accents back up the function words", () => {
-    expect(detectLanguage({ title: "Gu\u00eda para las familias", body: "Informaci\u00f3n para las familias de la escuela sobre el a\u00f1o escolar y sobre los maestros." })).toBe("es");
-  });
-
-  it("is deterministic across repeated calls", () => {
-    const input = { title: "Guía para familias", body: "Información para las familias de la escuela." };
-    expect([detectLanguage(input), detectLanguage(input), detectLanguage(input)]).toEqual(["es", "es", "es"]);
+  it("handles empty and missing text", () => {
+    expect(firstWords("", 5)).toBe("");
+    expect(firstWords(null, 5)).toBe("");
+    expect(firstWords(undefined, 5)).toBe("");
+    expect(firstWords("   ", 5)).toBe("");
   });
 });
 
-describe("isResourceLanguage", () => {
+describe("language guards", () => {
   it("accepts only the three filter values", () => {
     expect(["all", "en", "es"].every(isResourceLanguage)).toBe(true);
     expect(["unknown", "fr", "", null, undefined, 1].some(isResourceLanguage)).toBe(false);
+  });
+  it("accepts only the three stored values", () => {
+    expect(["en", "es", "unknown"].every(isItemLanguage)).toBe(true);
+    expect(["all", "fr", "", null, undefined, 1].some(isItemLanguage)).toBe(false);
   });
 });
 
