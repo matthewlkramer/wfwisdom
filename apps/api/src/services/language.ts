@@ -10,6 +10,8 @@ const SCHEMA = { name: "language", schema: { type: "object", additionalPropertie
 
 /** How much of an item the model is shown. The opening is plenty to tell a language from. */
 export const PROMPT_WORDS = 200;
+/** One retry: the failures seen in practice are rare and transient, not repeatable. */
+export const ATTEMPTS = 2;
 
 /** What the model is shown: the labels, and the opening of the text. */
 export function promptFor(input: LanguageInput): string {
@@ -32,20 +34,28 @@ export function promptFor(input: LanguageInput): string {
  * Returns null when no verdict could be reached: the model is paused by the kill switch, it is
  * unreachable, or it answered with something outside the three values. Callers must leave whatever
  * they already have alone in that case, rather than recording "unknown" over a good answer.
+ *
+ * A give-up always names the item it gave up on. Silence here is the worst outcome: a check that
+ * fails quietly leaves an item carrying a stale verdict with nothing to trace it by, and the next
+ * run fails on it identically and just as invisibly.
  */
 export async function resolveLanguage(input: LanguageInput, log: (m: string) => void = () => {}): Promise<ItemLanguage | null> {
-  const prompt = promptFor(input);
   if (`${input.title ?? ""}${input.body ?? ""}`.trim().length < 8) return "unknown"; // nothing to read
-  try {
-    const s = await getSettings();
-    if (s.killSwitch) return null;
-    const r = await respondJson<{ language: string }>({ model: s.assistModel, system: SYSTEM, user: prompt, schema: SCHEMA, effort: "low", maxOutput: 50, timeoutMs: 20_000 });
-    if (!isItemLanguage(r.data.language)) { log(`language check returned ${JSON.stringify(r.data.language)}, leaving it unchanged`); return null; }
-    return r.data.language;
-  } catch (e) {
-    const msg = (e as Error).message;
-    logger.warn({ err: msg }, "language check unavailable");
-    log(`language check failed, leaving it unchanged: ${msg}`);
-    return null;
+  const prompt = promptFor(input);
+  const item = firstWords(input.title, 12) || "(untitled)";
+  let reason = "no attempt was made";
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    try {
+      const s = await getSettings();
+      if (s.killSwitch) return null; // paused on purpose; not a failure, and not worth retrying
+      const r = await respondJson<{ language: string }>({ model: s.assistModel, system: SYSTEM, user: prompt, schema: SCHEMA, effort: "low", maxOutput: 50, timeoutMs: 20_000 });
+      if (isItemLanguage(r.data.language)) return r.data.language;
+      reason = `answered ${JSON.stringify(r.data.language)}`;
+    } catch (e) {
+      reason = (e as Error).message;
+    }
   }
+  logger.warn({ err: reason, item, attempts: ATTEMPTS }, "language check unavailable");
+  log(`language check failed for "${item}" after ${ATTEMPTS} attempts, leaving it unchanged: ${reason}`);
+  return null;
 }

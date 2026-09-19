@@ -7,7 +7,7 @@ vi.mock("../lib/openai.js", () => ({ respondJson }));
 vi.mock("../settings.js", () => ({ getSettings }));
 vi.mock("../logger.js", () => ({ logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() } }));
 
-const { PROMPT_WORDS, promptFor, resolveLanguage } = await import("./language.js");
+const { ATTEMPTS, PROMPT_WORDS, promptFor, resolveLanguage } = await import("./language.js");
 
 const ITEM = { title: "Board meeting agenda", body: "This is the agenda for the first board meeting of the school." };
 
@@ -42,9 +42,29 @@ describe("resolveLanguage", () => {
     expect(respondJson).not.toHaveBeenCalled();
   });
 
-  it("returns null when the API fails", async () => {
+  it("returns null when the API fails every attempt", async () => {
     respondJson.mockRejectedValue(new Error("OpenAI /responses failed: 429 rate limit"));
     await expect(resolveLanguage(ITEM)).resolves.toBeNull();
+    expect(respondJson).toHaveBeenCalledTimes(ATTEMPTS);
+  });
+
+  it("retries once and takes the second answer", async () => {
+    // The failure seen in production was rare and transient, so one retry is worth the penny.
+    respondJson.mockRejectedValueOnce(new Error("Model returned invalid JSON")).mockResolvedValueOnce({ data: { language: "es" } });
+    await expect(resolveLanguage(ITEM)).resolves.toBe("es");
+    expect(respondJson).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries an answer outside the three values too", async () => {
+    respondJson.mockResolvedValueOnce({ data: { language: "portuguese" } }).mockResolvedValueOnce({ data: { language: "en" } });
+    await expect(resolveLanguage(ITEM)).resolves.toBe("en");
+    expect(respondJson).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry a paused kill switch, which is deliberate rather than a failure", async () => {
+    getSettings.mockResolvedValue({ killSwitch: true, assistModel: "gpt-5.6-luna" });
+    await expect(resolveLanguage(ITEM)).resolves.toBeNull();
+    expect(respondJson).not.toHaveBeenCalled();
   });
 
   it("returns null rather than trusting a value outside the three", async () => {
@@ -52,11 +72,21 @@ describe("resolveLanguage", () => {
     await expect(resolveLanguage(ITEM)).resolves.toBeNull();
   });
 
-  it("reports a failure through the caller's log", async () => {
+  it("names the item it gave up on, so a silent failure can be traced", async () => {
     respondJson.mockRejectedValue(new Error("boom"));
     const log = vi.fn();
     await resolveLanguage(ITEM, log);
-    expect(log).toHaveBeenCalledWith(expect.stringContaining("boom"));
+    const msg = log.mock.calls[0]![0] as string;
+    expect(msg).toContain("Board meeting agenda");
+    expect(msg).toContain("boom");
+    expect(msg).toContain(String(ATTEMPTS));
+  });
+
+  it("names an untitled item rather than logging an empty quote", async () => {
+    respondJson.mockRejectedValue(new Error("boom"));
+    const log = vi.fn();
+    await resolveLanguage({ title: "", body: "some body text here to get past the length guard" }, log);
+    expect(log.mock.calls[0]![0]).toContain("(untitled)");
   });
 
   it("does not spend a call on an item with essentially no text", async () => {
