@@ -23,14 +23,20 @@ export function startScheduler(): void {
  * The deployment scales to zero when idle, so the nightly timer can be asleep at 03:10. On every boot, if the last
  * successful index is older than a day (or there has never been one), start one after a short delay.
  */
-export function catchUpIndexOnBoot(delayMs = 45_000, maxAgeHours = 22): void {
-  setTimeout(async () => {
+export function catchUpIndexOnBoot(delayMs = 45_000, maxAgeHours = 22, attempts = 4): void {
+  const cause = (e: unknown) => { const err = e as { message?: string; cause?: { message?: string } }; return `${err.message ?? String(e)}${err.cause?.message ? ` (${err.cause.message})` : ""}`; };
+  const attempt = async (n: number) => {
     try {
       const [last] = await getDb().select({ startedAt: indexRuns.startedAt }).from(indexRuns).where(eq(indexRuns.status, "done")).orderBy(desc(indexRuns.startedAt)).limit(1);
       const stale = !last || Date.now() - last.startedAt.getTime() > maxAgeHours * 3600_000;
       if (!stale || isIndexing()) return;
       logger.info({ last: last?.startedAt ?? null }, "no recent index run; starting a catch-up re-index");
       await runReindex("catch-up");
-    } catch (e) { logger.warn({ err: (e as Error).message }, "catch-up re-index did not start"); }
-  }, delayMs).unref();
+    } catch (e) {
+      // The managed database may still be waking up right after a cold start; try again a few times.
+      logger.warn({ err: cause(e), attempt: n }, "catch-up re-index did not start");
+      if (n < attempts) setTimeout(() => void attempt(n + 1), delayMs).unref();
+    }
+  };
+  setTimeout(() => void attempt(1), delayMs).unref();
 }
