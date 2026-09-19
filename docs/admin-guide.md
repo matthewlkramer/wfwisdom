@@ -37,7 +37,7 @@ Every page that lists resources — Start here, Map (and sub-job pages), Search,
 - Changing it anywhere applies it everywhere, until they change it again.
 - Each item's language is decided during indexing by the assist model, which reads the opening 200 words of the item's title and body along with its categories. It is told to judge the writing rather than the names in it, so an English staffing roster or release form carrying Spanish surnames is not filed as Spanish, and to treat an "Español"/"Spanish" label in the title or category as Spanish.
 - Each check costs about $0.00005, so re-checking the whole library is about five cents. It honours the kill switch.
-- If the check cannot run — kill switch on, the model unreachable, a nonsense answer — the item keeps whatever language it already had. A failed check never overwrites a good answer, so a run that hits a rate limit can simply be repeated.
+- If the check cannot run — kill switch on, the model unreachable, a nonsense answer — it is retried once, and if it still fails the item keeps whatever language it already had. A failed check never overwrites a good answer. The failure names the item in the run log, and the backfill prints the ids at the end with the command to retry just those, so a stale verdict is never left silently in place.
 - Items the model cannot place are marked **unknown** and appear only under **All resources**. Nothing is ever lost — switching back to All shows everything.
 - A material type whose linked resources are all in the other language shows a note saying so rather than an empty list.
 
@@ -50,7 +50,7 @@ The indexer logs in to Connected with the Bloomfire API key and the login email 
 - It runs automatically every night at 03:10 UTC.
 - To run it now: **Staff → Overview → Re-index now**. "Full re-index" re-fetches every item even if Connected says it has not changed (use after changing the embedding model or if something looks stale). Progress and the log show on the same page.
 - Items that disappear from Connected are marked removed and drop out of every view. Unpublished or group-restricted items are never indexed.
-- Each item's language (English, Spanish, or unknown) is decided on every re-index, for the items that changed. Existing items are filled in by the one-off `pnpm backfill:language`, so no re-index is needed just for language.
+- Each item's language (English, Spanish, or unknown) is decided only for the items Connected reports as changed. An item whose `updated_at` is unchanged is not re-read at all, so the nightly re-index costs a fraction of a cent. A **full** re-index re-checks all of them, about four cents. Existing items are filled in by the one-off `pnpm backfill:language`, so no re-index is needed just for language.
 - Google files shared as "anyone with the link" are read without credentials. Private ones are read through the service account (`GOOGLE_SERVICE_ACCOUNT_JSON`), acting as `GOOGLE_IMPERSONATE_EMAIL` when domain-wide delegation is authorized, otherwise as itself (which reaches shared drives it is a member of). Re-index after changing either.
 
 ## How to curate the best resources
@@ -121,6 +121,7 @@ Run `node scripts/check-secrets.mjs` in the Repl shell to verify every secret ag
 | `pnpm backfill:language` | Decides the language of every already-indexed item still marked unknown, using the same model check the indexer runs. Safe to re-run; it never touches Connected and never re-indexes. |
 | `pnpm backfill:language --all` | Re-checks every item, including ones already marked English or Spanish. About five cents and a minute or two for the whole library. |
 | `pnpm backfill:language --all --dry-run` | Reports how many items would be checked and what it would cost, without writing anything or spending anything. Run this first if you want the cost up front. |
+| `pnpm backfill:language --ids=a,b,c` | Re-checks just those item ids, whatever they are currently marked. The command to run is printed for you whenever a run leaves items unchecked. |
 
 ## Deploying changes
 
