@@ -36,7 +36,7 @@ Every page that lists resources — Start here, Map (and sub-job pages), Search,
 - The choice is remembered per person: it is stored on their user record, so it follows them to another computer. Signed-out browsers fall back to local storage.
 - Changing it anywhere applies it everywhere, until they change it again.
 - Each item's language is detected during indexing from its title, categories and body. Content labelled "Español" or "Spanish" in the title or category is treated as Spanish; otherwise a deterministic word-frequency check decides. Accented characters only back up a Spanish verdict, never create one, so an English staffing roster or release form full of Spanish surnames is not filed as Spanish.
-- Whatever that check cannot settle — typically a series, whose stored text is just a list of its posts' titles, or a form that is mostly field labels — goes to the assist model for a one-word answer. It costs about $0.00005 an item and only ever runs on that small tail. It honours the kill switch, and any failure leaves the item "unknown" rather than guessing.
+- Anything that check is not certain about goes to the assist model for a one-word answer. Only two things stand on their own: a hand-written "Español"/"Spanish" label, and a decisive margin over a good amount of text. A verdict reached on thin evidence is checked too, not just an outright "unknown", because those are the ones the offline pass gets wrong. Each check costs about $0.00005. It honours the kill switch, and if the model is paused, unreachable or answers with nonsense the offline verdict stands, so nothing is ever made worse by it.
 - Items whose language cannot be determined are marked **unknown** and appear only under **All resources**. Nothing is ever lost — switching back to All shows everything.
 - A material type whose linked resources are all in the other language shows a note saying so rather than an empty list.
 
@@ -120,6 +120,7 @@ Run `node scripts/check-secrets.mjs` in the Repl shell to verify every secret ag
 | `pnpm backfill:language` | Fills in the language of every already-indexed item still marked unknown, using the same detector the indexer uses. Safe to re-run; it never touches Connected and never re-indexes. |
 | `pnpm backfill:language --all` | Re-detects the language of every item, including ones already marked English or Spanish. Use after changing the detector. |
 | `pnpm backfill:language --no-ai` | Offline detector only, no model calls and no cost. Use to see what the deterministic pass alone would do. |
+| `pnpm backfill:language --all --dry-run` | Reports what it would change and how many model calls it would make, at roughly $0.00005 each, without writing anything or spending anything. Run this first if you want the cost up front. |
 
 ## Deploying changes
 

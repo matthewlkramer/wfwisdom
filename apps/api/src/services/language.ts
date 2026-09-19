@@ -1,4 +1,4 @@
-import { detectLanguage, isItemLanguage, type ItemLanguage, type LanguageInput } from "@wfw/shared";
+import { detectLanguageDetailed, isItemLanguage, type ItemLanguage, type LanguageInput } from "@wfw/shared";
 import { respondJson } from "../lib/openai.js";
 import { logger } from "../logger.js";
 import { getSettings } from "../settings.js";
@@ -20,29 +20,32 @@ export function promptFor(input: LanguageInput): string {
 }
 
 /**
- * Decide an item's language, deterministically where possible.
+ * Decide an item's language, using the model for anything the offline detector is not certain of.
  *
- * The offline detector settles the great majority for free. It returns "unknown" for the items it
- * has too little signal on — a series whose text is just a list of its posts' titles, a form that is
- * mostly field labels and names — and those are the ones worth a model call, so only that tail costs
- * anything. Any failure (kill switch, missing key, timeout, a nonsense answer) leaves it "unknown"
- * rather than guessing; the caller carries on either way.
+ * The offline pass is free, so it still runs first — but only two things let it stand on its own: an
+ * explicit "Español"/"Spanish" label, which a person wrote deliberately, and a decisive stop-word
+ * margin over a decent amount of text. Everything else goes to the model, including verdicts the
+ * detector reached on thin evidence, because those are exactly the ones it gets wrong. At roughly
+ * $0.00005 a call that tail is worth paying for.
+ *
+ * The model is never allowed to make things worse: if it is paused, unreachable, slow, or answers
+ * with something outside the three values, the offline verdict stands.
  */
 export async function resolveLanguage(input: LanguageInput, log: (m: string) => void = () => {}): Promise<ItemLanguage> {
-  const offline = detectLanguage(input);
-  if (offline !== "unknown") return offline;
+  const offline = detectLanguageDetailed(input);
+  if (offline.confidence === "high") return offline.language;
   const text = `${input.title ?? ""}${input.body ?? ""}`.trim();
-  if (text.length < 8) return "unknown"; // nothing to send; the model would only be guessing too
+  if (text.length < 8) return offline.language; // nothing to send; the model would only be guessing too
   try {
     const s = await getSettings();
-    if (s.killSwitch) return "unknown";
+    if (s.killSwitch) return offline.language;
     const r = await respondJson<{ language: string }>({ model: s.assistModel, system: SYSTEM, user: promptFor(input), schema: SCHEMA, effort: "low", maxOutput: 50, timeoutMs: 20_000 });
-    if (!isItemLanguage(r.data.language)) { log(`language check returned ${JSON.stringify(r.data.language)}, leaving unknown`); return "unknown"; }
+    if (!isItemLanguage(r.data.language)) { log(`language check returned ${JSON.stringify(r.data.language)}, keeping ${offline.language}`); return offline.language; }
     return r.data.language;
   } catch (e) {
     const msg = (e as Error).message;
     logger.warn({ err: msg }, "language check unavailable");
-    log(`language check failed: ${msg}`);
-    return "unknown";
+    log(`language check failed, keeping ${offline.language}: ${msg}`);
+    return offline.language;
   }
 }

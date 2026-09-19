@@ -27,6 +27,13 @@ const ES_CHARS_ALL = /[ñáéíóúü¿¡]/gi;
 
 export interface LanguageInput { title?: string | null; body?: string | null; categories?: string[] | null; seriesTitles?: string[] | null; description?: string | null }
 
+/** "high" means the offline evidence is strong enough to act on without a second opinion. */
+export type LanguageConfidence = "high" | "low";
+export interface LanguageVerdict { language: ItemLanguage; confidence: LanguageConfidence }
+/** Enough stop-word hits to be worth trusting, and a margin decisive enough not to be noise. */
+const HIGH_MIN_HITS = 12;
+const HIGH_MIN_RATIO = 4;
+
 function tokens(s: string): string[] {
   return s.toLowerCase().normalize("NFC").split(/[^a-záéíóúñü]+/i).filter((t) => t.length > 1);
 }
@@ -37,15 +44,25 @@ function tokens(s: string): string[] {
  * Returns "unknown" when there is too little text or the two languages are too close to call.
  */
 export function detectLanguage(input: LanguageInput): ItemLanguage {
+  return detectLanguageDetailed(input).language;
+}
+
+/**
+ * The same decision, with how far it can be trusted. Only an explicit human label, or a decisive
+ * stop-word margin over a decent amount of text, counts as "high"; everything else is worth a
+ * second opinion from the model before it is stored.
+ */
+export function detectLanguageDetailed(input: LanguageInput): LanguageVerdict {
   const labels = [input.title ?? "", ...(input.categories ?? []), ...(input.seriesTitles ?? [])].join(" · ");
-  if (SPANISH_LABEL.test(labels)) return "es";
+  // Someone labelled this "Español"/"Spanish" by hand. Nothing beats that, so do not second-guess it.
+  if (SPANISH_LABEL.test(labels)) return { language: "es", confidence: "high" };
   const text = `${input.title ?? ""}\n${input.description ?? ""}\n${(input.body ?? "").slice(0, 20_000)}`;
   const words = tokens(text);
   if (words.length < 12) {
-    // Too little text to count: fall back to the labels alone.
-    if (ES_CHARS.test(input.title ?? "")) return "es";
-    if (ENGLISH_LABEL.test(labels)) return "en";
-    return "unknown";
+    // Too little text to count: lean on the labels, but never call it settled.
+    if (ES_CHARS.test(input.title ?? "")) return { language: "es", confidence: "low" };
+    if (ENGLISH_LABEL.test(labels)) return { language: "en", confidence: "low" };
+    return { language: "unknown", confidence: "low" };
   }
   let es = 0, en = 0;
   for (const w of words) { if (ES_SET.has(w)) es++; else if (EN_SET.has(w)) en++; }
@@ -54,8 +71,8 @@ export function detectLanguage(input: LanguageInput): ItemLanguage {
   // words at all, and weighting those accents would file it as Spanish outright.
   if (es > 0) es += (text.match(ES_CHARS_ALL)?.length ?? 0) * 3;
   const total = es + en;
-  if (total < 4) return "unknown";
-  if (es > en * 1.5) return "es";
-  if (en > es * 1.5) return "en";
-  return "unknown";
+  if (total < 4) return { language: "unknown", confidence: "low" };
+  const [language, hi, lo] = es > en ? ["es" as const, es, en] : ["en" as const, en, es];
+  if (hi <= lo * 1.5) return { language: "unknown", confidence: "low" };
+  return { language, confidence: total >= HIGH_MIN_HITS && hi >= lo * HIGH_MIN_RATIO ? "high" : "low" };
 }
