@@ -25,7 +25,7 @@ import { searchRouter } from "./routes/search.js";
 import { signalsRouter } from "./routes/signals.js";
 import { submissionsRouter } from "./routes/submissions.js";
 import { typesRouter } from "./routes/types.js";
-import { startScheduler } from "./scheduler.js";
+import { catchUpIndexOnBoot, startScheduler } from "./scheduler.js";
 import { loadVectors } from "./services/vectors.js";
 import { markStaleRuns } from "./services/indexer.js";
 import { getSettings } from "./settings.js";
@@ -79,6 +79,7 @@ const server = app.listen(env.port, "0.0.0.0", () => {
   void markStaleRuns().catch((e) => logger.warn({ err: (e as Error).message }, "stale run cleanup failed"));
   void loadVectors().catch((e) => logger.warn({ err: (e as Error).message }, "vector load failed"));
   startScheduler();
+  if (env.isProd) catchUpIndexOnBoot();
 });
 async function shutdown(signal: string) { logger.info({ signal }, "shutting down"); server.close(async () => { await closeDb(); process.exit(0); }); }
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
