@@ -49,7 +49,10 @@ export function detectLanguage(input: LanguageInput): ItemLanguage {
   }
   let es = 0, en = 0;
   for (const w of words) { if (ES_SET.has(w)) es++; else if (EN_SET.has(w)) en++; }
-  es += (text.match(ES_CHARS_ALL)?.length ?? 0) * 3;
+  // Accents corroborate Spanish; they never establish it on their own. An English roster or release
+  // form carrying Spanish surnames (Peña, Núñez) is full of accents and has no Spanish function
+  // words at all, and weighting those accents would file it as Spanish outright.
+  if (es > 0) es += (text.match(ES_CHARS_ALL)?.length ?? 0) * 3;
   const total = es + en;
   if (total < 4) return "unknown";
   if (es > en * 1.5) return "es";

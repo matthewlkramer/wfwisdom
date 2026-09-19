@@ -35,7 +35,8 @@ Every page that lists resources — Start here, Map (and sub-job pages), Search,
 
 - The choice is remembered per person: it is stored on their user record, so it follows them to another computer. Signed-out browsers fall back to local storage.
 - Changing it anywhere applies it everywhere, until they change it again.
-- Each item's language is detected during indexing from its title, categories and body. Content labelled "Español" or "Spanish" in the title or category is treated as Spanish; otherwise a deterministic word-frequency check decides.
+- Each item's language is detected during indexing from its title, categories and body. Content labelled "Español" or "Spanish" in the title or category is treated as Spanish; otherwise a deterministic word-frequency check decides. Accented characters only back up a Spanish verdict, never create one, so an English staffing roster or release form full of Spanish surnames is not filed as Spanish.
+- Whatever that check cannot settle — typically a series, whose stored text is just a list of its posts' titles, or a form that is mostly field labels — goes to the assist model for a one-word answer. It costs about $0.00005 an item and only ever runs on that small tail. It honours the kill switch, and any failure leaves the item "unknown" rather than guessing.
 - Items whose language cannot be determined are marked **unknown** and appear only under **All resources**. Nothing is ever lost — switching back to All shows everything.
 - A material type whose linked resources are all in the other language shows a note saying so rather than an empty list.
 
@@ -118,6 +119,7 @@ Run `node scripts/check-secrets.mjs` in the Repl shell to verify every secret ag
 | --- | --- |
 | `pnpm backfill:language` | Fills in the language of every already-indexed item still marked unknown, using the same detector the indexer uses. Safe to re-run; it never touches Connected and never re-indexes. |
 | `pnpm backfill:language --all` | Re-detects the language of every item, including ones already marked English or Spanish. Use after changing the detector. |
+| `pnpm backfill:language --no-ai` | Offline detector only, no model calls and no cost. Use to see what the deterministic pass alone would do. |
 
 ## Deploying changes
 

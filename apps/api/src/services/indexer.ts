@@ -5,7 +5,8 @@ import { fetchGoogleDocText } from "../lib/google-docs.js";
 import { buildBodyHtml, stripContentTokens } from "../lib/html.js";
 import { embed, respond } from "../lib/openai.js";
 import { GOOGLE_DOC_RE, chunk, normalizeWs, sha, stripHtml } from "../lib/text.js";
-import { detectLanguage, type ItemLanguage } from "@wfw/shared";
+import type { ItemLanguage } from "@wfw/shared";
+import { resolveLanguage } from "./language.js";
 import { logger } from "../logger.js";
 import { getSettings } from "../settings.js";
 import { recomputeScores } from "./score.js";
@@ -77,7 +78,7 @@ async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) =
     views: it.views_count ?? 0, likes: it.likes_count ?? 0, comments: it.comments_count ?? 0,
     seriesTitles: (it.series ?? []).map((s) => s.title), categories: cats, audiences: auds, contentType: null,
     bodyText, bodyHtml: buildBodyHtml(kind, it), childPostIds: kind === "series" ? (it.posts ?? []).map((p) => p.id) : [], attachments, linkedDocs, linkOnly: realText < 200 && (linkCount > 0 || linkedDocs.length > 0), hasText: realText >= 300,
-    language: detectLanguage({ title, description: stripHtml(it.description), body: bodyText, categories: cats, seriesTitles: (it.series ?? []).map((s) => s.title) }),
+    language: await resolveLanguage({ title, description: stripHtml(it.description), body: bodyText, categories: cats, seriesTitles: (it.series ?? []).map((s) => s.title) }, log),
     contentHash: sha(`${title}|${it.description ?? ""}|${bodyText}`),
   };
 }
