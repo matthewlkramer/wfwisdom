@@ -7,8 +7,9 @@ import { createNativeItem } from "../routes/native.js";
 import { readNativeContent } from "../services/native.js";
 const [link, file] = process.argv.slice(2);
 const db = getDb();
-const [u] = await db.select({ id: users.id }).from(users).limit(1);
-if (!u) throw new Error("no users yet");
+let [u] = await db.select({ id: users.id }).from(users).limit(1);
+if (!u) [u] = await db.insert(users).values({ googleSub: "smoke-test", email: "smoke@example.com", name: "Smoke Test", role: "staff" }).returning({ id: users.id });
+if (!u) throw new Error("could not create a smoke-test user");
 if (link) {
   const r = await createNativeItem({ kind: "google", url: link, status: "published", authorUserId: u.id, by: "smoke" });
   const [it] = await db.select().from(items).where(eq(items.id, r.id));
