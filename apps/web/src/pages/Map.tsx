@@ -27,10 +27,13 @@ export function MapPage() {
   const visibleSubs = (j.data?.subjobs ?? []).filter((s) => !stage || s.stages.includes(stage));
   return (
     <div className="wf-page">
-      <div className="wf-page-header"><div><p className="eyebrow">The map</p><h1>{stage ? `What is in front of you in ${STAGES.find((s) => s.key === stage)?.name}` : "Everything, organized by the job in front of you"}</h1><p>Pick a stage to narrow the map to what applies now. Pick a job to see its sub-jobs with the best resources in each.</p></div><LanguageFilter /></div>
-      <div className="stage-rail" role="radiogroup" aria-label="Stage">
-        <button className={stage === "" ? "active" : ""} onClick={() => set({ stage: "" })}><strong>All stages</strong><span>{Object.values(counts).length ? "every resource" : ""}</span></button>
-        {STAGES.map((s) => <button key={s.key} className={stage === s.key ? "active" : ""} onClick={() => set({ stage: s.key })}><strong>{s.name}</strong><span>{counts[s.key] ?? 0} resources</span></button>)}
+      <div className="wf-page-header"><div><p className="eyebrow">The map</p><h1>{stage ? `What is in front of you in ${STAGES.find((s) => s.key === stage)?.name}` : "Everything, organized by the job in front of you"}</h1><p>Pick a stage to narrow the map to what applies now. Pick a job to see its sub-jobs with the best resources in each.</p></div></div>
+      <div className="filter-row">
+        <div className="stage-rail" role="radiogroup" aria-label="Stage">
+          <button className={stage === "" ? "active" : ""} onClick={() => set({ stage: "" })}><strong>All stages</strong><span>{Object.values(counts).length ? "every resource" : ""}</span></button>
+          {STAGES.map((s) => <button key={s.key} className={stage === s.key ? "active" : ""} onClick={() => set({ stage: s.key })}><strong>{s.name}</strong><span>{counts[s.key] ?? 0} resources</span></button>)}
+        </div>
+        <LanguageFilter />
       </div>
       <div className="map-explorer">
         <nav className="map-jobs" aria-label="Jobs">
@@ -65,7 +68,7 @@ export function SubjobPage() {
   return (
     <div className="wf-page">
       <Link to={d.job ? `/map?job=${d.job.key}` : "/map"} className="wf-page-back">← Map{d.job ? ` · ${d.job.name}` : ""}</Link>
-      <div className="wf-page-header"><div><h1>{d.subjob.name}</h1><p>{d.items.length} resource{d.items.length === 1 ? "" : "s"}, best first. Staff picks and Essentials are marked.{d.subjob.stages.length ? ` Relevant in: ${d.subjob.stages.map((k) => STAGES.find((x) => x.key === k)?.name ?? k).join(", ")}.` : ""}</p></div><LanguageFilter /></div>
+      <div className="wf-page-header"><div><h1>{d.subjob.name}</h1><p>{d.items.length} resource{d.items.length === 1 ? "" : "s"}, best first. Staff picks and Essentials are marked.{d.subjob.stages.length ? ` Relevant in: ${d.subjob.stages.map((k) => STAGES.find((x) => x.key === k)?.name ?? k).join(", ")}.` : ""}</p></div><div className="wf-record-actions"><LanguageFilter /></div></div>
       <ItemGrid items={d.items} context={{ from: "map", subjob: d.subjob.key }} empty="No resources placed here yet." />
     </div>
   );

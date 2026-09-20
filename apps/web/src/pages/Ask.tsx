@@ -9,7 +9,7 @@ type Msg = { role: "user" | "assistant"; content: string; citations?: Citation[]
 
 function Cites({ citations, from }: { citations: Citation[]; from: string }) {
   if (!citations.length) return null;
-  return <ul className="chat-cites">{citations.map((c, j) => <li key={c.itemId}>[{j + 1}] <Link to={`/item/${c.itemId}`} onClick={() => signalClick(c.itemId, { from })}>{c.title}</Link> · <a href={c.url} target="_blank" rel="noopener noreferrer">Connected ↗</a></li>)}</ul>;
+  return <ul className="chat-cites">{citations.map((c, j) => <li key={c.itemId}>[{j + 1}] <Link to={`/item/${c.itemId}`} onClick={() => signalClick(c.itemId, { from })}>{c.title}</Link></li>)}</ul>;
 }
 
 /** The share status the asker sees for one of their own questions. */

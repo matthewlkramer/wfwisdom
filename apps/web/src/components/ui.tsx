@@ -31,7 +31,7 @@ export function ItemCard({ item, context, showWhy = true }: { item: ItemSummary;
       <div className="wf-record-heading"><span><Link className="wf-card-title" to={`/item/${item.id}`} onClick={() => signalClick(item.id, context ?? {})}>{item.title}</Link></span><span className="wf-record-tags"><Pill item={item} /></span></div>
       {showWhy && item.why ? <p className="item-why">{item.why}</p> : null}
       {item.summary ? <p className="item-summary">{item.summary}</p> : item.description ? <p className="item-summary">{item.description.slice(0, 220)}{item.description.length > 220 ? "…" : ""}</p> : null}
-      <div className="item-meta"><span className="wf-status wf-status-stage">{kindLabel}</span>{item.updatedAt ? <span>Updated {fmtMonth(item.updatedAt)}</span> : null}{item.attachmentCount ? <span>{item.attachmentCount} attachment{item.attachmentCount > 1 ? "s" : ""}</span> : null}{item.linkOnly ? <span>Link out</span> : null}<a href={item.url} target="_blank" rel="noreferrer" onClick={() => signalClick(item.id, { ...(context ?? {}), external: true })}>Open in Connected ↗</a></div>
+      <div className="item-meta"><span className="wf-status wf-status-stage">{kindLabel}</span>{item.updatedAt ? <span>Updated {fmtMonth(item.updatedAt)}</span> : null}{item.attachmentCount ? <span>{item.attachmentCount} attachment{item.attachmentCount > 1 ? "s" : ""}</span> : null}{item.linkOnly ? <span>Link out</span> : null}</div>
     </article>
   );
 }

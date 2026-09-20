@@ -9,7 +9,7 @@ export function Landing({ next }: { next: string }) {
       <div className="hero"><div className="hero-copy">
         <p className="eyebrow">Wildflower Schools</p>
         <h1>Wildflower Wisdom</h1>
-        <p className="lede">A better way into Connected, the Wildflower knowledge base: a map organized by what you are doing right now, search that understands the question, and feedback on the materials you are writing.</p>
+        <p className="lede">The Wildflower knowledge base: a map organized by what you are doing right now, search that understands the question, and feedback on the materials you are writing.</p>
         {err ? <State kind="error" title="Sign-in did not complete">{err}</State> : null}
         {cfg.data && !cfg.data.googleConfigured ? <State kind="info" title="Sign-in is not configured yet">Google sign-in secrets have not been set on this deployment.</State> : null}
         <p><a className="primary-button" href={`/api/auth/google?next=${encodeURIComponent(next === "/" ? "/" : next)}`}>Sign in with Google</a></p>

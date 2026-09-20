@@ -11,13 +11,13 @@ export function SearchPage() {
   const r = useQuery({ queryKey: ["search", q, language], queryFn: () => api.get<{ query: string; rewritten: string | null; mode: string; results: ItemSummary[] }>(`/api/search?q=${encodeURIComponent(q)}&${langParam(language)}`), enabled: q.length >= 2 });
   return (
     <div className="wf-page">
-      <div className="wf-page-header"><div><h1>Search</h1><p>Semantic search over everything in Connected, including attachment text, ranked with helpfulness in mind. Each result says why it matched.</p></div><LanguageFilter /></div>
-      <SearchInput large autoFocus value={draft} onChange={setDraft} onSubmit={() => setSp({ q: draft.trim() })} />
+      <div className="wf-page-header"><div><h1>Search</h1><p>Semantic search over everything in Wildflower Wisdom, including attachment text, ranked with helpfulness in mind. Each result says why it matched.</p></div></div>
+      <div className="filter-row"><div className="grow"><SearchInput large autoFocus value={draft} onChange={setDraft} onSubmit={() => setSp({ q: draft.trim() })} /></div><LanguageFilter /></div>
       <div style={{ height: 16 }} />
       {q.length < 2 ? <State kind="empty" title="Type a question or a few words">Try “how do we set tuition levels” or “sample board resolution to open a bank account”.</State>
         : r.isLoading ? <Loading what="Searching" /> : r.error ? <ErrorState error={r.error} retry={() => r.refetch()} />
         : <>{r.data!.rewritten && r.data!.rewritten.toLowerCase() !== q.toLowerCase() ? <p className="muted" style={{ marginBottom: 12 }}>Searched for: <em>{r.data!.rewritten}</em>{r.data!.mode === "keyword" ? " (keyword mode)" : ""}</p> : r.data!.mode === "keyword" ? <p className="muted">Keyword mode.</p> : null}
-          {r.data!.results.length ? <ItemGrid items={r.data!.results} context={{ from: "search", q }} /> : <State kind="empty" title="Nothing matched">Connected may not cover this. <Link to={`/ask?q=${encodeURIComponent(q)}`}>Ask the question</Link> to get a direct answer, or try different words.</State>}
+          {r.data!.results.length ? <ItemGrid items={r.data!.results} context={{ from: "search", q }} /> : <State kind="empty" title="Nothing matched">The knowledge base may not cover this. <Link to={`/ask?q=${encodeURIComponent(q)}`}>Ask the question</Link> to get a direct answer, or try different words.</State>}
           {r.data!.results.length ? <p className="muted" style={{ marginTop: 16 }}>Not what you needed? <Link to={`/ask?q=${encodeURIComponent(q)}`}>Ask it as a question</Link>.</p> : null}</>}
     </div>
   );

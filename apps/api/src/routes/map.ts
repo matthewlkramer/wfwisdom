@@ -83,11 +83,19 @@ mapRouter.get("/item/:id", async (req, res) => {
   const children = childIds.length ? await db.select({ ...itemSelect, sourceId: items.sourceId }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.sourceKind, "post"), inArray(items.sourceId, childIds), visibleWhere(staff))) : [];
   const byId = new Map(children.map((c) => [c.sourceId, c]));
   const contents = childIds.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => !!c).map((c) => toSummary(c as ItemRow));
+  // Series this post belongs to, with every post in order, so the page can show its siblings.
+  const seriesRows = r.sourceKind === "post" ? await db.select({ id: items.id, title: items.title, childPostIds: items.childPostIds }).from(items).where(and(eq(items.sourceKind, "series"), isNull(items.removedAt), sql`${items.childPostIds} @> ${JSON.stringify([r.sourceId])}::jsonb`)) : [];
+  const seriesNav = await Promise.all(seriesRows.map(async (sr) => {
+    const ids = (sr.childPostIds ?? []).slice(0, 200);
+    const rows = ids.length ? await db.select({ id: items.id, title: items.title, sourceId: items.sourceId }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.sourceKind, "post"), inArray(items.sourceId, ids), visibleWhere(staff))) : [];
+    const bySource = new Map(rows.map((x) => [x.sourceId, x]));
+    return { seriesId: sr.id, seriesTitle: sr.title, posts: ids.map((sid) => bySource.get(sid)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => ({ id: x.id, title: x.title, current: x.id === r.id })) };
+  }));
   // Items with no stored HTML yet (indexed before full content landed) fall back to their plain text.
   const raw = r.bodyHtml ?? (r.bodyText ? `<p>${r.bodyText.split(/\n{2,}/).slice(0, 80).map((p) => p.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!))).join("</p><p>")}</p>` : "");
   // Stripped at read time so items indexed before the fix never show a raw [content|NNNN|] token.
   const { html: withoutVideo, video } = extractPrimaryVideo(stripContentTokens(raw), r.attachmentsFull);
-  res.json({ item: { ...toSummary(r as ItemRow), authorName: r.authorName, publishedAt: r.publishedAt, categories: r.categories, audiences: r.audiences, bodyHtml: withoutVideo, primaryVideo: video, attachments: r.attachmentsFull.map((a) => ({ id: a.id, name: a.name, type: a.type, bytes: a.bytes, mime: a.mime ?? null })), linkedDocs: r.linkedDocs.map((d) => ({ url: d.url, kind: d.kind, status: d.status })), contents }, placements: pl, votes: { yes: votes?.yes ?? 0, no: votes?.no ?? 0, mine: mine[0]?.kind ?? null } });
+  res.json({ item: { ...toSummary(r as ItemRow), authorName: r.authorName, publishedAt: r.publishedAt, categories: r.categories, audiences: r.audiences, bodyHtml: withoutVideo, primaryVideo: video, attachments: r.attachmentsFull.map((a) => ({ id: a.id, name: a.name, type: a.type, bytes: a.bytes, mime: a.mime ?? null })), linkedDocs: r.linkedDocs.map((d) => ({ url: d.url, kind: d.kind, status: d.status })), contents, seriesNav }, placements: pl, votes: { yes: votes?.yes ?? 0, no: votes?.no ?? 0, mine: mine[0]?.kind ?? null } });
 });
 
 /** Resolve a Connected post/series/question id to the wfwisdom item (used for links inside imported content). */

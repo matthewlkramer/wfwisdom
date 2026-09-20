@@ -11,8 +11,8 @@ const workspace: NavItem[] = [
   { to: "/", label: "Start here", icon: Compass, end: true },
   { to: "/map", label: "Map", icon: MapIcon },
   { to: "/ask", label: "Ask", icon: MessagesSquare },
-  { to: "/materials", label: "Draft documents", icon: Sparkles },
-  { to: "/my", label: "My drafts", icon: PenLine },
+  { to: "/materials", label: "Create custom materials", icon: Sparkles },
+  { to: "/share", label: "Share your materials", icon: PenLine },
 ];
 const staff: NavItem[] = [
   { to: "/admin", label: "Overview", icon: Gauge, end: true },
@@ -49,7 +49,7 @@ export function Shell({ user, onSignOut }: { user: SessionUser; onSignOut: () =>
       </aside>
       <main className="main-content">
         <header className="authenticated-header">
-          <div className="global-search"><SearchInput value={q} onChange={setQ} placeholder="Search Connected…" onSubmit={() => { if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }} /></div>
+          <div className="global-search"><SearchInput value={q} onChange={setQ} placeholder="Search Wildflower Wisdom…" onSubmit={() => { if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }} /></div>
           <div className="authenticated-actions"><button type="button" className="feedback-trigger" onClick={() => setFeedbackOpen(true)}><MessageSquarePlus size={17} aria-hidden="true" /> Feedback</button></div>
         </header>
         <Outlet />

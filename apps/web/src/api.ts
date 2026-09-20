@@ -17,3 +17,9 @@ export const api = {
 export function fmtDate(d: string | null | undefined): string { if (!d) return ""; return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }); }
 export function fmtMonth(d: string | null | undefined): string { if (!d) return ""; return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short" }); }
 export function signalClick(itemId: string, context: Record<string, unknown> = {}, kind: "click" | "search_click" = "click") { void api.post("/api/signals", { itemId, kind, context }).catch(() => {}); }
+
+/** A Connected URL becomes an in-app link (resolved by /c/:kind/:id); anything else is left as is. */
+export function internalHref(url: string): string {
+  const m = /connected\.wildflowerschools\.org\/(posts|series|questions)\/(\d+)/.exec(url);
+  return m ? `/c/${m[1] === "posts" ? "post" : m[1] === "series" ? "series" : "question"}/${m[2]}` : url;
+}

@@ -23,7 +23,8 @@ import { ConnectedRedirect, ItemPage } from "./pages/Item";
 import { Landing } from "./pages/Landing";
 import { MapPage, SubjobPage } from "./pages/Map";
 import { Materials, MaterialType } from "./pages/Materials";
-import { MyDrafts, SubmissionPage } from "./pages/Submissions";
+import { SubmissionPage } from "./pages/Submissions";
+import { SharePage } from "./pages/Share";
 import { SearchPage } from "./pages/Search";
 
 export default function App() {
@@ -45,7 +46,8 @@ export default function App() {
         <Route path="ask" element={<Ask />} />
         <Route path="materials" element={<Materials />} />
         <Route path="materials/:key" element={<MaterialType />} />
-        <Route path="my" element={<MyDrafts />} />
+        <Route path="my" element={<Navigate to="/materials#drafts" replace />} />
+        <Route path="share" element={<SharePage />} />
         <Route path="drafts/:id" element={<SubmissionPage />} />
         {user.role === "staff" ? (
           <Route path="admin" element={<AdminLayout />}>

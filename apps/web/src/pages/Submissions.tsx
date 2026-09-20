@@ -3,7 +3,7 @@ import { ArrowRight, Download, Mail } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { ReviewResult } from "@wfw/shared";
-import { api, fmtDate } from "../api";
+import { api, fmtDate, internalHref } from "../api";
 import { ErrorState, Loading, RubricBar, State, VerdictPill } from "../components/ui";
 
 type Row = { id: string; title: string | null; status: string; verdict: string | null; createdAt: string; typeName: string; typeKey: string; parentId: string | null; charCount: number; objectivesTotal: number | null; objectivesMax: number | null; openChanges: number | null; verifyCount: number | null };
@@ -19,16 +19,18 @@ function chains(rows: Row[]): Row[][] {
   return [...groups.values()].map((g) => g.sort((a, b) => a.createdAt.localeCompare(b.createdAt))).sort((a, b) => b[b.length - 1]!.createdAt.localeCompare(a[a.length - 1]!.createdAt));
 }
 
-export function MyDrafts() {
+/** The writer's drafts with their versions; shown on the Create custom materials page. */
+export function DraftsSection() {
   const q = useQuery({ queryKey: ["my-submissions"], queryFn: () => api.get<ListData>("/api/submissions"), refetchInterval: (query) => (query.state.data?.submissions.some((s) => s.status === "queued" || s.status === "running") ? 3000 : false) });
-  if (q.isLoading) return <div className="wf-page"><Loading /></div>;
-  if (q.error) return <div className="wf-page"><ErrorState error={q.error} retry={() => q.refetch()} /></div>;
+  if (q.isLoading) return <Loading />;
+  if (q.error) return <ErrorState error={q.error} retry={() => q.refetch()} />;
   const rows = q.data!.submissions; const st = q.data!.stats;
   const groups = chains(rows);
+  if (!groups.length) return null;
   const ready = groups.filter((g) => g[g.length - 1]!.verdict?.startsWith("Ready")).length;
   return (
-    <div className="wf-page narrow">
-      <div className="wf-page-header"><div><h1>My drafts</h1><p>Each draft keeps its versions together so you can see what improved. Only you and Wildflower staff can see these.</p></div><div className="wf-record-actions"><Link className="primary-button" to="/materials">Start a new draft</Link></div></div>
+    <section id="drafts" style={{ display: "grid", gap: 12, margin: "22px 0 26px" }}>
+      <div className="wf-section-header" style={{ margin: 0 }}><div><h2>Your drafts</h2><p>Each draft keeps its versions together so you can see what improved. Only you and Wildflower staff can see these.</p></div></div>
       <div className="stat-strip">{[[String(groups.length - ready), "drafts in progress"], [String(ready), "ready to use"], [String(st.reviewsThisMonth), "reviews this month"], [`${st.reviewsLeftToday}`, "reviews left today"]].map(([v, l]) => <div key={l} className="wf-card wf-card-metric"><span className="wf-card-value">{v}</span><small>{l}</small></div>)}</div>
       {groups.length ? <div style={{ display: "grid", gap: 12 }}>{groups.map((g) => { const last = g[g.length - 1]!; const first = g[0]!; const delta = first.objectivesTotal !== null && last.objectivesTotal !== null && g.length > 1 ? last.objectivesTotal - first.objectivesTotal : null; return (
         <div key={last.id} className="wf-card wf-card-section draft-chain">
@@ -43,8 +45,8 @@ export function MyDrafts() {
           </div>
           <div className="draft-chain-actions"><Link className="primary-button" to={`/drafts/${last.id}`}>{last.status === "done" ? "Open latest review" : "Open"}</Link>{last.status === "done" ? <Link to={`/materials/${last.typeKey}?resubmit=${last.id}`}>Revise and resubmit</Link> : null}</div>
         </div>); })}</div>
-        : <State kind="empty" title="No drafts yet">Pick a material type, write or upload a draft, and get feedback in about a minute.</State>}
-    </div>
+        : null}
+    </section>
   );
 }
 
@@ -75,7 +77,7 @@ export function SubmissionPage() {
   const parentScores = new Map((s.parentReview?.rubric ?? []).map((c) => [c.criterion, c.score]));
   return (
     <div className="wf-page">
-      <Link to="/my" className="wf-page-back">← My drafts</Link>
+      <Link to="/materials" className="wf-page-back">← Create custom materials</Link>
       <div className="wf-page-header"><div><p className="eyebrow">{s.typeName} · version {s.versionNumber}</p><h1>{s.title ?? "Untitled draft"}</h1><p>Submitted {fmtDate(s.createdAt)}{s.filename ? ` from ${s.filename}` : ""} · {s.charCount.toLocaleString()} characters{s.parentReview ? ` · revised from a draft reviewed ${fmtDate(s.parentReview.createdAt)}` : ""}</p></div>
         {s.status === "done" ? <div className="wf-record-actions"><a className="secondary-button" href={`/api/submissions/${s.id}/download`}><Download size={16} /> Download</a><button className="secondary-button" onClick={() => email.mutate()} disabled={email.isPending}><Mail size={16} /> {s.emailedAt ? "Email again" : "Email me this"}</button><Link className="primary-button" to={`/materials/${s.typeKey}?resubmit=${s.id}&text=${encodeURIComponent(s.draftText.slice(0, 6000))}`}>Revise and resubmit</Link></div> : null}</div>
       {email.isSuccess ? <State kind="success" title={`Sent to ${email.data.to}`} /> : email.error ? <ErrorState error={email.error} /> : null}
@@ -96,7 +98,7 @@ export function SubmissionPage() {
                   <h3>What is working</h3><ul className="wf-list tight">{r.strengths.map((x, i) => <li key={i}>{x}</li>)}</ul>
                   <h3>How it meets the objectives</h3><div style={{ display: "grid", gap: 8 }}>{r.rubric.map((c) => <div key={c.criterion} className="objective-note"><strong>{c.criterion}</strong> <RubricBar score={c.score} /><div className="muted">{c.note}</div></div>)}</div>
                   {r.verify_with_humans.length ? <div className="verify-box"><strong>Verify with your Operations Guide, attorney, or accountant</strong><ul className="wf-list tight">{r.verify_with_humans.map((x, i) => <li key={i}>{x}</li>)}</ul></div> : null}
-                  {r.recommended_resources.length ? <><h3>Connected resources</h3><ul className="wf-list tight">{r.recommended_resources.map((x, i) => <li key={i}><a href={x.url} target="_blank" rel="noreferrer">{x.title} ↗</a> — {x.why}</li>)}</ul></> : null}
+                  {r.recommended_resources.length ? <><h3>Resources to use</h3><ul className="wf-list tight">{r.recommended_resources.map((x, i) => <li key={i}><Link to={internalHref(x.url)}>{x.title}</Link> — {x.why}</li>)}</ul></> : null}
                   {r.nits.length ? <><h3>Nits</h3><ul className="wf-list tight">{r.nits.map((x, i) => <li key={i}>{x}</li>)}</ul></> : null}
                 </div> : null}
                 {tab === "changes" ? <div className="review-tab"><ol className="priority-list">{r.priority_changes.map((p, i) => <li key={i}><strong>{p.what}</strong><div className="muted">{p.why}</div><div><em>How:</em> {p.how}</div></li>)}</ol></div> : null}
@@ -127,7 +129,7 @@ export function Review({ r }: { r: ReviewResult }) {
       {r.example_rewrites.length ? <section className="wf-card wf-card-section"><h3>Example rewrites</h3>{r.example_rewrites.map((e, i) => <div key={i} className="rewrite"><div className="quote">“{e.original}”</div><div className="rewrite-option">{e.rewrite}</div><div className="muted">{e.why}</div></div>)}</section> : null}
       {r.questions_for_writer.length ? <section className="wf-card wf-card-section"><h3>Questions for you</h3><ul className="wf-list tight">{r.questions_for_writer.map((s, i) => <li key={i}>{s}</li>)}</ul></section> : null}
       {r.verify_with_humans.length ? <section className="wf-card wf-card-section verify-box"><h3 style={{ color: "var(--wf-warning)" }}>Verify with your Operations Guide, attorney, or accountant</h3><ul className="wf-list tight">{r.verify_with_humans.map((s, i) => <li key={i}>{s}</li>)}</ul></section> : null}
-      {r.recommended_resources.length ? <section className="wf-card wf-card-section"><h3>Connected resources</h3><ul className="wf-list tight">{r.recommended_resources.map((x, i) => <li key={i}><a href={x.url} target="_blank" rel="noreferrer">{x.title} ↗</a> — {x.why}</li>)}</ul></section> : null}
+      {r.recommended_resources.length ? <section className="wf-card wf-card-section"><h3>Resources to use</h3><ul className="wf-list tight">{r.recommended_resources.map((x, i) => <li key={i}><Link to={internalHref(x.url)}>{x.title}</Link> — {x.why}</li>)}</ul></section> : null}
       {r.nits.length ? <section className="wf-card wf-card-section"><h3>Nits</h3><ul className="wf-list tight">{r.nits.map((s, i) => <li key={i}>{s}</li>)}</ul></section> : null}
     </div>
   );

@@ -33,10 +33,10 @@ export function langParam(language: ResourceLanguage): string { return `lang=${l
 export function LanguageFilter({ label = "Language" }: { label?: string }) {
   const { language, setLanguage } = useLanguage();
   return (
-    <div className="segmented" role="radiogroup" aria-label={label}>
-      {RESOURCE_LANGUAGES.map((l) => (
-        <button key={l.key} type="button" role="radio" aria-checked={language === l.key} className={language === l.key ? "active" : ""} onClick={() => setLanguage(l.key)}>{l.label}</button>
-      ))}
-    </div>
+    <label className="filter-select"><span>{label}</span>
+      <select value={language} onChange={(e) => { const v = e.target.value; if (isResourceLanguage(v)) setLanguage(v); }} aria-label={label}>
+        {RESOURCE_LANGUAGES.map((l) => <option key={l.key} value={l.key}>{l.label}</option>)}
+      </select>
+    </label>
   );
 }
