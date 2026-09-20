@@ -122,7 +122,7 @@ export async function ensureFolder(name: string, parent = driveFolder()): Promis
 }
 
 /** Upload a file into the Wisdom Drive folder. Office files and text convert to Google Docs, Slides or Sheets so editing continues in Google. */
-export async function uploadToDrive(buf: Buffer, name: string, mime: string, convert = true, opts: { parent?: string } = {}): Promise<DriveMeta> {
+export async function uploadToDrive(buf: Buffer, name: string, mime: string, convert = true, opts: { parent?: string; mustConvert?: boolean } = {}): Promise<DriveMeta> {
   const folder = opts.parent ?? driveFolder();
   const h = await writeHeaders();
   const target = convert ? CONVERT_TO[mime] : undefined;
@@ -134,9 +134,10 @@ export async function uploadToDrive(buf: Buffer, name: string, mime: string, con
   const tail = Buffer.from(`\r\n--${boundary}--`);
   const r = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=${UPLOAD_FIELDS}`, { method: "POST", headers: { ...h, "Content-Type": `multipart/related; boundary=${boundary}` }, body: Buffer.concat([head, buf, tail]) });
   if (!r.ok) {
+    const detail = `${r.status} ${(await r.text()).replace(/\s+/g, " ").slice(0, 300)}`;
     // Files Google will not convert (too large, odd encoding) are kept as they are rather than lost.
-    if (target && r.status !== 401 && r.status !== 403) return uploadToDrive(buf, name, mime, false, opts);
-    throw new Error(`Drive upload failed: ${r.status} ${(await r.text()).slice(0, 200)}`);
+    if (target && !opts.mustConvert && r.status !== 401 && r.status !== 403) { logger.warn({ name, mime, detail }, "Drive would not convert the file; keeping it as uploaded"); return uploadToDrive(buf, name, mime, false, opts); }
+    throw new Error(`Drive upload failed${target ? ` (converting ${mime} to ${target})` : ""}: ${detail}`);
   }
   return await r.json() as DriveMeta;
 }

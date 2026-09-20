@@ -114,7 +114,7 @@ async function importPostOrQuestion(ctx: Ctx, row: Row, kind: "post" | "question
     const docHtml = `<html><body>${absLinks(replaceMediaFigures(bodyHtml, (id) => { const u = byContent.get(id); return u ? `<p><a href="${esc(linkFor(u))}">${esc(u.att.name)}</a></p>` : ""; }))}</body></html>`;
     nativeKind = "google"; googleKind = "document"; plan = "Google Doc";
     if (!ctx.dryRun) {
-      const meta = await uploadToDrive(Buffer.from(docHtml, "utf8"), title, "text/html", true, { parent: folder ?? undefined });
+      const meta = await uploadToDrive(Buffer.from(docHtml, "utf8"), `${title}.html`, "text/html", true, { parent: folder ?? undefined, mustConvert: true });
       if (meta.mimeType !== "application/vnd.google-apps.document") throw new Error(`Google did not convert the post text into a Doc (got ${meta.mimeType})`);
       googleFileId = meta.id; driveMime = meta.mimeType; url = meta.webViewLink ?? googleUrl("document", meta.id);
     }

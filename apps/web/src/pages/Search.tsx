@@ -10,6 +10,10 @@ export function SearchPage() {
   const [sp, setSp] = useSearchParams(); const q = sp.get("q") ?? ""; const [draft, setDraft] = useState(q); const { language } = useLanguage(); const { types } = useDocTypes();
   useEffect(() => setDraft(q), [q]);
   const r = useQuery({ queryKey: ["search", q, language, types], queryFn: () => api.get<{ query: string; rewritten: string | null; mode: string; results: ItemSummary[] }>(`/api/search?q=${encodeURIComponent(q)}&${langParam(language)}&${typesParam(types)}`), enabled: q.length >= 2 });
+  // The list shows as soon as it is ranked; the one-line "why it matches" notes arrive a moment later.
+  const ids = r.data?.results.map((it) => it.id).join(",") ?? "";
+  const why = useQuery({ queryKey: ["explain", q, ids], queryFn: () => api.post<{ lines: Record<string, string> }>("/api/search/explain", { q, items: r.data!.results.map((it) => ({ id: it.id, title: it.title, summary: (it.summary ?? it.description ?? "").slice(0, 1000) })) }), enabled: !!r.data?.results.length, staleTime: 10 * 60_000 });
+  const results = (r.data?.results ?? []).map((it) => ({ ...it, why: why.data?.lines[it.id] ?? it.why ?? null }));
   return (
     <div className="wf-page">
       <div className="wf-page-header"><div><h1>Search</h1><p>Semantic search over everything in Wildflower Wisdom, including attachment text, ranked with helpfulness in mind. Each result says why it matched.</p></div></div>
@@ -18,7 +22,7 @@ export function SearchPage() {
       {q.length < 2 ? <State kind="empty" title="Type a question or a few words">Try “how do we set tuition levels” or “sample board resolution to open a bank account”.</State>
         : r.isLoading ? <Loading what="Searching" /> : r.error ? <ErrorState error={r.error} retry={() => r.refetch()} />
         : <>{r.data!.rewritten && r.data!.rewritten.toLowerCase() !== q.toLowerCase() ? <p className="muted" style={{ marginBottom: 12 }}>Searched for: <em>{r.data!.rewritten}</em>{r.data!.mode === "keyword" ? " (keyword mode)" : ""}</p> : r.data!.mode === "keyword" ? <p className="muted">Keyword mode.</p> : null}
-          {r.data!.results.length ? <ItemGrid items={r.data!.results} context={{ from: "search", q }} /> : <State kind="empty" title="Nothing matched">The knowledge base may not cover this. <Link to={`/ask?q=${encodeURIComponent(q)}`}>Ask the question</Link> to get a direct answer, or try different words.</State>}
+          {results.length ? <ItemGrid items={results} context={{ from: "search", q }} /> : <State kind="empty" title="Nothing matched">The knowledge base may not cover this. <Link to={`/ask?q=${encodeURIComponent(q)}`}>Ask the question</Link> to get a direct answer, or try different words.</State>}
           {r.data!.results.length ? <p className="muted" style={{ marginTop: 16 }}>Not what you needed? <Link to={`/ask?q=${encodeURIComponent(q)}`}>Ask it as a question</Link>.</p> : null}</>}
     </div>
   );

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getDb, searchLog } from "@wfw/db";
 import { isResourceLanguage, type ResourceLanguage } from "@wfw/shared";
 import { requireUser } from "../auth.js";
-import { search } from "../services/search.js";
+import { explainResults, search } from "../services/search.js";
 import { parseTypes } from "../services/items.js";
 import { answer } from "../services/chat.js";
 import { listMyQuestions, listSharedExamples } from "../services/questions.js";
@@ -27,10 +27,16 @@ searchRouter.get("/", async (req, res) => {
   const language: ResourceLanguage = isResourceLanguage(req.query.lang) ? req.query.lang : await readerLanguage(req.user!.id);
   if (q.length < 2) { res.json({ query: q, rewritten: null, mode: "keyword", results: [], language }); return; }
   const types = parseTypes(req.query.types);
-  const r = await search(q, { staff: req.user!.role === "staff", limit: types.length ? 30 : 12, explain: req.query.explain !== "0", userId: req.user!.id, language });
+  // Results come back at once; the page asks for the "why it matches" lines separately so they never hold up the list.
+  const r = await search(q, { staff: req.user!.role === "staff", limit: types.length ? 30 : 12, explain: req.query.explain === "1", userId: req.user!.id, language });
   if (types.length) { const ct = new Set(types); r.results = r.results.filter((it) => (it.isSeries ? ct.has("series") : it.kind === "question" ? ct.has("question") : ct.has(it.contentType ?? "other"))).slice(0, 12); }
   await getDb().insert(searchLog).values({ userId: req.user!.id, query: q, rewritten: r.rewritten, mode: r.mode, resultCount: r.results.length });
   res.json({ ...r, language });
+});
+searchRouter.post("/explain", async (req, res) => {
+  const body = z.object({ q: z.string().min(2).max(300), items: z.array(z.object({ id: z.string().uuid(), title: z.string().max(300), summary: z.string().max(1000) })).max(30) }).parse(req.body);
+  const lines = await explainResults(body.q, body.items);
+  res.json({ lines: Object.fromEntries(lines) });
 });
 searchRouter.post("/chat", async (req, res) => {
   const body = chatSchema.parse(req.body);

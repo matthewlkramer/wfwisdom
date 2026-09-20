@@ -6,9 +6,17 @@ let entries: Entry[] = [];
 let loadedAt = 0;
 let loading: Promise<void> | null = null;
 
+/**
+ * Load the chunk embeddings into memory. A forced load (after indexing) is awaited; the periodic refresh runs in the
+ * background so a search never waits the several seconds the load takes.
+ */
 export async function loadVectors(force = false): Promise<void> {
+  if (loading) return force || !entries.length ? loading : undefined;
+  if (!force && entries.length) { if (Date.now() - loadedAt > 30 * 60_000) void reload(); return; }
+  return reload();
+}
+async function reload(): Promise<void> {
   if (loading) return loading;
-  if (!force && entries.length && Date.now() - loadedAt < 10 * 60_000) return;
   loading = (async () => {
     const db = getDb();
     const rows = await db.select({ itemId: itemChunks.itemId, chunkId: itemChunks.id, ord: itemChunks.ord, emb: itemChunks.embedding }).from(itemChunks).innerJoin(items, sql`${items.id} = ${itemChunks.itemId} and ${items.removedAt} is null`).where(sql`${itemChunks.embedding} is not null`);
@@ -20,6 +28,8 @@ export async function loadVectors(force = false): Promise<void> {
   return loading;
 }
 export function vectorCount(): number { return entries.length; }
+/** Changes whenever the index is reloaded; cached search results are keyed on it. */
+export function vectorsVersion(): number { return loadedAt; }
 
 /** Cosine similarity search per item: half the item's head chunk (title, description, opening) and half its best chunk,
  *  so long documents that mention everything do not outrank focused ones. */
