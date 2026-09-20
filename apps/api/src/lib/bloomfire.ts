@@ -51,8 +51,13 @@ export class Bloomfire {
   post(id: number) { return this.get<BfItem>(`/posts/${id}`, POST_FIELDS); }
   series(id: number) { return this.get<BfItem>(`/series/${id}`, SERIES_FIELDS); }
   question(id: number) { return this.get<BfItem>(`/questions/${id}`, QUESTION_FIELDS); }
-  async download(url: string): Promise<Buffer> {
-    const r = await fetch(url); if (!r.ok) throw new Error(`download ${r.status}`);
-    return Buffer.from(await r.arrayBuffer());
+  /** Downloads an attachment; a stalled transfer is abandoned after the timeout rather than hanging a worker. */
+  async download(url: string, timeoutMs = 90_000): Promise<Buffer> {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const r = await fetch(url, { signal: ctrl.signal }); if (!r.ok) throw new Error(`download ${r.status}`);
+      return Buffer.from(await r.arrayBuffer());
+    } catch (e) { throw new Error((e as Error).name === "AbortError" ? `download timed out after ${timeoutMs / 1000}s` : (e as Error).message); }
+    finally { clearTimeout(t); }
   }
 }
