@@ -95,7 +95,12 @@ async function importPostOrQuestion(ctx: Ctx, row: Row, kind: "post" | "question
   const ownWords = normalizeWs(stripHtml(replaceMediaFigures(bodyHtml, () => ""))).length;
   const wantsDoc = kind === "post" && ownWords >= DOC_THRESHOLD;
   const folderName = cleanName(`${title.slice(0, 80)} (${kind} ${row.sourceId})`);
-  const folder = !ctx.dryRun && (contents.length || wantsDoc) ? (row.importedFrom?.folderId ?? await ensureFolder(folderName, ctx.root)) : null;
+  let folder = row.importedFrom?.folderId ?? null;
+  if (!folder && !ctx.dryRun && (contents.length || wantsDoc)) {
+    folder = await ensureFolder(folderName, ctx.root);
+    // Remembered at once so a retry after a failure reuses the folder instead of making another.
+    await db.update(items).set({ importedFrom: { kind, sourceId: row.sourceId, url: row.url, folderId: folder } }).where(eq(items.id, row.id));
+  }
   // Files first, saving progress as each lands so a failure later does not upload them twice.
   const prior = new Map((row.nativeAttachments ?? []).map((a) => [a.sourceContentId ?? -1, a as StoredAttachment]));
   const uploaded: { att: StoredAttachment; meta: DriveMeta | null; text: string }[] = [];

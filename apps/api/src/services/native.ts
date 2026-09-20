@@ -16,7 +16,7 @@ export type GoogleKind = "document" | "spreadsheets" | "presentation" | "file";
 
 const GOOGLE_APPS: Record<string, GoogleKind> = { "application/vnd.google-apps.document": "document", "application/vnd.google-apps.spreadsheet": "spreadsheets", "application/vnd.google-apps.presentation": "presentation" };
 const CONVERT_TO: Record<string, string> = {
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "application/vnd.google-apps.document", "application/msword": "application/vnd.google-apps.document", "text/plain": "application/vnd.google-apps.document", "text/markdown": "application/vnd.google-apps.document", "application/rtf": "application/vnd.google-apps.document",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "application/vnd.google-apps.document", "application/msword": "application/vnd.google-apps.document", "text/html": "application/vnd.google-apps.document", "text/plain": "application/vnd.google-apps.document", "text/markdown": "application/vnd.google-apps.document", "application/rtf": "application/vnd.google-apps.document",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation": "application/vnd.google-apps.presentation", "application/vnd.ms-powerpoint": "application/vnd.google-apps.presentation",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "application/vnd.google-apps.spreadsheet", "application/vnd.ms-excel": "application/vnd.google-apps.spreadsheet", "text/csv": "application/vnd.google-apps.spreadsheet",
 };
