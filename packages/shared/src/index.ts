@@ -19,6 +19,9 @@ export interface ItemSummary {
   description: string | null; summary: string | null; contentType: string | null;
   updatedAt: string | null; views: number; score: number; curation: Curation; dated: string | null;
   linkOnly: boolean; attachmentCount: number; seriesTitles: string[]; language: ItemLanguage; why?: string | null;
+  /** For a series card on the map: the items inside it, in order. */
+  children?: { id: string; title: string }[];
+  isSeries?: boolean;
 }
 export interface SubjobSummary { id: string; key: string; name: string; description: string | null; stages: StageKey[]; itemCount: number; }
 export interface JobSummary { id: string; key: string; name: string; description: string | null; staffOnly: boolean; hidden: boolean; subjobs: SubjobSummary[]; }
@@ -77,3 +80,9 @@ export interface QuestionNote { id: string; body: string; authorName: string; cr
 /** A question in the staff Questions queue. */
 export interface StaffQuestion extends MyQuestion { askerName: string; askerEmail: string; reviewedBy: string | null; reviewedAt: string | null; shareDecidedBy: string | null; shareDecidedAt: string | null; notes: QuestionNote[] }
 export interface StaffQuestionListResult { questions: StaffQuestion[]; pagination: { page: number; limit: number; total: number; pageCount: number } }
+
+/** Document types readers can filter by. "series" and "question" are kinds; the rest are content types. */
+export const DOC_TYPES: { key: string; label: string }[] = [
+  { key: "series", label: "Series" }, { key: "guide", label: "Guides" }, { key: "template", label: "Templates" }, { key: "example", label: "Examples" }, { key: "data", label: "Data" },
+  { key: "training", label: "Training" }, { key: "directory", label: "Directories" }, { key: "policy", label: "Policies" }, { key: "news", label: "News" }, { key: "question", label: "Q&A" }, { key: "link", label: "Links" }, { key: "other", label: "Other" },
+];

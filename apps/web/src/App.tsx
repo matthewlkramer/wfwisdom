@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { SessionUser } from "@wfw/shared";
 import { api } from "./api";
 import { Shell } from "./components/Shell";
+import { TypeFilterProvider } from "./filters";
 import { LanguageProvider } from "./language";
 import { Loading } from "./components/ui";
 import { AdminLayout } from "./pages/admin/AdminLayout";
@@ -36,7 +37,7 @@ export default function App() {
   const user = me.data?.user ?? null;
   if (!user) return <LanguageProvider user={null}><Routes><Route path="*" element={<Landing next={loc.pathname + loc.search} />} /></Routes></LanguageProvider>;
   return (
-    <LanguageProvider user={user}>
+    <LanguageProvider user={user}><TypeFilterProvider>
     <Routes>
       <Route element={<Shell user={user} onSignOut={() => qc.setQueryData(["me"], { user: null })} />}>
         <Route index element={<Home />} />
@@ -74,6 +75,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
-    </LanguageProvider>
+    </TypeFilterProvider></LanguageProvider>
   );
 }

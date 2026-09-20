@@ -25,11 +25,12 @@ export function Pill({ item }: { item: ItemSummary }) {
   return <>{item.curation === "essential" ? <span className="wf-status wf-status-essential">Essential</span> : item.curation === "recommended" ? <span className="wf-status wf-status-recommended">Staff pick</span> : null}{item.dated ? <span className="wf-status wf-status-attention">{item.dated}</span> : null}</>;
 }
 export function ItemCard({ item, context, showWhy = true }: { item: ItemSummary; context?: Record<string, unknown>; showWhy?: boolean }) {
-  const kindLabel = item.kind === "series" ? "Series" : item.kind === "question" ? "Q&A" : item.contentType ? item.contentType[0]!.toUpperCase() + item.contentType.slice(1) : "Post";
+  const kindLabel = item.isSeries || item.kind === "series" ? "Series" : item.kind === "question" ? "Q&A" : item.contentType ? item.contentType[0]!.toUpperCase() + item.contentType.slice(1) : "Post";
   return (
     <article className="wf-card wf-card-record">
       <div className="wf-record-heading"><span><Link className="wf-card-title" to={`/item/${item.id}`} onClick={() => signalClick(item.id, context ?? {})}>{item.title}</Link></span><span className="wf-record-tags"><Pill item={item} /></span></div>
       {showWhy && item.why ? <p className="item-why">{item.why}</p> : null}
+      {item.children?.length ? <ol className="series-items">{item.children.map((c) => <li key={c.id}><Link to={`/item/${c.id}`} onClick={() => signalClick(c.id, { ...(context ?? {}), viaSeries: item.id })}>{c.title}</Link></li>)}</ol> : null}
       {item.summary ? <p className="item-summary">{item.summary}</p> : item.description ? <p className="item-summary">{item.description.slice(0, 220)}{item.description.length > 220 ? "…" : ""}</p> : null}
       <div className="item-meta"><span className="wf-status wf-status-stage">{kindLabel}</span>{item.updatedAt ? <span>Updated {fmtMonth(item.updatedAt)}</span> : null}{item.attachmentCount ? <span>{item.attachmentCount} attachment{item.attachmentCount > 1 ? "s" : ""}</span> : null}{item.linkOnly ? <span>Link out</span> : null}</div>
     </article>

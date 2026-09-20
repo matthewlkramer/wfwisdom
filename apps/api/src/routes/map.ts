@@ -4,7 +4,7 @@ import { and, desc, eq, getDb, inArray, isNull, itemMeta, items, jobs, placement
 import { STAGES, isResourceLanguage, type JobSummary, type ResourceLanguage, type StageKey } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { getSettings } from "../settings.js";
-import { itemsForSubjob, languageWhere, mostUsed, startHere, toSummary, itemSelect, type ItemRow, visibleWhere } from "../services/items.js";
+import { itemsForSubjob, languageWhere, mostUsed, parseTypes, startHere, toSummary, itemSelect, type ItemRow, visibleWhere } from "../services/items.js";
 import { extractPrimaryVideo, stripContentTokens } from "../lib/html.js";
 import { readerLanguage } from "../services/language-pref.js";
 
@@ -37,7 +37,8 @@ mapRouter.get("/home", async (req, res) => {
   const [u] = await getDb().select({ stage: users.stage }).from(users).where(eq(users.id, req.user!.id));
   const effective = stage ?? (isStage(u?.stage) ? u!.stage as StageKey : null);
   const lang = await requestLanguage(req);
-  const [start, used] = await Promise.all([effective ? startHere(effective, staff, s.startHereCap, lang) : Promise.resolve([]), mostUsed(staff, 8, lang)]);
+  const types = parseTypes(req.query.types);
+  const [start, used] = await Promise.all([effective ? startHere(effective, staff, s.startHereCap, lang, types) : Promise.resolve([]), mostUsed(staff, 8, lang, types)]);
   res.json({ stage: effective, startHere: start, mostUsed: used, stages: STAGES, language: lang });
 });
 
@@ -57,7 +58,8 @@ mapRouter.get("/job/:key", async (req, res) => {
   const ss = await db.select().from(subjobs).where(eq(subjobs.jobId, j.id)).orderBy(subjobs.sort);
   const perSub = Number(req.query.limit ?? 3);
   const lang = await requestLanguage(req);
-  const out = await Promise.all(ss.map(async (sj) => { const list = await itemsForSubjob(sj.id, staff, lang); return { id: sj.id, key: sj.key, name: sj.name, description: sj.description, stages: sj.stages as StageKey[], itemCount: list.length, items: list.slice(0, perSub) }; }));
+  const types = parseTypes(req.query.types);
+  const out = await Promise.all(ss.map(async (sj) => { const list = await itemsForSubjob(sj.id, staff, lang, types); return { id: sj.id, key: sj.key, name: sj.name, description: sj.description, stages: sj.stages as StageKey[], itemCount: list.length, items: list.slice(0, perSub) }; }));
   res.json({ job: { id: j.id, key: j.key, name: j.name, description: j.description, staffOnly: j.staffOnly }, subjobs: out });
 });
 
@@ -67,7 +69,7 @@ mapRouter.get("/subjob/:key", async (req, res) => {
   const [s] = await db.select({ id: subjobs.id, key: subjobs.key, name: subjobs.name, description: subjobs.description, stages: subjobs.stages, jobId: subjobs.jobId }).from(subjobs).where(eq(subjobs.key, String(req.params.key)));
   if (!s) { res.status(404).json({ error: "Not found" }); return; }
   const [j] = await db.select().from(jobs).where(eq(jobs.id, s.jobId));
-  const list = await itemsForSubjob(s.id, staff, await requestLanguage(req));
+  const list = await itemsForSubjob(s.id, staff, await requestLanguage(req), parseTypes(req.query.types));
   res.json({ subjob: { ...s, stages: s.stages as StageKey[] }, job: j ? { id: j.id, key: j.key, name: j.name } : null, items: list });
 });
 
