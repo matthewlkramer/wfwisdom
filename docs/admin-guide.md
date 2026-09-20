@@ -62,7 +62,7 @@ Everything mirrored from Connected can be moved into Wildflower Wisdom for good,
 
 What happens to each item (its id, placements, curation, votes, and score are kept):
 
-- Its files are uploaded to the Wisdom Drive folder, in a folder per item under "Connected import". Word, PowerPoint, and Excel files become Google Docs, Slides, and Sheets; PDFs, images, audio, and video stay files. Text is pulled out of documents, and Connected's transcripts of videos are kept, so search still finds them.
+- Its files are uploaded to the Wisdom Drive folder, in a folder per item under "Connected import". The file as originally uploaded is taken (the Word file behind Connected's PDF preview, for instance). Word, PowerPoint, and Excel files become Google Docs, Slides, and Sheets; PDFs, images, audio, and video stay files. Text is pulled out of documents, and Connected's transcripts of videos are kept, so search still finds them.
 - A post with real text of its own (about a paragraph or more) becomes a Google Doc made from that text, with its files linked from the Doc and shown under it on the page.
 - A post that is mostly one document points at that document; the post's short intro is shown above it.
 - Anything else (a short note with files, a video with a caption) keeps that short text as an intro above its files. Staff can turn such a page into a Google Doc from **Edit** at any time.

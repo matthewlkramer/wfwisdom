@@ -66,16 +66,18 @@ async function importFile(ctx: Ctx, c: BfContent, folder: string | null, prior: 
   const size = c.original_file_size ?? 0;
   const transcript = c.audio_transcript?.transcript ? `Transcript of ${name}:\n${normalizeWs(c.audio_transcript.transcript).slice(0, 60_000)}` : "";
   if (prior) return { att: prior, meta: null, text: transcript };
-  if (!c.content_url) throw new Error(`file ${c.id} (${name}) has no download URL`);
   const kind = kindOfContent(c);
   if (ctx.dryRun) return { att: { driveId: `dry-${c.id}`, name, mime: (kind === "document" && convertTarget(declared)) || declared, bytes: size, kind, chars: 0, sourceContentId: c.id }, meta: null, text: transcript };
+  // The file as uploaded (a Word file rather than its PDF preview) when Connected still has it; the rendering otherwise.
+  const src = (await ctx.bf.originalUrl(c.id)) ?? c.content_url;
+  if (!src) throw new Error(`file ${c.id} (${name}) has no download URL`);
   let meta: DriveMeta; let text = transcript;
   if (kind === "video" || kind === "audio" || size > BUFFER_LIMIT) {
-    const r = await ctx.bf.open(c.content_url);
+    const r = await ctx.bf.open(src);
     const total = Number(r.headers.get("content-length")) || size || null;
     meta = await uploadToDriveStream(r.body!, name, guessMime(name, r.headers.get("content-type")?.split(";")[0]) === "application/octet-stream" ? declared : guessMime(name, r.headers.get("content-type")?.split(";")[0]), total, { parent: folder ?? undefined });
   } else {
-    const buf = await ctx.bf.download(c.content_url, 600_000);
+    const buf = await ctx.bf.download(src, 600_000);
     // Trust the bytes over the label: Connected sometimes serves a PDF rendering under the original name.
     const isPdf = buf.subarray(0, 4).toString() === "%PDF";
     const mime = isPdf ? "application/pdf" : declared;

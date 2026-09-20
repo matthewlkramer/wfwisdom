@@ -51,6 +51,18 @@ export class Bloomfire {
   post(id: number) { return this.get<BfItem>(`/posts/${id}`, POST_FIELDS); }
   series(id: number) { return this.get<BfItem>(`/series/${id}`, SERIES_FIELDS); }
   question(id: number) { return this.get<BfItem>(`/questions/${id}`, QUESTION_FIELDS); }
+  /**
+   * The signed URL of an attachment's original file (the .docx behind a PDF preview, the uploaded video). Connected's
+   * content_url is a rendering; this endpoint redirects to the file as uploaded. Null when Connected has no original.
+   */
+  async originalUrl(contentId: number): Promise<string | null> {
+    if (!this.token) await this.login();
+    try {
+      const r = await fetch(`${this.base}/api/v2/contents/${contentId}/download`, { headers: { Authorization: `Bloomfire-Session-Token ${this.token}` }, redirect: "manual" });
+      const loc = r.headers.get("location");
+      return (r.status === 301 || r.status === 302 || r.status === 303 || r.status === 307) && loc ? loc : null;
+    } catch { return null; }
+  }
   /** Opens an attachment for streaming: waits for the headers only, the caller consumes the body. */
   async open(url: string, timeoutMs = 60_000): Promise<Response> {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeoutMs);
