@@ -45,6 +45,8 @@ export interface Settings {
   maxUploadBytes: number; maxDraftChars: number; maxReviewOutputTokens: number;
   scoreWeights: { curation: number; usage: number; freshness: number }; freshnessLadder: number[]; evergreenContentTypes: string[];
   startHereCap: number; signalBlendCeiling: number; signalHalfLifeDays: number; staffDomain: string;
+  /** Off once everything has been imported from Connected: the nightly index then no longer talks to Connected. */
+  connectedSyncEnabled: boolean;
 }
 export const SETTING_DEFAULTS: Settings = {
   killSwitch: false, reviewModel: "gpt-5.6-sol", reviewEffort: "medium", assistModel: "gpt-5.6-luna", chatModel: "gpt-5.6-luna", embeddingModel: "text-embedding-3-small",
@@ -53,6 +55,7 @@ export const SETTING_DEFAULTS: Settings = {
   maxUploadBytes: 5 * 1024 * 1024, maxDraftChars: 30000, maxReviewOutputTokens: 4000,
   scoreWeights: { curation: 0.4, usage: 0.35, freshness: 0.25 }, freshnessLadder: [1, 0.8, 0.6, 0.4, 0.25], evergreenContentTypes: ["template", "policy", "definition"],
   startHereCap: 7, signalBlendCeiling: 0.6, signalHalfLifeDays: 90, staffDomain: "wildflowerschools.org",
+  connectedSyncEnabled: true,
 };
 
 export type FeedbackCategory = "bug" | "question" | "suggestion" | "other";

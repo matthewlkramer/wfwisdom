@@ -5,6 +5,7 @@ import { SETTING_DEFAULTS, STAGES, type ReviewResult, type Settings } from "@wfw
 import { actor, requireStaff } from "../auth.js";
 import { respondJson } from "../lib/openai.js";
 import { isIndexing, runReindex, applySeeds } from "../services/indexer.js";
+import { importStatus, isImporting, runImport } from "../services/import-connected.js";
 import { itemSelect, toSummary, type ItemRow } from "../services/items.js";
 import { usageToday } from "../services/limits.js";
 import { REVIEW_SCHEMA, buildSystemPrompt, currentBasePrompt } from "../services/review.js";
@@ -23,9 +24,9 @@ adminRouter.get("/overview", async (_req, res) => {
   const [counts] = await db.select({ items: sql<number>`count(*) filter (where removed_at is null)::int`, withText: sql<number>`count(*) filter (where removed_at is null and has_text)::int`, linkOnly: sql<number>`count(*) filter (where removed_at is null and link_only)::int` }).from(items);
   const [pending] = await db.select({ n: sql<number>`count(*)::int` }).from(itemMeta).where(eq(itemMeta.reviewStatus, "pending"));
   const [userCount] = await db.select({ n: sql<number>`count(*)::int`, staff: sql<number>`count(*) filter (where role='staff')::int` }).from(users);
-  const lastRuns = await db.select().from(indexRuns).orderBy(desc(indexRuns.startedAt)).limit(5);
+  const lastRuns = await db.select().from(indexRuns).where(sql`${indexRuns.kind} <> 'import'`).orderBy(desc(indexRuns.startedAt)).limit(5);
   const [subs] = await db.select({ total: sql<number>`count(*)::int`, cost: sql<number>`coalesce(sum(cost_usd),0)::float` }).from(submissions);
-  res.json({ counts: { ...counts, chunks: vectorCount(), pendingReview: pending?.n ?? 0, users: userCount?.n ?? 0, staff: userCount?.staff ?? 0, submissions: subs?.total ?? 0, submissionCost: subs?.cost ?? 0 }, usageToday: await usageToday(), indexing: isIndexing(), lastRuns, settings: await getSettings(true) });
+  res.json({ counts: { ...counts, chunks: vectorCount(), pendingReview: pending?.n ?? 0, users: userCount?.n ?? 0, staff: userCount?.staff ?? 0, submissions: subs?.total ?? 0, submissionCost: subs?.cost ?? 0 }, usageToday: await usageToday(), indexing: isIndexing(), importing: isImporting(), lastRuns, settings: await getSettings(true) });
 });
 
 // ---- settings
@@ -47,6 +48,14 @@ adminRouter.post("/reindex", async (req, res) => {
 });
 adminRouter.post("/rescore", async (req, res) => { const r = await recomputeScores(); await audit(req, "score.recompute", "all", r); res.json(r); });
 adminRouter.post("/apply-seeds", async (req, res) => { await applySeeds(); await loadVectors(true); await audit(req, "seeds.apply", "all"); res.json({ ok: true }); });
+// ---- moving off Connected
+adminRouter.get("/import/status", async (_req, res) => res.json(await importStatus()));
+adminRouter.post("/import/start", async (req, res) => {
+  const b = z.object({ limit: z.number().int().positive().max(5000).optional(), dryRun: z.boolean().optional() }).parse(req.body ?? {});
+  if (isImporting()) { res.status(409).json({ error: "An import is already running" }); return; }
+  try { const id = await runImport(actor(req), b); await audit(req, "import.start", id, b); res.status(202).json({ runId: id }); }
+  catch (e) { res.status(400).json({ error: (e as Error).message }); }
+});
 adminRouter.get("/runs", async (_req, res) => res.json({ runs: await getDb().select().from(indexRuns).orderBy(desc(indexRuns.startedAt)).limit(20), indexing: isIndexing() }));
 adminRouter.get("/runs/:id", async (req, res) => { const [r] = await getDb().select().from(indexRuns).where(eq(indexRuns.id, String(req.params.id))); r ? res.json(r) : res.status(404).json({ error: "Not found" }); });
 

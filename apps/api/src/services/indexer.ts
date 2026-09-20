@@ -3,6 +3,7 @@ import { Bloomfire, type BfContent, type BfItem } from "../lib/bloomfire.js";
 import { extractText } from "../lib/extract.js";
 import { fetchGoogleDocText } from "../lib/google-docs.js";
 import { refreshNativeItems } from "./native.js";
+import { isImporting } from "./import-connected.js";
 import { buildBodyHtml, stripContentTokens } from "../lib/html.js";
 import { embed, respond } from "../lib/openai.js";
 import { GOOGLE_DOC_RE, chunk, normalizeWs, sha, stripHtml } from "../lib/text.js";
@@ -87,6 +88,7 @@ async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) =
 
 export async function runReindex(triggeredBy: string, opts: { full?: boolean; limit?: number } = {}): Promise<string> {
   if (running) throw new Error("A re-index is already running");
+  if (isImporting()) throw new Error("Wait for the Connected import to finish first");
   const db = getDb();
   await markStaleRuns();
   const [run] = await db.insert(indexRuns).values({ kind: "reindex", triggeredBy }).returning({ id: indexRuns.id });
@@ -99,13 +101,17 @@ export async function runReindex(triggeredBy: string, opts: { full?: boolean; li
     const stats: Record<string, unknown> = { fetched: 0, changed: 0, unchanged: 0, removed: 0, embedded: 0, summarized: 0, errors: 0 };
     try {
       const s = await getSettings(true);
-      const bf = new Bloomfire(); await bf.login(); log("logged in to Connected");
-      const lists: { kind: Kind; ids: { id: number; updated_at: string }[] }[] = [
-        { kind: "post", ids: await bf.listPosts() }, { kind: "series", ids: await bf.listSeries() }, { kind: "question", ids: await bf.listQuestions() },
-      ];
-      log(`catalog: ${lists.map((l) => `${l.ids.length} ${l.kind}s`).join(", ")}`);
-      const existing = await db.select({ id: items.id, kind: items.sourceKind, sourceId: items.sourceId, hash: items.contentHash, upd: items.sourceUpdatedAt, removedAt: items.removedAt, hasHtml: sql<boolean>`${items.bodyHtml} is not null` }).from(items);
+      const bf = new Bloomfire();
+      const lists: { kind: Kind; ids: { id: number; updated_at: string }[] }[] = [];
+      if (s.connectedSyncEnabled) {
+        await bf.login(); log("logged in to Connected");
+        lists.push({ kind: "post", ids: await bf.listPosts() }, { kind: "series", ids: await bf.listSeries() }, { kind: "question", ids: await bf.listQuestions() });
+        log(`catalog: ${lists.map((l) => `${l.ids.length} ${l.kind}s`).join(", ")}`);
+      } else log("Connected sync is off (everything has been imported); refreshing Google files only");
+      const existing = await db.select({ id: items.id, kind: items.sourceKind, sourceId: items.sourceId, hash: items.contentHash, upd: items.sourceUpdatedAt, removedAt: items.removedAt, hasHtml: sql<boolean>`${items.bodyHtml} is not null`, importedFrom: items.importedFrom }).from(items);
       const byKey = new Map(existing.map((e) => [`${e.kind}:${e.sourceId}`, e]));
+      // Items already moved into Wisdom are native now; Connected's copy is no longer read.
+      const importedKeys = new Set(existing.filter((e) => e.importedFrom).map((e) => `${e.importedFrom!.kind}:${e.importedFrom!.sourceId}`));
       const seenKeys = new Set<string>();
       const changedIds: string[] = [];
       let processed = 0;
@@ -116,6 +122,7 @@ export async function runReindex(triggeredBy: string, opts: { full?: boolean; li
         while (cursor < work.length) {
           const { kind, ref } = work[cursor++]!;
           const key = `${kind}:${ref.id}`; seenKeys.add(key);
+          if (importedKeys.has(key)) continue;
           const prev = byKey.get(key);
           const updated = ref.updated_at ? new Date(ref.updated_at) : null;
           const skip = !opts.full && prev && !prev.removedAt && prev.hasHtml && prev.upd && updated && prev.upd.getTime() === updated.getTime();
@@ -144,7 +151,7 @@ export async function runReindex(triggeredBy: string, opts: { full?: boolean; li
       };
       await Promise.all([worker(), worker(), worker(), worker()]);
       // items no longer in Connected
-      const gone = existing.filter((e) => e.kind !== "native" && !seenKeys.has(`${e.kind}:${e.sourceId}`) && !e.removedAt && !opts.limit);
+      const gone = s.connectedSyncEnabled ? existing.filter((e) => e.kind !== "native" && !seenKeys.has(`${e.kind}:${e.sourceId}`) && !e.removedAt && !opts.limit) : [];
       if (gone.length) { await db.update(items).set({ removedAt: new Date() }).where(inArray(items.id, gone.map((g) => g.id))); stats.removed = gone.length; log(`${gone.length} items no longer in Connected marked removed`); }
       await applySeeds(log);
       await flush(stats);
@@ -178,7 +185,7 @@ export async function applySeeds(log: (m: string) => void = () => {}): Promise<v
   const pending = await db.select().from(placementSeeds).where(eq(placementSeeds.applied, false));
   let n = 0;
   for (const seed of pending) {
-    const [it] = await db.select({ id: items.id }).from(items).where(and(eq(items.sourceKind, seed.sourceKind), eq(items.sourceId, seed.sourceId)));
+    const [it] = await db.select({ id: items.id }).from(items).where(sql`(${items.sourceKind} = ${seed.sourceKind} and ${items.sourceId} = ${seed.sourceId}) or ${items.importedFrom} @> ${JSON.stringify({ kind: seed.sourceKind, sourceId: seed.sourceId })}::jsonb`);
     if (!it) continue;
     const already = await db.select({ id: placements.id }).from(placements).where(eq(placements.itemId, it.id)).limit(1);
     if (already.length === 0) {
@@ -199,7 +206,7 @@ export async function applySeeds(log: (m: string) => void = () => {}): Promise<v
   let m = 0;
   for (const tr of trs) {
     const tid = typeByKey.get(tr.typeKey); if (!tid) continue;
-    const [it] = await db.select({ id: items.id }).from(items).where(and(eq(items.sourceKind, "post"), eq(items.sourceId, tr.sourceId)));
+    const [it] = await db.select({ id: items.id }).from(items).where(sql`(${items.sourceKind} = 'post' and ${items.sourceId} = ${tr.sourceId}) or ${items.importedFrom} @> ${JSON.stringify({ kind: "post", sourceId: tr.sourceId })}::jsonb`);
     if (!it) continue;
     const r = await db.insert(typeResources).values({ typeId: tid, itemId: it.id, sort: tr.sort }).onConflictDoNothing();
     m += r.rowCount ?? 0;

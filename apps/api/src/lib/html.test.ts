@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBodyHtml, extractPrimaryVideo, mediaHtml, stripContentTokens } from "./html.js";
+import { buildBodyHtml, extractPrimaryVideo, mediaHtml, nativeMediaHtml, replaceMediaFigures, stripContentTokens } from "./html.js";
 import type { BfContent, BfItem } from "./bloomfire.js";
 
 const video = (id: number): BfContent => ({ id, type: "Video", title: "Walkthrough", original_file_name: "walkthrough.mp4", original_file_size: 1024, original_content_type: "video/mp4" } as BfContent);
@@ -71,5 +71,19 @@ describe("extractPrimaryVideo", () => {
   it("does nothing for an item with no video", () => {
     const html = "<p>Text</p>";
     expect(extractPrimaryVideo(html, [{ id: 3, name: "a.pdf", type: "Document", bytes: 10 }])).toEqual({ html, video: null });
+  });
+});
+
+describe("import helpers", () => {
+  it("nativeMediaHtml renders a Drive file like a Connected attachment", () => {
+    const html = nativeMediaHtml({ driveId: "abc123", name: "plan.pdf", mime: "application/pdf", bytes: 2 * 1024 * 1024, kind: "document" });
+    expect(html).toContain('data-drive-id="abc123"');
+    expect(html).toContain('<iframe src="/api/files/native/abc123"');
+    expect(html).toContain("2.0 MB");
+  });
+  it("replaceMediaFigures swaps each Connected figure by content id", () => {
+    const html = `<p>Hi</p>${mediaHtml(video(42))}${mediaHtml({ id: 7, type: "Image", original_file_name: "a.png" } as BfContent)}<p>Bye</p>`;
+    const out = replaceMediaFigures(html, (id) => (id === 42 ? "<p>VIDEO</p>" : ""));
+    expect(out).toBe("<p>Hi</p><p>VIDEO</p><p>Bye</p>");
   });
 });

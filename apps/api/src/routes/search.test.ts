@@ -16,7 +16,7 @@ vi.mock("../services/search.js", () => ({ search }));
 vi.mock("../services/questions.js", () => ({ listMyQuestions, listSharedExamples }));
 vi.mock("../services/language-pref.js", () => ({ readerLanguage }));
 vi.mock("../services/limits.js", () => ({ checkChatAllowed, LimitError }));
-vi.mock("@wfw/db", () => ({ searchLog: {}, getDb: () => ({ insert: () => ({ values: searchLogValues }) }) }));
+vi.mock("@wfw/db", async (importOriginal) => ({ ...(await importOriginal<typeof import("@wfw/db")>()), getDb: () => ({ insert: () => ({ values: searchLogValues }) }) }));
 
 const { searchRouter, chatSchema } = await import("./search.js");
 const { testApp, teacher } = await import("./test-app.js");

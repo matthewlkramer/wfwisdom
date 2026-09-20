@@ -94,22 +94,102 @@ function parseCsv(csv: string): string[][] {
   return rows.filter((r) => r.some((x) => x.trim()));
 }
 
+export const MIME_BY_EXT: Record<string, string> = { docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", doc: "application/msword", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation", ppt: "application/vnd.ms-powerpoint", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xls: "application/vnd.ms-excel", csv: "text/csv", txt: "text/plain", md: "text/markdown", rtf: "application/rtf", pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", mp4: "video/mp4", mov: "video/quicktime", m4v: "video/x-m4v", webm: "video/webm", mp3: "audio/mpeg", m4a: "audio/mp4", wav: "audio/wav" };
+/** Best guess at a file's MIME type from what the source said and its extension. */
+export function guessMime(name: string, declared?: string | null): string {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (declared && declared !== "application/octet-stream" && declared !== "binary/octet-stream") return declared;
+  return MIME_BY_EXT[ext] ?? "application/octet-stream";
+}
+/** The Google format an uploaded file converts to, if any. */
+export const convertTarget = (mime: string | null | undefined): string | null => CONVERT_TO[mime ?? ""] ?? null;
+export const isGoogleAppsMime = (mime: string | null | undefined) => (mime ?? "").startsWith("application/vnd.google-apps.");
+export const googleKindOfMime = (mime: string | null | undefined): GoogleKind => GOOGLE_APPS[mime ?? ""] ?? "file";
+export const UPLOAD_FIELDS = "id,name,mimeType,modifiedTime,webViewLink";
+
+async function writeHeaders(): Promise<Record<string, string>> { const h = await authHeaders(true); if (!h.Authorization) throw new Error("The Google service account is not configured"); return h; }
+function driveFolder(): string { const folder = env.googleSharedDriveId; if (!folder) throw new Error("GOOGLE_SHARED_DRIVE_ID is not set"); return folder; }
+
+/** Find a folder by name under a parent (the Wisdom folder by default), creating it when missing. */
+export async function ensureFolder(name: string, parent = driveFolder()): Promise<string> {
+  const h = await writeHeaders();
+  const q = `name = '${name.replace(/'/g, "\\'")}' and '${parent}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id)&pageSize=1`, { headers: h });
+  if (r.ok) { const j = await r.json() as { files?: { id: string }[] }; if (j.files?.[0]) return j.files[0].id; }
+  const c = await fetch("https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id", { method: "POST", headers: { ...h, "Content-Type": "application/json" }, body: JSON.stringify({ name, parents: [parent], mimeType: "application/vnd.google-apps.folder" }) });
+  if (!c.ok) throw new Error(`Drive folder create failed: ${c.status} ${(await c.text()).slice(0, 200)}`);
+  return ((await c.json()) as { id: string }).id;
+}
+
 /** Upload a file into the Wisdom Drive folder. Office files and text convert to Google Docs, Slides or Sheets so editing continues in Google. */
-export async function uploadToDrive(buf: Buffer, name: string, mime: string, convert = true): Promise<DriveMeta> {
-  const folder = env.googleSharedDriveId; if (!folder) throw new Error("GOOGLE_SHARED_DRIVE_ID is not set");
-  const h = await authHeaders(true); if (!h.Authorization) throw new Error("The Google service account is not configured");
+export async function uploadToDrive(buf: Buffer, name: string, mime: string, convert = true, opts: { parent?: string } = {}): Promise<DriveMeta> {
+  const folder = opts.parent ?? driveFolder();
+  const h = await writeHeaders();
   const target = convert ? CONVERT_TO[mime] : undefined;
-  const meta: Record<string, unknown> = { name: target ? name.replace(/\.[a-z0-9]+$/i, "") : name, parents: [folder], ...(target ? { mimeType: target } : {}) };
+  // A converted file drops its extension; a dot inside a title ("Budget v2.1") is left alone.
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  const meta: Record<string, unknown> = { name: target && (ext in MIME_BY_EXT || ext === "html" || ext === "htm") ? name.replace(/\.[a-z0-9]+$/i, "") : name, parents: [folder], ...(target ? { mimeType: target } : {}) };
   const boundary = `wfw${Date.now().toString(36)}`;
   const head = Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: ${mime}\r\n\r\n`);
   const tail = Buffer.from(`\r\n--${boundary}--`);
-  const r = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,mimeType,modifiedTime,webViewLink", { method: "POST", headers: { ...h, "Content-Type": `multipart/related; boundary=${boundary}` }, body: Buffer.concat([head, buf, tail]) });
-  if (!r.ok) throw new Error(`Drive upload failed: ${r.status} ${(await r.text()).slice(0, 200)}`);
+  const r = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=${UPLOAD_FIELDS}`, { method: "POST", headers: { ...h, "Content-Type": `multipart/related; boundary=${boundary}` }, body: Buffer.concat([head, buf, tail]) });
+  if (!r.ok) {
+    // Files Google will not convert (too large, odd encoding) are kept as they are rather than lost.
+    if (target && r.status !== 401 && r.status !== 403) return uploadToDrive(buf, name, mime, false, opts);
+    throw new Error(`Drive upload failed: ${r.status} ${(await r.text()).slice(0, 200)}`);
+  }
   return await r.json() as DriveMeta;
 }
+
+const CHUNK = 32 * 1024 * 1024;
+/**
+ * Resumable upload straight from a byte stream, for videos and other large files that must not be held in memory.
+ * The stream is sent in 32 MB chunks; Google answers 308 until the last chunk lands.
+ */
+export async function uploadToDriveStream(body: ReadableStream<Uint8Array>, name: string, mime: string, totalBytes: number | null, opts: { parent?: string; idleMs?: number } = {}): Promise<DriveMeta> {
+  const folder = opts.parent ?? driveFolder();
+  const h = await writeHeaders();
+  const start = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=${UPLOAD_FIELDS}`, { method: "POST", headers: { ...h, "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Type": mime, ...(totalBytes ? { "X-Upload-Content-Length": String(totalBytes) } : {}) }, body: JSON.stringify({ name, parents: [folder] }) });
+  if (!start.ok) throw new Error(`Drive resumable start failed: ${start.status} ${(await start.text()).slice(0, 200)}`);
+  const session = start.headers.get("location"); if (!session) throw new Error("Drive resumable start returned no session");
+  const reader = body.getReader();
+  let offset = 0; let pending: Uint8Array[] = []; let pendingBytes = 0; let done = false; let result: DriveMeta | null = null;
+  const send = async (chunk: Buffer, last: boolean) => {
+    const total = last ? offset + chunk.length : (totalBytes ?? "*");
+    const range = chunk.length ? `bytes ${offset}-${offset + chunk.length - 1}/${total}` : `bytes */${total}`;
+    let r: Response | null = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      r = await fetch(session, { method: "PUT", headers: { "Content-Length": String(chunk.length), "Content-Range": range }, body: new Uint8Array(chunk) }).catch(() => null);
+      if (r && (r.status === 308 || r.ok)) break;
+      await new Promise((res) => setTimeout(res, 2000 * (attempt + 1)));
+    }
+    if (!r) throw new Error("Drive chunk upload failed: no response");
+    if (r.status === 308) { offset += chunk.length; return; }
+    if (!r.ok) throw new Error(`Drive chunk upload failed: ${r.status} ${(await r.text()).slice(0, 200)}`);
+    offset += chunk.length; result = await r.json() as DriveMeta;
+  };
+  const idleMs = opts.idleMs ?? 180_000;
+  while (!done) {
+    // A source that stops sending is abandoned rather than holding the worker forever.
+    const { value, done: d } = await Promise.race([reader.read(), new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`download stalled for ${idleMs / 1000}s`)), idleMs).unref())]);
+    if (value?.length) { pending.push(value); pendingBytes += value.length; }
+    done = d;
+    if (pendingBytes >= CHUNK || done) {
+      const buf = Buffer.concat(pending); pending = []; pendingBytes = 0;
+      if (done) { await send(buf, true); break; }
+      // Intermediate chunks must be a multiple of 256 KiB; carry the remainder over.
+      const cut = buf.length - (buf.length % (256 * 1024));
+      await send(buf.subarray(0, cut), false);
+      if (cut < buf.length) { pending.push(buf.subarray(cut)); pendingBytes = buf.length - cut; }
+    }
+  }
+  if (!result) throw new Error("Drive upload did not complete");
+  return result;
+}
 /** Stream a Drive file's bytes (files kept in the Wisdom folder). */
-export async function driveDownload(id: string, range?: string): Promise<Response> {
+export async function driveDownload(id: string, range?: string, mime?: string | null): Promise<Response> {
   const h = await authHeaders(); if (!h.Authorization) throw new Error("The Google service account is not configured");
+  if (isGoogleAppsMime(mime)) return fetch(`https://www.googleapis.com/drive/v3/files/${id}/export?mimeType=application/pdf`, { headers: h });
   return fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media&supportsAllDrives=true`, { headers: { ...h, ...(range ? { Range: range } : {}) } });
 }
 export const toNodeStream = (body: ReadableStream<Uint8Array>) => Readable.fromWeb(body as never);
@@ -162,13 +242,18 @@ export async function refreshNativeItem(itemId: string, by = "system"): Promise<
   const db = getDb();
   const [it] = await db.select().from(items).where(eq(items.id, itemId));
   if (!it || it.sourceKind !== "native") return { changed: false, status: "missing" };
-  const content = await readNativeContent(it);
-  if (content.status !== "ok") return { changed: false, status: content.status };
+  const read = await readNativeContent(it);
+  if (read.status !== "ok") return { changed: false, status: read.status };
+  // Imported items carry their own intro (the old post's words) and the text of their files; both stay searchable.
+  const introText = it.introHtml ? normalizeWs(stripHtml(it.introHtml)) : "";
+  const text = [introText, read.text, it.attachmentText ?? ""].filter(Boolean).join("\n\n").slice(0, 400_000);
+  const html = [it.introHtml ?? "", read.html].filter(Boolean).join("\n");
+  const content: NativeContent = { ...read, text, html, hash: sha(`${text}|${html}`) };
   const hash = sha(`${it.title}|${it.description ?? ""}|${content.text}`);
   const changed = hash !== it.contentHash || (it.bodyHtml ?? "") !== content.html;
   if (changed) {
     const language = content.text ? await resolveLanguage({ title: it.title, description: it.description, body: content.text }) : null;
-    await db.update(items).set({ bodyText: content.text, bodyHtml: content.html, contentHash: hash, hasText: content.text.length >= 300, sourceUpdatedAt: content.modifiedAt ?? new Date(), nativeModifiedAt: content.modifiedAt, driveMime: content.mime ?? it.driveMime, indexedAt: new Date(), ...(language ? { language } : {}) }).where(eq(items.id, itemId));
+    await db.update(items).set({ bodyText: content.text, bodyHtml: content.html, contentHash: hash, hasText: content.text.length >= 300, sourceUpdatedAt: content.modifiedAt ?? it.sourceUpdatedAt ?? new Date(), nativeModifiedAt: content.modifiedAt, driveMime: content.mime ?? it.driveMime, indexedAt: new Date(), ...(language ? { language } : {}) }).where(eq(items.id, itemId));
     await snapshotIfChanged(itemId, content, it.title, it.bodyMarkdown, by);
   } else await db.update(items).set({ indexedAt: new Date() }).where(eq(items.id, itemId));
   return { changed, status: "ok" };

@@ -89,9 +89,24 @@ export function buildBodyHtml(kind: "post" | "series" | "question", it: BfItem):
 }
 
 
+const FIGURE_RE = /<figure class="wf-media" data-content-id="(\d+)">[\s\S]*?<\/figure>/g;
+
+/** A file that lives in the Wisdom Drive folder, rendered in place like a Connected attachment. */
+export interface NativeAttachment { driveId: string; name: string; mime: string | null; bytes: number; kind: string }
+export function nativeMediaHtml(a: NativeAttachment): string {
+  const src = `/api/files/native/${a.driveId}`; const name = esc(a.name);
+  const size = a.bytes ? ` · ${(a.bytes / 1024 / 1024).toFixed(1)} MB` : "";
+  const view = a.kind === "image" ? `<img src="${src}" alt="${name}" loading="lazy">` : a.kind === "video" ? `<video src="${src}" controls preload="metadata"></video>` : a.kind === "audio" ? `<audio src="${src}" controls preload="metadata" style="width:100%"></audio>` : a.kind === "document" ? `<iframe src="${src}" title="${name}" loading="lazy"></iframe>` : "";
+  return `<figure class="wf-media" data-drive-id="${esc(a.driveId)}">${view}<figcaption class="caption"><strong>${name}</strong><span class="muted">${esc(a.kind)}${size}</span><a href="${src}?download=1">Download</a></figcaption></figure>`;
+}
+/** Swap each Connected media figure (by content id) for whatever the callback returns; used when importing. */
+export function replaceMediaFigures(html: string, replace: (contentId: number) => string): string {
+  FIGURE_RE.lastIndex = 0;
+  return html.replace(FIGURE_RE, (_m, id: string) => replace(Number(id)));
+}
+
 /** A video attachment hoisted out of the body so the player can sit at the top of the item page. */
 export interface PrimaryVideo { id: number; name: string; type: string; bytes: number; mime: string | null }
-const FIGURE_RE = /<figure class="wf-media" data-content-id="(\d+)">[\s\S]*?<\/figure>/g;
 
 /**
  * When an item's primary content is a video, pull it out of the body HTML so the page can render the

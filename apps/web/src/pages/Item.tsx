@@ -7,10 +7,10 @@ import { api, fmtDate } from "../api";
 import { ErrorState, ItemGrid, Linkify, Loading, Pill } from "../components/ui";
 import { useMe } from "../me";
 
-type Attachment = { id: number; name: string; type: string; bytes: number; mime: string | null };
+type Attachment = { key: string; src: string; name: string; kind: string; bytes: number; mime: string | null; openUrl: string | null };
 type LinkedDoc = { url: string; kind: string; status: string };
 type Detail = {
-  item: ItemSummary & { authorName: string | null; publishedAt: string | null; categories: string[]; audiences: string[]; bodyHtml: string; primaryVideo: Attachment | null; attachments: Attachment[]; linkedDocs: LinkedDoc[]; contents: ItemSummary[]; seriesNav: { seriesId: string; seriesTitle: string; posts: { id: string; title: string; current: boolean }[] }[]; native: { kind: string | null; googleKind: string | null; googleFileId: string | null; status: string; author: { id: string; name: string } | null } | null };
+  item: ItemSummary & { authorName: string | null; publishedAt: string | null; categories: string[]; audiences: string[]; bodyHtml: string; primaryVideo: Attachment | null; attachments: Attachment[]; linkedDocs: LinkedDoc[]; contents: ItemSummary[]; seriesNav: { seriesId: string; seriesTitle: string; posts: { id: string; title: string; current: boolean }[] }[]; native: { kind: string | null; googleKind: string | null; googleFileId: string | null; status: string; author: { id: string; name: string } | null; imported: boolean } | null };
   placements: { key: string; name: string; jobName: string; jobKey: string; isPrimary: boolean }[];
   votes: { yes: number; no: number; mine: string | null };
 };
@@ -20,16 +20,14 @@ const docLabel = (k: string) => (k === "spreadsheets" ? "Google Sheet" : k === "
 const embedUrl = (d: LinkedDoc) => { const m = d.url.match(/\/d\/([A-Za-z0-9_-]+)/); const id = m?.[1] ?? ""; return d.kind === "presentation" ? `https://docs.google.com/presentation/d/${id}/embed?start=false&loop=false` : `https://docs.google.com/${d.kind}/d/${id}/preview`; };
 
 function Media({ a }: { a: Attachment }) {
-  const src = `/api/files/${a.id}`;
-  const isPdfLike = a.type === "PreviewableDocument" || a.type === "Document";
   return (
     <figure className="wf-media">
-      {a.type === "Image" ? <img src={src} alt={a.name} loading="lazy" />
-        : a.type === "Video" ? <video src={src} controls preload="metadata" />
-        : a.type === "Audio" ? <audio src={src} controls preload="metadata" style={{ width: "100%" }} />
-        : isPdfLike ? <iframe src={src} title={a.name} loading="lazy" />
+      {a.kind === "image" ? <img src={a.src} alt={a.name} loading="lazy" />
+        : a.kind === "video" ? <video src={a.src} controls preload="metadata" />
+        : a.kind === "audio" ? <audio src={a.src} controls preload="metadata" style={{ width: "100%" }} />
+        : a.kind === "document" ? <iframe src={a.src} title={a.name} loading="lazy" />
         : null}
-      <figcaption className="caption"><strong>{a.name}</strong><span className="muted">{a.type === "PreviewableDocument" ? "document" : a.type.toLowerCase()}{mb(a.bytes)}</span><a href={`${src}?download=1`}><Download size={14} /> Download</a></figcaption>
+      <figcaption className="caption"><strong>{a.name}</strong><span className="muted">{a.kind}{mb(a.bytes)}</span>{a.openUrl ? <a href={a.openUrl} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Open in Google</a> : null}<a href={`${a.src}?download=1`}><Download size={14} /> Download</a></figcaption>
     </figure>
   );
 }
@@ -43,12 +41,11 @@ export function ItemPage() {
   if (q.error) return <div className="wf-page"><ErrorState error={q.error} retry={() => q.refetch()} /></div>;
   const { item, placements, votes } = q.data!;
   const primary = placements.find((p) => p.isPrimary) ?? placements[0];
-  const inlined = new Set([...item.bodyHtml.matchAll(/data-content-id="(\d+)"/g)].map((m) => Number(m[1])));
-  // The primary video is rendered at the top of the page, so it is not repeated in the body or Files.
-  const rest = item.attachments.filter((a) => !inlined.has(a.id) && a.id !== item.primaryVideo?.id);
-  const images = rest.filter((a) => a.type === "Image");
-  const files = rest.filter((a) => a.type !== "Image");
-  const kindLabel = item.kind === "series" ? "Series" : item.kind === "question" ? "Q&A" : item.contentType ?? "Post";
+  // Files already shown inside the body, and the video shown at the top, are not repeated below it.
+  const rest = item.attachments.filter((a) => !item.bodyHtml.includes(`"${a.src}"`) && a.key !== item.primaryVideo?.key);
+  const images = rest.filter((a) => a.kind === "image");
+  const files = rest.filter((a) => a.kind !== "image");
+  const kindLabel = item.isSeries || item.kind === "series" ? "Series" : item.kind === "question" || item.contentType === "question" ? "Q&A" : item.contentType ?? "Post";
   return (
     <div className="wf-page">
       {primary ? <Link to={`/map/${primary.key}`} className="wf-page-back">← {primary.jobName} · {primary.name}</Link> : <Link to="/map" className="wf-page-back">← Map</Link>}
@@ -75,11 +72,11 @@ export function ItemPage() {
             {item.primaryVideo ? <Media a={item.primaryVideo} /> : null}
             {item.description && item.description !== item.title ? <p className="lede" style={{ marginTop: 0 }}>{item.description}</p> : null}
             {item.bodyHtml ? <div className="wf-doc" dangerouslySetInnerHTML={{ __html: item.bodyHtml }} /> : null}
-            {images.map((a) => <Media key={a.id} a={a} />)}
-            {(item.kind === "series" || item.native?.kind === "series") && item.contents.length ? <><h2 style={{ marginTop: 8 }}>In this series</h2><ItemGrid items={item.contents} context={{ from: "series" }} /></> : null}
+            {images.map((a) => <Media key={a.key} a={a} />)}
+            {(item.isSeries || item.kind === "series" || item.native?.kind === "series") && item.contents.length ? <><h2 style={{ marginTop: 8 }}>In this series</h2><ItemGrid items={item.contents} context={{ from: "series" }} /></> : null}
             {!item.bodyHtml && !item.attachments.length && !item.linkedDocs.length && !item.contents.length ? <p className="muted">This item has no readable content beyond its title.</p> : null}
           </article>
-          {files.length ? <section className="wf-card wf-card-section" style={{ marginTop: 16 }}><h2 style={{ marginTop: 0 }}>Files</h2>{files.map((a) => <Media key={a.id} a={a} />)}</section> : null}
+          {files.length ? <section className="wf-card wf-card-section" style={{ marginTop: 16 }}><h2 style={{ marginTop: 0 }}>Files</h2>{files.map((a) => <Media key={a.key} a={a} />)}</section> : null}
           {item.linkedDocs.length ? <section className="wf-card wf-card-section" style={{ marginTop: 16 }}><h2 style={{ marginTop: 0 }}>Linked Google files</h2>
             {item.linkedDocs.map((d, i) => <figure className="wf-embed" key={i}><iframe src={embedUrl(d)} title={docLabel(d.kind)} loading="lazy" allowFullScreen /><figcaption><a href={d.url} target="_blank" rel="noreferrer">{docLabel(d.kind)} ↗</a>{d.status === "private" ? <span className="muted"> · shared privately; you may need to request access</span> : null}</figcaption></figure>)}
           </section> : null}

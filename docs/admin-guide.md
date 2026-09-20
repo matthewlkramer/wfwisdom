@@ -56,6 +56,26 @@ The indexer logs in to Connected with the Bloomfire API key and the login email 
 - Each item's language (English, Spanish, or unknown) is decided only for the items Connected reports as changed. An item whose `updated_at` is unchanged is not re-read at all, so the nightly re-index costs a fraction of a cent. A **full** re-index re-checks all of them, about four cents. Existing items are filled in by the one-off `pnpm backfill:language`, so no re-index is needed just for language.
 - Google files shared as "anyone with the link" are read without credentials. Private ones are read through the service account (`GOOGLE_SERVICE_ACCOUNT_JSON`), acting as `GOOGLE_IMPERSONATE_EMAIL` when domain-wide delegation is authorized, otherwise as itself (which reaches shared drives it is a member of). Re-index after changing either.
 
+## Moving off Connected
+
+Everything mirrored from Connected can be moved into Wildflower Wisdom for good, so Connected can be shut down. **Staff → Overview → Move off Connected** shows what is still in Connected and runs the import.
+
+What happens to each item (its id, placements, curation, votes, and score are kept):
+
+- Its files are uploaded to the Wisdom Drive folder, in a folder per item under "Connected import". Word, PowerPoint, and Excel files become Google Docs, Slides, and Sheets; PDFs, images, audio, and video stay files. Text is pulled out of documents, and Connected's transcripts of videos are kept, so search still finds them.
+- A post with real text of its own (about a paragraph or more) becomes a Google Doc made from that text, with its files linked from the Doc and shown under it on the page.
+- A post that is mostly one document points at that document; the post's short intro is shown above it.
+- Anything else (a short note with files, a video with a caption) keeps that short text as an intro above its files. Staff can turn such a page into a Google Doc from **Edit** at any time.
+- A series becomes a native series over the imported posts; a question keeps the question and its answers as a page.
+
+How to run it:
+
+1. Check the Drive secrets (`GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_IMPERSONATE_EMAIL`, `GOOGLE_SHARED_DRIVE_ID`) with `node scripts/check-secrets.mjs`.
+2. Click **Dry run** to see what would happen to the next 50 items without changing anything, then **Import 5 as a test** and open a few of the imported items.
+3. Click **Import everything**. It can be stopped (a restart stops it) and started again: finished items are skipped and failed ones are retried, and files already uploaded for a failed item are reused. Failed items are listed on the page with the reason.
+4. The published site is small and scales down when idle, so the full run (about 12 GB of video and documents) is best run from the Replit workspace: add a workspace secret `IMPORT_DATABASE_URL` with the production `DATABASE_URL` (Deployments → the deployment's database), then run `pnpm import:connected` in the shell (`--dry-run` and `--limit=N` work there too). Remove the secret afterwards.
+5. When nothing is left, **Connected sync** switches itself off: the nightly run no longer reads Connected and only refreshes Google files. Connected can then be decommissioned. Old Connected links inside imported content still open the right item here.
+
 ## How to curate the best resources
 
 **Staff → Curation** lists every item with its score, views, and placements. Per item you can:
@@ -124,6 +144,7 @@ Run `node scripts/check-secrets.mjs` in the Repl shell to verify every secret ag
 | `pnpm backfill:language` | Decides the language of every already-indexed item still marked unknown, using the same model check the indexer runs. Safe to re-run; it never touches Connected and never re-indexes. |
 | `pnpm backfill:language --all` | Re-checks every item, including ones already marked English or Spanish. About five cents and a minute or two for the whole library. |
 | `pnpm backfill:language --all --dry-run` | Reports how many items would be checked and what it would cost, without writing anything or spending anything. Run this first if you want the cost up front. |
+| `pnpm import:connected` | Runs the Connected import from the shell (see Moving off Connected). `--dry-run` only logs the plan; `--limit=N` does the next N items. With `IMPORT_DATABASE_URL` set it works on that database instead of the workspace's. |
 | `pnpm backfill:language --ids=a,b,c` | Re-checks just those item ids, whatever they are currently marked. The command to run is printed for you whenever a run leaves items unchecked. |
 
 ## Deploying changes

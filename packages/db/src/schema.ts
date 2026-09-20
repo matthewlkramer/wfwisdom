@@ -86,6 +86,16 @@ export const items = pgTable("items", {
   childItemIds: jsonb("child_item_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
   nativeModifiedAt: timestamp("native_modified_at", { withTimezone: true }),
   bodyMarkdown: text("body_markdown"),
+  /** Set when this item was moved here from Connected: where it came from, so old links still resolve. */
+  importedFrom: jsonb("imported_from").$type<{ kind: string; sourceId: number; url: string; folderId?: string | null }>(),
+  importedAt: timestamp("imported_at", { withTimezone: true }),
+  importError: text("import_error"),
+  /** Files that live in the Wisdom Drive folder alongside the item (imported attachments). */
+  nativeAttachments: jsonb("native_attachments").$type<{ driveId: string; name: string; mime: string | null; bytes: number; kind: string; chars?: number; sourceContentId?: number | null }[]>().notNull().default(sql`'[]'::jsonb`),
+  /** Text pulled out of those files and transcripts, merged into body_text so search still finds it. */
+  attachmentText: text("attachment_text"),
+  /** Short HTML shown above the main content (an imported post's own words when its content is a file). */
+  introHtml: text("intro_html"),
   attachments: jsonb("attachments").$type<{ id: number; name: string; type: string; bytes: number; chars: number; mime?: string | null }[]>().notNull().default(sql`'[]'::jsonb`),
   linkedDocs: jsonb("linked_docs").$type<{ url: string; kind: string; status: string; chars: number }[]>().notNull().default(sql`'[]'::jsonb`),
   linkOnly: boolean("link_only").notNull().default(false),

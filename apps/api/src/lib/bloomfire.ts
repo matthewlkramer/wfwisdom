@@ -51,6 +51,13 @@ export class Bloomfire {
   post(id: number) { return this.get<BfItem>(`/posts/${id}`, POST_FIELDS); }
   series(id: number) { return this.get<BfItem>(`/series/${id}`, SERIES_FIELDS); }
   question(id: number) { return this.get<BfItem>(`/questions/${id}`, QUESTION_FIELDS); }
+  /** Opens an attachment for streaming: waits for the headers only, the caller consumes the body. */
+  async open(url: string, timeoutMs = 60_000): Promise<Response> {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try { const r = await fetch(url, { signal: ctrl.signal, redirect: "follow" }); if (!r.ok || !r.body) throw new Error(`download ${r.status}`); return r; }
+    catch (e) { throw new Error((e as Error).name === "AbortError" ? `download did not start within ${timeoutMs / 1000}s` : (e as Error).message); }
+    finally { clearTimeout(t); }
+  }
   /** Downloads an attachment; a stalled transfer is abandoned after the timeout rather than hanging a worker. */
   async download(url: string, timeoutMs = 90_000): Promise<Buffer> {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeoutMs);

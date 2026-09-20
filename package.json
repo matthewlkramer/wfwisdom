@@ -17,7 +17,8 @@
     "index": "pnpm --filter @wfw/api index",
     "check:secrets": "node scripts/check-secrets.mjs",
     "preview": "pnpm build && pnpm deploy:start",
-    "backfill:language": "pnpm --filter @wfw/api backfill:language"
+    "backfill:language": "pnpm --filter @wfw/api backfill:language",
+    "import:connected": "pnpm --filter @wfw/api import:connected"
   },
   "engines": {
     "node": ">=22"

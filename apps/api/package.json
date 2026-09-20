@@ -10,7 +10,8 @@
     "index": "tsx src/cli/index-now.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run src --passWithNoTests",
-    "backfill:language": "tsx src/cli/backfill-language.ts"
+    "backfill:language": "tsx src/cli/backfill-language.ts",
+    "import:connected": "tsx src/cli/import-connected.ts"
   },
   "dependencies": {
     "@wfw/db": "workspace:*",

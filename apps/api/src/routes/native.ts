@@ -5,14 +5,15 @@ import { and, desc, eq, getDb, inArray, itemMeta, itemVersions, items, jobs, pla
 import { actor, requireStaff, requireUser } from "../auth.js";
 import { extractText } from "../lib/extract.js";
 import { embedItems, summarizeItems } from "../services/indexer.js";
-import { driveDownload, driveMeta, exportGoogle, googleUrl, parseGoogleLink, readNativeContent, refreshNativeItem, snapshotIfChanged, toNodeStream, uploadToDrive, type GoogleKind, type NativeKind } from "../services/native.js";
+import { driveDownload, driveMeta, exportGoogle, googleUrl, guessMime, isGoogleAppsMime, markdownToHtml, parseGoogleLink, readNativeContent, refreshNativeItem, snapshotIfChanged, toNodeStream, uploadToDrive, type GoogleKind, type NativeKind } from "../services/native.js";
 import { resolveLanguage } from "../services/language.js";
 import { getSettings } from "../settings.js";
 import { loadVectors } from "../services/vectors.js";
 import { sha } from "../lib/text.js";
+import { env } from "../env.js";
+import { sanitizeBody } from "../lib/html.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 60 * 1024 * 1024 } });
-const MIME_BY_EXT: Record<string, string> = { docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", doc: "application/msword", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", csv: "text/csv", txt: "text/plain", md: "text/markdown", pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", mp4: "video/mp4", mov: "video/quicktime" };
 
 interface CreateInput { kind: NativeKind; title?: string; description?: string | null; url?: string; file?: Express.Multer.File; bodyMarkdown?: string; childItemIds?: string[]; materialTypeKey?: string | null; note?: string | null; status: "published" | "pending"; authorUserId: string; by: string }
 
@@ -28,7 +29,7 @@ export async function createNativeItem(input: CreateInput): Promise<{ id: string
     if (!title) { const ex = await exportGoogle(g.kind, g.id, driveMime); if (ex.status !== "ok") throw new Error(ex.status === "private" ? "That Google file is private. Share it with anyone with the link, or with the Wildflower Wisdom service account." : "That Google file could not be read."); title = ex.title?.trim() || "Untitled Google file"; }
   } else if (input.kind === "file") {
     const f = input.file; if (!f) throw new Error("No file was uploaded");
-    const ext = f.originalname.split(".").pop()?.toLowerCase() ?? ""; const mime = f.mimetype && f.mimetype !== "application/octet-stream" ? f.mimetype : (MIME_BY_EXT[ext] ?? "application/octet-stream");
+    const mime = guessMime(f.originalname, f.mimetype);
     const meta = await uploadToDrive(f.buffer, f.originalname, mime, true);
     googleFileId = meta.id; driveMime = meta.mimeType; url = meta.webViewLink ?? googleUrl("file", meta.id);
     googleKind = meta.mimeType === "application/vnd.google-apps.document" ? "document" : meta.mimeType === "application/vnd.google-apps.spreadsheet" ? "spreadsheets" : meta.mimeType === "application/vnd.google-apps.presentation" ? "presentation" : "file";
@@ -109,10 +110,10 @@ nativeAdminRouter.get("/:id", async (req, res) => {
   const pl = await db.select({ key: subjobs.key, name: subjobs.name, jobName: jobs.name, isPrimary: placements.isPrimary }).from(placements).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).innerJoin(jobs, eq(jobs.id, subjobs.jobId)).where(eq(placements.itemId, it.id)).orderBy(desc(placements.isPrimary));
   const [meta] = await db.select({ stages: itemMeta.stages }).from(itemMeta).where(eq(itemMeta.itemId, it.id));
   const children = it.childItemIds.length ? await db.select({ id: items.id, title: items.title }).from(items).where(inArray(items.id, it.childItemIds)) : [];
-  res.json({ item: { id: it.id, title: it.title, description: it.description, url: it.url, status: it.status, nativeKind: it.nativeKind, googleKind: it.googleKind, googleFileId: it.googleFileId, driveMime: it.driveMime, bodyMarkdown: it.bodyMarkdown, childItemIds: it.childItemIds, materialTypeKey: it.materialTypeKey, contributionNote: it.contributionNote, declineNote: it.declineNote, nativeModifiedAt: it.nativeModifiedAt, language: it.language }, versions, placements: pl, stages: meta?.stages ?? [], children: it.childItemIds.map((id) => children.find((c) => c.id === id)).filter(Boolean) });
+  res.json({ item: { id: it.id, title: it.title, description: it.description, url: it.url, status: it.status, nativeKind: it.nativeKind, googleKind: it.googleKind, googleFileId: it.googleFileId, driveMime: it.driveMime, bodyMarkdown: it.bodyMarkdown, childItemIds: it.childItemIds, materialTypeKey: it.materialTypeKey, contributionNote: it.contributionNote, declineNote: it.declineNote, nativeModifiedAt: it.nativeModifiedAt, language: it.language, introHtml: it.introHtml, nativeAttachments: it.nativeAttachments, importedFrom: it.importedFrom ? { kind: it.importedFrom.kind, sourceId: it.importedFrom.sourceId } : null, importedAt: it.importedAt }, versions, placements: pl, stages: meta?.stages ?? [], children: it.childItemIds.map((id) => children.find((c) => c.id === id)).filter(Boolean) });
 });
 nativeAdminRouter.patch("/:id", async (req, res) => {
-  const body = z.object({ title: z.string().max(200).optional(), description: z.string().max(600).nullable().optional(), bodyMarkdown: z.string().max(200_000).optional(), childItemIds: z.array(z.string().uuid()).optional(), url: z.string().url().optional(), subjobKeys: z.array(z.string()).optional(), stages: z.array(z.string()).optional(), language: z.enum(["en", "es", "unknown"]).optional() }).parse(req.body);
+  const body = z.object({ title: z.string().max(200).optional(), description: z.string().max(600).nullable().optional(), bodyMarkdown: z.string().max(200_000).optional(), childItemIds: z.array(z.string().uuid()).optional(), url: z.string().url().optional(), subjobKeys: z.array(z.string()).optional(), stages: z.array(z.string()).optional(), language: z.enum(["en", "es", "unknown"]).optional(), introHtml: z.string().max(200_000).nullable().optional(), removeAttachment: z.string().optional() }).parse(req.body);
   const db = getDb(); const id = String(req.params.id);
   const [it] = await db.select().from(items).where(and(eq(items.id, id), eq(items.sourceKind, "native")));
   if (!it) { res.status(404).json({ error: "Not found" }); return; }
@@ -122,6 +123,8 @@ nativeAdminRouter.patch("/:id", async (req, res) => {
   if (body.bodyMarkdown !== undefined) set.bodyMarkdown = body.bodyMarkdown;
   if (body.childItemIds !== undefined) set.childItemIds = body.childItemIds;
   if (body.language !== undefined) set.language = body.language;
+  if (body.introHtml !== undefined) set.introHtml = body.introHtml ? sanitizeBody(body.introHtml) : null;
+  if (body.removeAttachment) set.nativeAttachments = (it.nativeAttachments ?? []).filter((a) => a.driveId !== body.removeAttachment);
   if (body.url !== undefined) { const g = parseGoogleLink(body.url); if (!g) { res.status(400).json({ error: "That is not a Google link" }); return; } set.googleFileId = g.id; set.googleKind = g.kind; set.url = googleUrl(g.kind, g.id); set.nativeModifiedAt = null; }
   if (Object.keys(set).length) await db.update(items).set(set).where(eq(items.id, id));
   if (body.subjobKeys !== undefined || body.stages !== undefined) await setPlacements(id, body.subjobKeys ?? [], body.stages ?? (await db.select({ stages: itemMeta.stages }).from(itemMeta).where(eq(itemMeta.itemId, id)))[0]?.stages ?? []);
@@ -155,6 +158,21 @@ nativeAdminRouter.post("/:id/versions/:version/restore", async (req, res) => {
     res.json({ ok: true, url: (await db.select({ url: items.url }).from(items).where(eq(items.id, id)))[0]?.url, refreshed: r });
   } catch (e) { res.status(400).json({ error: (e as Error).message }); }
 });
+/** Turn a page written or imported here into a Google Doc, so it is edited in Google like everything else. */
+nativeAdminRouter.post("/:id/to-google", async (req, res) => {
+  const db = getDb(); const id = String(req.params.id);
+  const [it] = await db.select().from(items).where(and(eq(items.id, id), eq(items.sourceKind, "native")));
+  if (!it || it.nativeKind !== "text") { res.status(400).json({ error: "Only a page written here can be turned into a Google Doc" }); return; }
+  try {
+    const html = `<html><body>${[it.introHtml ?? "", markdownToHtml(it.bodyMarkdown ?? "")].filter(Boolean).join("\n").replace(/href="\/(c|item)\//g, `href="${env.appBaseUrl}/$1/`)}</body></html>`;
+    const meta = await uploadToDrive(Buffer.from(html, "utf8"), it.title, "text/html", true, it.importedFrom?.folderId ? { parent: it.importedFrom.folderId } : {});
+    await db.update(items).set({ nativeKind: "google", googleFileId: meta.id, googleKind: "document", driveMime: meta.mimeType, url: meta.webViewLink ?? googleUrl("document", meta.id), introHtml: null, bodyMarkdown: null, nativeModifiedAt: null, contentType: sql`case when ${items.contentType} in ('Note', 'question') then 'Google Doc' else ${items.contentType} end` }).where(eq(items.id, id));
+    const r = await refreshNativeItem(id, `${actor(req)} (to Google Doc)`);
+    if (it.status === "published") await publishNative(id);
+    await db.insert(auditLog).values({ actor: actor(req), action: "native.to_google", target: id, detail: { fileId: meta.id } }).catch(() => undefined);
+    res.json({ ok: true, url: meta.webViewLink, refreshed: r });
+  } catch (e) { res.status(400).json({ error: (e as Error).message }); }
+});
 nativeAdminRouter.post("/contributions/:id/approve", async (req, res) => {
   const body = z.object({ subjobKeys: z.array(z.string()).default([]), stages: z.array(z.string()).default([]), title: z.string().max(200).optional(), description: z.string().max(600).nullable().optional() }).parse(req.body);
   const db = getDb(); const id = String(req.params.id);
@@ -185,15 +203,18 @@ export const nativeFilesRouter = Router();
 nativeFilesRouter.use(requireUser);
 nativeFilesRouter.get("/:fileId", async (req, res) => {
   const fileId = String(req.params.fileId);
-  const [it] = await getDb().select({ id: items.id, driveMime: items.driveMime, title: items.title, status: items.status, authorUserId: items.authorUserId }).from(items).where(and(eq(items.googleFileId, fileId), eq(items.sourceKind, "native")));
+  if (!/^[A-Za-z0-9_-]{10,}$/.test(fileId)) { res.status(400).json({ error: "Bad id" }); return; }
+  const [it] = await getDb().select({ id: items.id, driveMime: items.driveMime, title: items.title, status: items.status, authorUserId: items.authorUserId, nativeAttachments: items.nativeAttachments, googleFileId: items.googleFileId }).from(items).where(and(eq(items.sourceKind, "native"), sql`${items.googleFileId} = ${fileId} or ${items.nativeAttachments} @> ${JSON.stringify([{ driveId: fileId }])}::jsonb`)).limit(1);
   if (!it || (it.status !== "published" && req.user!.role !== "staff" && it.authorUserId !== req.user!.id)) { res.status(404).json({ error: "Not found" }); return; }
+  const att = it.googleFileId === fileId ? null : (it.nativeAttachments ?? []).find((a) => a.driveId === fileId) ?? null;
+  const mime = att ? att.mime : it.driveMime; const name = att ? att.name : it.title;
   try {
-    const up = await driveDownload(fileId, typeof req.headers.range === "string" ? req.headers.range : undefined);
+    const up = await driveDownload(fileId, typeof req.headers.range === "string" ? req.headers.range : undefined, mime);
     if (!up.ok && up.status !== 206) { res.status(502).json({ error: `Drive returned ${up.status}` }); return; }
     res.status(up.status);
     for (const h of ["content-type", "content-length", "content-range", "accept-ranges"]) { const v = up.headers.get(h); if (v) res.setHeader(h, v); }
-    if (!up.headers.get("content-type") && it.driveMime) res.setHeader("content-type", it.driveMime);
-    res.setHeader("content-disposition", `${req.query.download ? "attachment" : "inline"}; filename="${it.title.replace(/[^\w.\- ]+/g, "_")}"`);
+    if (!up.headers.get("content-type") && mime) res.setHeader("content-type", mime);
+    res.setHeader("content-disposition", `${req.query.download ? "attachment" : "inline"}; filename="${name.replace(/[^\w.\- ]+/g, "_")}${isGoogleAppsMime(mime) ? ".pdf" : ""}"`);
     res.setHeader("cache-control", "private, max-age=3600");
     if (!up.body) { res.end(); return; }
     toNodeStream(up.body).pipe(res);

@@ -4,8 +4,9 @@ import { and, desc, eq, getDb, inArray, isNull, itemMeta, items, jobs, placement
 import { STAGES, isResourceLanguage, type JobSummary, type ResourceLanguage, type StageKey } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { getSettings } from "../settings.js";
-import { itemsForSubjob, languageWhere, mostUsed, parseTypes, startHere, toSummary, itemSelect, type ItemRow, visibleWhere } from "../services/items.js";
-import { extractPrimaryVideo, stripContentTokens } from "../lib/html.js";
+import { itemsForSubjob, languageWhere, mostUsed, parseTypes, postsBySourceId, startHere, toSummary, itemSelect, type ItemRow, visibleWhere } from "../services/items.js";
+import { stripContentTokens } from "../lib/html.js";
+import { googleKindOfMime, googleUrl, isGoogleAppsMime } from "../services/native.js";
 import { readerLanguage } from "../services/language-pref.js";
 
 export const mapRouter = Router();
@@ -76,42 +77,49 @@ mapRouter.get("/subjob/:key", async (req, res) => {
 mapRouter.get("/item/:id", async (req, res) => {
   const staff = req.user!.role === "staff";
   const db = getDb();
-  const [r] = await db.select({ ...itemSelect, authorName: items.authorName, publishedAt: items.publishedAt, categories: items.categories, audiences: items.audiences, linkedDocs: items.linkedDocs, attachmentsFull: items.attachments, bodyHtml: items.bodyHtml, bodyText: items.bodyText, childPostIds: items.childPostIds, childItemIds: items.childItemIds, sourceKind: items.sourceKind, sourceId: items.sourceId, nativeKind: items.nativeKind, googleKind: items.googleKind, googleFileId: items.googleFileId, authorUserId: items.authorUserId, status: items.status, bodyMarkdown: items.bodyMarkdown }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.id, String(req.params.id)), visibleWhere(staff)));
+  const [r] = await db.select({ ...itemSelect, authorName: items.authorName, publishedAt: items.publishedAt, categories: items.categories, audiences: items.audiences, linkedDocs: items.linkedDocs, attachmentsFull: items.attachments, bodyHtml: items.bodyHtml, bodyText: items.bodyText, childPostIds: items.childPostIds, childItemIds: items.childItemIds, sourceKind: items.sourceKind, sourceId: items.sourceId, nativeKind: items.nativeKind, googleKind: items.googleKind, googleFileId: items.googleFileId, authorUserId: items.authorUserId, status: items.status, bodyMarkdown: items.bodyMarkdown, nativeAttachments: items.nativeAttachments, importedFrom: items.importedFrom }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.id, String(req.params.id)), visibleWhere(staff)));
   if (!r) { res.status(404).json({ error: "Not found" }); return; }
   const pl = await db.select({ key: subjobs.key, name: subjobs.name, jobName: jobs.name, jobKey: jobs.key, isPrimary: placements.isPrimary }).from(placements).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).innerJoin(jobs, eq(jobs.id, subjobs.jobId)).where(eq(placements.itemId, r.id)).orderBy(desc(placements.isPrimary));
   const [votes] = await db.select({ yes: sql<number>`count(*) filter (where kind='helpful_yes')::int`, no: sql<number>`count(*) filter (where kind='helpful_no')::int` }).from(signals).where(eq(signals.itemId, r.id));
   const mine = await db.select({ kind: signals.kind }).from(signals).where(and(eq(signals.itemId, r.id), eq(signals.userId, req.user!.id), sql`kind in ('helpful_yes','helpful_no')`)).orderBy(desc(signals.createdAt)).limit(1);
   const childIds = (r.childPostIds ?? []).slice(0, 200);
-  const children = childIds.length ? await db.select({ ...itemSelect, sourceId: items.sourceId }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.sourceKind, "post"), inArray(items.sourceId, childIds), visibleWhere(staff))) : [];
-  const byId = new Map(children.map((c) => [c.sourceId, c]));
-  let contents = childIds.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => !!c).map((c) => toSummary(c as ItemRow));
+  const byId = await postsBySourceId(childIds, staff);
+  let contents = childIds.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => !!c).map((c) => toSummary(c));
   // Native series list other items by id.
   const nativeChildIds = (r.childItemIds ?? []).slice(0, 200);
   if (nativeChildIds.length) { const kids = await db.select({ ...itemSelect }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, nativeChildIds), visibleWhere(staff))); const kById = new Map(kids.map((k) => [k.id, k])); contents = nativeChildIds.map((id) => kById.get(id)).filter((k): k is NonNullable<typeof k> => !!k).map((k) => toSummary(k as ItemRow)); }
   const author = r.authorUserId ? (await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, r.authorUserId)))[0] ?? null : null;
   const nativeSeries = r.sourceKind === "native" ? await db.select({ id: items.id, title: items.title, childItemIds: items.childItemIds }).from(items).where(and(eq(items.sourceKind, "native"), eq(items.nativeKind, "series"), eq(items.status, "published"), isNull(items.removedAt), sql`${items.childItemIds} @> ${JSON.stringify([r.id])}::jsonb`)) : [];
   // Series this post belongs to, with every post in order, so the page can show its siblings.
-  const seriesRows = r.sourceKind === "post" ? await db.select({ id: items.id, title: items.title, childPostIds: items.childPostIds }).from(items).where(and(eq(items.sourceKind, "series"), isNull(items.removedAt), sql`${items.childPostIds} @> ${JSON.stringify([r.sourceId])}::jsonb`)) : [];
+  const connectedPostId = r.sourceKind === "post" ? r.sourceId : r.importedFrom?.kind === "post" ? r.importedFrom.sourceId : null;
+  const seriesRows = connectedPostId ? await db.select({ id: items.id, title: items.title, childPostIds: items.childPostIds }).from(items).where(and(eq(items.sourceKind, "series"), isNull(items.removedAt), sql`${items.childPostIds} @> ${JSON.stringify([connectedPostId])}::jsonb`)) : [];
   const nativeSeriesNav = await Promise.all(nativeSeries.map(async (sr) => { const ids = (sr.childItemIds ?? []).slice(0, 200); const rows = ids.length ? await db.select({ id: items.id, title: items.title }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, ids), visibleWhere(staff))) : []; const m = new Map(rows.map((x) => [x.id, x])); return { seriesId: sr.id, seriesTitle: sr.title, posts: ids.map((id) => m.get(id)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => ({ id: x.id, title: x.title, current: x.id === r.id })) }; }));
   const connectedSeriesNav = await Promise.all(seriesRows.map(async (sr) => {
     const ids = (sr.childPostIds ?? []).slice(0, 200);
-    const rows = ids.length ? await db.select({ id: items.id, title: items.title, sourceId: items.sourceId }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.sourceKind, "post"), inArray(items.sourceId, ids), visibleWhere(staff))) : [];
-    const bySource = new Map(rows.map((x) => [x.sourceId, x]));
+    const bySource = await postsBySourceId(ids, staff);
     return { seriesId: sr.id, seriesTitle: sr.title, posts: ids.map((sid) => bySource.get(sid)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => ({ id: x.id, title: x.title, current: x.id === r.id })) };
   }));
   const seriesNav = [...connectedSeriesNav, ...nativeSeriesNav];
   // Items with no stored HTML yet (indexed before full content landed) fall back to their plain text.
   const raw = r.bodyHtml ?? (r.bodyText ? `<p>${r.bodyText.split(/\n{2,}/).slice(0, 80).map((p) => p.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!))).join("</p><p>")}</p>` : "");
-  // Stripped at read time so items indexed before the fix never show a raw [content|NNNN|] token.
-  const { html: withoutVideo, video } = extractPrimaryVideo(stripContentTokens(raw), r.attachmentsFull);
-  res.json({ item: { ...toSummary(r as ItemRow), authorName: r.authorName, publishedAt: r.publishedAt, categories: r.categories, audiences: r.audiences, bodyHtml: withoutVideo, primaryVideo: video, attachments: r.attachmentsFull.map((a) => ({ id: a.id, name: a.name, type: a.type, bytes: a.bytes, mime: a.mime ?? null })), linkedDocs: r.linkedDocs.map((d) => ({ url: d.url, kind: d.kind, status: d.status })), contents, seriesNav, native: r.sourceKind === "native" ? { kind: r.nativeKind, googleKind: r.googleKind, googleFileId: r.googleFileId, status: r.status, author } : null }, placements: pl, votes: { yes: votes?.yes ?? 0, no: votes?.no ?? 0, mine: mine[0]?.kind ?? null } });
+  // Files from Connected (streamed while it exists) and files in Drive are presented the same way.
+  const kindOf = (t: string) => t === "Image" ? "image" : t === "Video" ? "video" : t === "Audio" ? "audio" : t === "PreviewableDocument" || t === "Document" ? "document" : "file";
+  const attachments = [
+    ...r.attachmentsFull.map((a) => ({ key: `c${a.id}`, src: `/api/files/${a.id}`, name: a.name, kind: kindOf(a.type), bytes: a.bytes, mime: a.mime ?? null, openUrl: null as string | null })),
+    ...(r.nativeAttachments ?? []).map((a) => ({ key: `d${a.driveId}`, src: `/api/files/native/${a.driveId}`, name: a.name, kind: a.kind, bytes: a.bytes, mime: a.mime, openUrl: isGoogleAppsMime(a.mime) ? googleUrl(googleKindOfMime(a.mime), a.driveId) : null })),
+  ];
+  // A video is shown at the top of the page rather than in the body, so its figure is taken out of the HTML.
+  const video = attachments.find((a) => a.kind === "video") ?? null;
+  const stripped = stripContentTokens(raw);
+  const withoutVideo = video ? stripped.replace(new RegExp(`<figure class="wf-media" data-(?:content|drive)-id="${video.key.slice(1)}">[\\s\\S]*?</figure>`, "g"), "") : stripped;
+  res.json({ item: { ...toSummary(r as ItemRow), authorName: r.authorName, publishedAt: r.publishedAt, categories: r.categories, audiences: r.audiences, bodyHtml: withoutVideo, primaryVideo: video, attachments, linkedDocs: r.linkedDocs.map((d) => ({ url: d.url, kind: d.kind, status: d.status })), contents, seriesNav, native: r.sourceKind === "native" ? { kind: r.nativeKind, googleKind: r.googleKind, googleFileId: r.googleFileId, status: r.status, author, imported: !!r.importedFrom } : null }, placements: pl, votes: { yes: votes?.yes ?? 0, no: votes?.no ?? 0, mine: mine[0]?.kind ?? null } });
 });
 
 /** Resolve a Connected post/series/question id to the wfwisdom item (used for links inside imported content). */
 mapRouter.get("/by-source/:kind/:sourceId", async (req, res) => {
   const kind = String(req.params.kind), sourceId = Number(req.params.sourceId);
   if (!["post", "series", "question"].includes(kind) || !Number.isFinite(sourceId)) { res.status(400).json({ error: "Bad reference" }); return; }
-  const [r] = await getDb().select({ id: items.id, title: items.title, url: items.url }).from(items).where(and(eq(items.sourceKind, kind), eq(items.sourceId, sourceId), isNull(items.removedAt))).limit(1);
+  const [r] = await getDb().select({ id: items.id, title: items.title, url: items.url }).from(items).where(and(sql`(${items.sourceKind} = ${kind} and ${items.sourceId} = ${sourceId}) or ${items.importedFrom} @> ${JSON.stringify({ kind, sourceId })}::jsonb`, isNull(items.removedAt))).limit(1);
   if (!r) { res.status(404).json({ error: "Not in Wildflower Wisdom" }); return; }
   res.json(r);
 });
