@@ -16,6 +16,8 @@ import { AdminSubmissions, AdminSubmissionDetail } from "./pages/admin/Submissio
 import { AdminSettings } from "./pages/admin/Settings";
 import { AdminActivity } from "./pages/admin/Activity";
 import { AdminFeedback } from "./pages/admin/Feedback";
+import { AdminContributions } from "./pages/admin/Contributions";
+import { AdminResourceEdit, AdminResourceNew } from "./pages/admin/Resources";
 import { AdminQuestions } from "./pages/admin/Questions";
 import { Ask } from "./pages/Ask";
 import { Home } from "./pages/Home";
@@ -61,6 +63,9 @@ export default function App() {
             <Route path="submissions" element={<AdminSubmissions />} />
             <Route path="submissions/:id" element={<AdminSubmissionDetail />} />
             <Route path="feedback" element={<AdminFeedback />} />
+            <Route path="contributions" element={<AdminContributions />} />
+            <Route path="resources/new" element={<AdminResourceNew />} />
+            <Route path="resources/:id" element={<AdminResourceEdit />} />
             <Route path="questions" element={<AdminQuestions />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="activity" element={<AdminActivity />} />

@@ -43,6 +43,13 @@
       "when": 1789900000000,
       "tag": "0005_questions_and_language",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789925762061,
+      "tag": "0006_native_items",
+      "breakpoints": true
     }
   ]
 }

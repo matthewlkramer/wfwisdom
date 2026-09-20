@@ -1,15 +1,16 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Download, ExternalLink, Pencil, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { ItemSummary } from "@wfw/shared";
 import { api, fmtDate } from "../api";
 import { ErrorState, ItemGrid, Linkify, Loading, Pill } from "../components/ui";
+import { useMe } from "../me";
 
 type Attachment = { id: number; name: string; type: string; bytes: number; mime: string | null };
 type LinkedDoc = { url: string; kind: string; status: string };
 type Detail = {
-  item: ItemSummary & { authorName: string | null; publishedAt: string | null; categories: string[]; audiences: string[]; bodyHtml: string; primaryVideo: Attachment | null; attachments: Attachment[]; linkedDocs: LinkedDoc[]; contents: ItemSummary[]; seriesNav: { seriesId: string; seriesTitle: string; posts: { id: string; title: string; current: boolean }[] }[] };
+  item: ItemSummary & { authorName: string | null; publishedAt: string | null; categories: string[]; audiences: string[]; bodyHtml: string; primaryVideo: Attachment | null; attachments: Attachment[]; linkedDocs: LinkedDoc[]; contents: ItemSummary[]; seriesNav: { seriesId: string; seriesTitle: string; posts: { id: string; title: string; current: boolean }[] }[]; native: { kind: string | null; googleKind: string | null; googleFileId: string | null; status: string; author: { id: string; name: string } | null } | null };
   placements: { key: string; name: string; jobName: string; jobKey: string; isPrimary: boolean }[];
   votes: { yes: number; no: number; mine: string | null };
 };
@@ -34,7 +35,7 @@ function Media({ a }: { a: Attachment }) {
 }
 
 export function ItemPage() {
-  const { id } = useParams(); const qc = useQueryClient();
+  const { id } = useParams(); const qc = useQueryClient(); const me = useMe();
   const q = useQuery({ queryKey: ["item", id], queryFn: () => api.get<Detail>(`/api/map/item/${id}`) });
   const vote = useMutation({ mutationFn: (kind: "helpful_yes" | "helpful_no") => api.post("/api/signals", { itemId: id, kind }), onSuccess: () => qc.invalidateQueries({ queryKey: ["item", id] }) });
   useEffect(() => { window.scrollTo(0, 0); }, [id]);
@@ -56,13 +57,18 @@ export function ItemPage() {
           <div className="wf-record-tags" style={{ marginBottom: 8 }}><Pill item={item} /><span className="wf-status wf-status-stage">{kindLabel}</span></div>
           <h1>{item.title}</h1>
           <p className="muted" style={{ marginTop: 6 }}>
-            {item.authorName ? <>{item.authorName}</> : null}
+            {item.native?.author ? <>{item.native.author.name}</> : item.authorName ? <>{item.authorName}</> : null}
             {item.authorName && item.publishedAt ? " · " : ""}
             {item.publishedAt ? <>Published {fmtDate(item.publishedAt)}</> : null}
             {item.updatedAt && item.updatedAt !== item.publishedAt ? <> · updated {fmtDate(item.updatedAt)}</> : null}
           </p>
         </div>
+        <div className="wf-record-actions native-actions">
+          {item.native && (item.native.kind === "google" || item.native.kind === "file") ? <a className="secondary-button" href={item.url} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Open in Google</a> : null}
+          {item.native && me?.role === "staff" ? <Link className="secondary-button" to={`/admin/resources/${item.id}`}><Pencil size={16} /> Edit</Link> : null}
+        </div>
       </div>
+      {item.native?.status && item.native.status !== "published" ? <div className="wf-state wf-state-info" style={{ marginBottom: 16 }}><strong>{item.native.status === "pending" ? "Waiting for staff review" : "Not published"}</strong></div> : null}
       <div className="two-col">
         <div>
           <article className="wf-card wf-card-section">
@@ -70,7 +76,7 @@ export function ItemPage() {
             {item.description && item.description !== item.title ? <p className="lede" style={{ marginTop: 0 }}>{item.description}</p> : null}
             {item.bodyHtml ? <div className="wf-doc" dangerouslySetInnerHTML={{ __html: item.bodyHtml }} /> : null}
             {images.map((a) => <Media key={a.id} a={a} />)}
-            {item.kind === "series" && item.contents.length ? <><h2 style={{ marginTop: 8 }}>In this series</h2><ItemGrid items={item.contents} context={{ from: "series" }} /></> : null}
+            {(item.kind === "series" || item.native?.kind === "series") && item.contents.length ? <><h2 style={{ marginTop: 8 }}>In this series</h2><ItemGrid items={item.contents} context={{ from: "series" }} /></> : null}
             {!item.bodyHtml && !item.attachments.length && !item.linkedDocs.length && !item.contents.length ? <p className="muted">This item has no readable content beyond its title.</p> : null}
           </article>
           {files.length ? <section className="wf-card wf-card-section" style={{ marginTop: 16 }}><h2 style={{ marginTop: 0 }}>Files</h2>{files.map((a) => <Media key={a.id} a={a} />)}</section> : null}

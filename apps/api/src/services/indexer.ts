@@ -2,6 +2,7 @@ import { and, eq, getDb, inArray, indexRuns, itemChunks, itemMeta, items, placem
 import { Bloomfire, type BfContent, type BfItem } from "../lib/bloomfire.js";
 import { extractText } from "../lib/extract.js";
 import { fetchGoogleDocText } from "../lib/google-docs.js";
+import { refreshNativeItems } from "./native.js";
 import { buildBodyHtml, stripContentTokens } from "../lib/html.js";
 import { embed, respond } from "../lib/openai.js";
 import { GOOGLE_DOC_RE, chunk, normalizeWs, sha, stripHtml } from "../lib/text.js";
@@ -143,17 +144,19 @@ export async function runReindex(triggeredBy: string, opts: { full?: boolean; li
       };
       await Promise.all([worker(), worker(), worker(), worker()]);
       // items no longer in Connected
-      const gone = existing.filter((e) => !seenKeys.has(`${e.kind}:${e.sourceId}`) && !e.removedAt && !opts.limit);
+      const gone = existing.filter((e) => e.kind !== "native" && !seenKeys.has(`${e.kind}:${e.sourceId}`) && !e.removedAt && !opts.limit);
       if (gone.length) { await db.update(items).set({ removedAt: new Date() }).where(inArray(items.id, gone.map((g) => g.id))); stats.removed = gone.length; log(`${gone.length} items no longer in Connected marked removed`); }
       await applySeeds(log);
       await flush(stats);
+      // native items that live in Google: pick up edits made there
+      try { const refreshed = await refreshNativeItems(log); changedIds.push(...refreshed); } catch (e) { log(`native refresh failed: ${(e as Error).message}`); }
       // chunk + embed changed items (and anything missing embeddings)
-      const missing = await db.select({ id: items.id }).from(items).where(sql`${items.removedAt} is null and not exists (select 1 from ${itemChunks} c where c.item_id = ${items.id} and c.embedding is not null)`);
+      const missing = await db.select({ id: items.id }).from(items).where(sql`${items.removedAt} is null and ${items.status} = 'published' and not exists (select 1 from ${itemChunks} c where c.item_id = ${items.id} and c.embedding is not null)`);
       const toEmbed = [...new Set([...changedIds, ...missing.map((m) => m.id)])];
       log(`embedding ${toEmbed.length} items with ${s.embeddingModel}`);
       stats.embedded = await embedItems(toEmbed, s.embeddingModel, log);
       await flush(stats);
-      const toSummarize = await db.select({ id: items.id }).from(items).where(sql`${items.removedAt} is null and (${items.summary} is null or ${items.summaryHash} is distinct from ${items.contentHash})`);
+      const toSummarize = await db.select({ id: items.id }).from(items).where(sql`${items.removedAt} is null and ${items.status} = 'published' and (${items.summary} is null or ${items.summaryHash} is distinct from ${items.contentHash})`);
       log(`summarizing ${toSummarize.length} items with ${s.assistModel}`);
       stats.summarized = await summarizeItems(toSummarize.map((t) => t.id), s.assistModel, log);
       const sc = await recomputeScores(); stats.scored = sc.items; log(`scores recomputed for ${sc.items} items`);
@@ -205,7 +208,7 @@ export async function applySeeds(log: (m: string) => void = () => {}): Promise<v
   if (m) log(`linked ${m} seeded type resources`);
 }
 
-async function embedItems(ids: string[], model: string, log: (m: string) => void): Promise<number> {
+export async function embedItems(ids: string[], model: string, log: (m: string) => void): Promise<number> {
   const db = getDb(); let embedded = 0;
   for (let i = 0; i < ids.length; i += 20) {
     const batch = ids.slice(i, i + 20);
@@ -234,7 +237,7 @@ async function embedItems(ids: string[], model: string, log: (m: string) => void
   return embedded;
 }
 
-async function summarizeItems(ids: string[], model: string, log: (m: string) => void): Promise<number> {
+export async function summarizeItems(ids: string[], model: string, log: (m: string) => void): Promise<number> {
   const db = getDb(); let n = 0;
   const SYSTEM = "Write a two-sentence plain-language summary of this Connected item for a Wildflower teacher leader deciding whether to open it: what it is, and what they would use it for. No marketing tone, no preamble.";
   const worker = async (id: string) => {

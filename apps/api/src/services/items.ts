@@ -19,7 +19,7 @@ export function rank(a: ItemRow & { position?: number | null }, b: ItemRow & { p
   if (ca !== cb) return cb - ca;
   return b.score - a.score;
 }
-export const visibleWhere = (staff: boolean) => staff ? sql`${items.removedAt} is null` : sql`${items.removedAt} is null and coalesce(${itemMeta.hidden}, false) = false`;
+export const visibleWhere = (staff: boolean) => staff ? sql`${items.removedAt} is null and ${items.status} = 'published'` : sql`${items.removedAt} is null and ${items.status} = 'published' and coalesce(${itemMeta.hidden}, false) = false`;
 /** The reader's language filter. "all" keeps everything, including items whose language is unknown. */
 export const languageWhere = (lang: ResourceLanguage | null | undefined) => (lang && lang !== "all" ? sql`${items.language} = ${lang}` : undefined);
 

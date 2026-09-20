@@ -73,6 +73,19 @@ export const items = pgTable("items", {
   bodyHtml: text("body_html"),
   /** For series: Connected post ids in order, resolved to items at read time. */
   childPostIds: jsonb("child_post_ids").$type<number[]>().notNull().default(sql`'[]'::jsonb`),
+  /** Native items (source_kind = 'native'): content that lives in Google or was written here. */
+  nativeKind: text("native_kind"), // google | file | text | series
+  googleFileId: text("google_file_id"),
+  googleKind: text("google_kind"), // document | spreadsheets | presentation | file
+  driveMime: text("drive_mime"),
+  authorUserId: uuid("author_user_id").references(() => users.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("published"), // published | pending | declined
+  contributionNote: text("contribution_note"),
+  declineNote: text("decline_note"),
+  materialTypeKey: text("material_type_key"),
+  childItemIds: jsonb("child_item_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  nativeModifiedAt: timestamp("native_modified_at", { withTimezone: true }),
+  bodyMarkdown: text("body_markdown"),
   attachments: jsonb("attachments").$type<{ id: number; name: string; type: string; bytes: number; chars: number; mime?: string | null }[]>().notNull().default(sql`'[]'::jsonb`),
   linkedDocs: jsonb("linked_docs").$type<{ url: string; kind: string; status: string; chars: number }[]>().notNull().default(sql`'[]'::jsonb`),
   linkOnly: boolean("link_only").notNull().default(false),
@@ -350,3 +363,18 @@ export const draftGenerations = pgTable("draft_generations", {
   error: text("error"),
   createdAt: now(),
 }, (t) => [index("draft_generations_user_idx").on(t.userId, t.createdAt)]);
+
+/** Snapshots of a native item's content each time it changes, so an overwritten Google file can be recovered. */
+export const itemVersions = pgTable("item_versions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  itemId: uuid("item_id").notNull().references(() => items.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  title: text("title").notNull(),
+  bodyText: text("body_text"),
+  bodyHtml: text("body_html"),
+  bodyMarkdown: text("body_markdown"),
+  hash: text("hash"),
+  sourceModifiedAt: timestamp("source_modified_at", { withTimezone: true }),
+  createdBy: text("created_by"),
+  createdAt: now(),
+}, (t) => [index("item_versions_item_idx").on(t.itemId, t.version)]);

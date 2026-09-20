@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, BookOpenCheck, Compass, FileText, Flower2, Gauge, ListTree, LogOut, Map as MapIcon, MessageSquarePlus, MessageSquareText, MessagesSquare, PenLine, Settings, Sparkles, Archive, Star, type LucideIcon } from "lucide-react";
+import { Activity, BookOpenCheck, Compass, FilePlus, FileText, Flower2, Gauge, Inbox, ListTree, LogOut, Map as MapIcon, MessageSquarePlus, MessageSquareText, MessagesSquare, PenLine, Settings, Sparkles, Archive, Star, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import type { SessionUser } from "@wfw/shared";
 import { api } from "../api";
@@ -18,6 +18,8 @@ const staff: NavItem[] = [
   { to: "/admin", label: "Overview", icon: Gauge, end: true },
   { to: "/admin/taxonomy", label: "Taxonomy", icon: ListTree },
   { to: "/admin/curation", label: "Curation", icon: Star },
+  { to: "/admin/resources/new", label: "Add a resource", icon: FilePlus },
+  { to: "/admin/contributions", label: "Contributions", icon: Inbox },
   { to: "/admin/retirement", label: "Retirement queue", icon: Archive },
   { to: "/admin/types", label: "Material types", icon: BookOpenCheck },
   { to: "/admin/base-prompt", label: "Base prompt", icon: FileText },
