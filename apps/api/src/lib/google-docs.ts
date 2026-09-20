@@ -3,7 +3,8 @@ import { env } from "../env.js";
 import { normalizeWs } from "./text.js";
 
 const tokens = new Map<string, { token: string; exp: number }>();
-const DRIVE_RO = "https://www.googleapis.com/auth/drive.readonly";
+// Domain-wide delegation is authorized for the full Drive scope only, so reads request the same scope.
+const DRIVE_RO = "https://www.googleapis.com/auth/drive";
 const DRIVE_RW = "https://www.googleapis.com/auth/drive";
 
 async function mintToken(scope: string, sub: string | null): Promise<string> {
