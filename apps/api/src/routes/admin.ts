@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
 import { and, asc, auditLog, inArray, basePromptVersions, desc, eq, getDb, indexRuns, itemMeta, items, jobs, materialTypeVersions, materialTypes, placements, sql, submissions, subjobs, typeResources, users, chatTurns, searchLog } from "@wfw/db";
-import { SETTING_DEFAULTS, STAGES, type ReviewResult, type Settings } from "@wfw/shared";
+import { DOC_TYPES, REGIONS, SETTING_DEFAULTS, STAGES, type ReviewResult, type Settings } from "@wfw/shared";
 import { actor, requireStaff } from "../auth.js";
 import { respondJson } from "../lib/openai.js";
 import { isIndexing, runReindex, applySeeds } from "../services/indexer.js";
@@ -131,6 +131,32 @@ adminRouter.patch("/items/:id/meta", async (req, res) => {
   await getDb().insert(itemMeta).values({ itemId: String(req.params.id), ...(set as object) }).onConflictDoUpdate({ target: itemMeta.itemId, set });
   await audit(req, "item.meta", String(req.params.id), b); res.json({ ok: true });
 });
+/**
+ * The document type a reader filters by and sees on the card. Kept apart from the meta route because it
+ * lives on the item itself, not on the curation record — and "series" is not offered: that is how an item
+ * is built, not what it is. A roster of people is tagged "resource_list" and still nests like a series.
+ */
+adminRouter.patch("/items/:id/type", async (req, res) => {
+  const allowed = DOC_TYPES.map((t) => t.key).filter((k) => k !== "series");
+  const b = z.object({ contentType: z.string().refine((v) => allowed.includes(v), "Unknown document type").nullable() }).parse(req.body);
+  const id = String(req.params.id);
+  const [updated] = await getDb().update(items).set({ contentType: b.contentType }).where(eq(items.id, id)).returning({ id: items.id });
+  if (!updated) { res.status(404).json({ error: "Item not found" }); return; }
+  await audit(req, "item.type", id, b); res.json({ ok: true });
+});
+/**
+ * Which regions an item is written for. Material mirrored from Connected gets these from its audience
+ * taxa at index time; an item written here has no audiences, so staff set them by hand. Empty means it
+ * applies wherever the reader is.
+ */
+adminRouter.patch("/items/:id/regions", async (req, res) => {
+  const keys = REGIONS.map((r) => r.key);
+  const b = z.object({ regions: z.array(z.string().refine((v) => keys.includes(v), "Unknown region")).max(keys.length) }).parse(req.body);
+  const id = String(req.params.id);
+  const [updated] = await getDb().update(items).set({ regions: [...new Set(b.regions)].sort() }).where(eq(items.id, id)).returning({ id: items.id });
+  if (!updated) { res.status(404).json({ error: "Item not found" }); return; }
+  await audit(req, "item.regions", id, b); res.json({ ok: true });
+});
 adminRouter.put("/items/:id/placements", async (req, res) => {
   const b = z.object({ placements: z.array(z.object({ subjobKey: z.string(), isPrimary: z.boolean(), position: z.number().int().nullable().optional() })).max(6) }).parse(req.body);
   const db = getDb(); const id = String(req.params.id);
@@ -139,6 +165,38 @@ adminRouter.put("/items/:id/placements", async (req, res) => {
   await db.delete(placements).where(eq(placements.itemId, id));
   for (const p of b.placements) { const sid = byKey.get(p.subjobKey); if (sid) await db.insert(placements).values({ itemId: id, subjobId: sid, isPrimary: p.isPrimary, source: "staff", position: p.position ?? null }).onConflictDoNothing(); }
   await audit(req, "item.placements", id, b); res.json({ ok: true });
+});
+/**
+ * Move one resource from one sub-job to another, or copy it into a second one.
+ *
+ * Kept apart from the placements route, which replaces an item's whole set and so needs the caller to
+ * already know every placement it has. This says what the staff member actually did — dragged this
+ * resource onto that sub-job — and leaves the item's other placements alone. A move that lands where
+ * the item already sits just drops the old placement.
+ */
+adminRouter.post("/items/:id/move", async (req, res) => {
+  const b = z.object({ from: z.string().nullable().optional(), to: z.string(), copy: z.boolean().default(false) }).parse(req.body);
+  const db = getDb(); const id = String(req.params.id);
+  const [item] = await db.select({ id: items.id }).from(items).where(eq(items.id, id));
+  if (!item) { res.status(404).json({ error: "Item not found" }); return; }
+  const subs = await db.select({ id: subjobs.id, key: subjobs.key }).from(subjobs).where(inArray(subjobs.key, [b.to, ...(b.from ? [b.from] : [])]));
+  const to = subs.find((s) => s.key === b.to);
+  const from = b.from ? subs.find((s) => s.key === b.from) : undefined;
+  if (!to || (b.from && !from)) { res.status(404).json({ error: "Sub-job not found" }); return; }
+  if (from && from.id === to.id) { res.json({ ok: true, moved: false }); return; }
+  // The item keeps its standing: a resource that was the primary of where it came from stays primary.
+  const [old] = from ? await db.select({ isPrimary: placements.isPrimary, position: placements.position, why: placements.why }).from(placements).where(and(eq(placements.itemId, id), eq(placements.subjobId, from.id))) : [];
+  await db.insert(placements).values({ itemId: id, subjobId: to.id, isPrimary: !b.copy && (old?.isPrimary ?? false), source: "staff", position: old?.position ?? null, why: old?.why ?? null }).onConflictDoNothing();
+  if (from && !b.copy) await db.delete(placements).where(and(eq(placements.itemId, id), eq(placements.subjobId, from.id)));
+  // Dropping the primary placement — onto a sub-job the item was already in, say — would otherwise leave
+  // it placed everywhere and primary nowhere, which is what the map ranks and "most used" reads.
+  const rest = await db.select({ subjobId: placements.subjobId, isPrimary: placements.isPrimary }).from(placements).where(eq(placements.itemId, id));
+  if (rest.length && !rest.some((p) => p.isPrimary)) {
+    const promote = rest.find((p) => p.subjobId === to.id) ?? rest[0]!;
+    await db.update(placements).set({ isPrimary: true }).where(and(eq(placements.itemId, id), eq(placements.subjobId, promote.subjobId)));
+  }
+  await audit(req, b.copy ? "item.placement.copy" : "item.placement.move", id, b);
+  res.json({ ok: true, moved: true });
 });
 adminRouter.get("/retirement-queue", async (req, res) => {
   const status = String(req.query.status ?? "pending");
@@ -153,7 +211,7 @@ adminRouter.post("/retirement-queue/:id", async (req, res) => {
   await getDb().insert(itemMeta).values({ itemId: id, reviewStatus: b.decision, datedLabel: label, hidden: b.decision === "hidden", reviewedBy: actor(req), reviewedAt: new Date() }).onConflictDoUpdate({ target: itemMeta.itemId, set: { reviewStatus: b.decision, datedLabel: label, hidden: b.decision === "hidden", reviewedBy: actor(req), reviewedAt: new Date(), updatedAt: new Date() } });
   await audit(req, "retirement.decide", id, b); res.json({ ok: true });
 });
-adminRouter.get("/item-search", async (req, res) => { const q = String(req.query.q ?? ""); if (q.length < 2) { res.json({ results: [] }); return; } const r = await search(q, { staff: true, limit: 10, explain: false }); res.json({ results: r.results }); });
+adminRouter.get("/item-search", async (req, res) => { const q = String(req.query.q ?? ""); if (q.length < 2) { res.json({ results: [] }); return; } const r = await search(q, { staff: true, limit: 10 }); res.json({ results: r.results }); });
 
 // ---- material types
 adminRouter.get("/types", async (_req, res) => {

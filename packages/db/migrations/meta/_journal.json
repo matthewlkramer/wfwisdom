@@ -57,6 +57,20 @@
       "when": 1790000000000,
       "tag": "0007_connected_import",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790100000000,
+      "tag": "0008_titles_and_resource_lists",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790100000001,
+      "tag": "0009_regions",
+      "breakpoints": true
     }
   ]
 }

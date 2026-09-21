@@ -1,10 +1,11 @@
 // Types shared by the API and the web app. Keep this file dependency-free.
 export * from "./language.js";
 export * from "./linkify.js";
+export * from "./region.js";
 import type { ItemLanguage, ResourceLanguage } from "./language.js";
 
 export type Role = "teacher_leader" | "staff";
-export interface SessionUser { id: string; email: string; name: string; role: Role; resourceLanguage: ResourceLanguage; }
+export interface SessionUser { id: string; email: string; name: string; role: Role; resourceLanguage: ResourceLanguage; resourceRegions: string[]; }
 export type StageKey = "discovery" | "visioning" | "planning" | "startup" | "open";
 export const STAGES: { key: StageKey; name: string; description: string }[] = [
   { key: "discovery", name: "Discovery", description: "Exploring whether to open a Wildflower school" },
@@ -19,6 +20,8 @@ export interface ItemSummary {
   description: string | null; summary: string | null; contentType: string | null;
   updatedAt: string | null; views: number; score: number; curation: Curation; dated: string | null;
   linkOnly: boolean; attachmentCount: number; seriesTitles: string[]; language: ItemLanguage; why?: string | null;
+  /** The regions this is written for (keys from REGIONS). Empty means it applies wherever you are. */
+  regions: string[];
   /** For a series card on the map: the items inside it, in order. */
   children?: { id: string; title: string }[];
   isSeries?: boolean;
@@ -84,8 +87,12 @@ export interface QuestionNote { id: string; body: string; authorName: string; cr
 export interface StaffQuestion extends MyQuestion { askerName: string; askerEmail: string; reviewedBy: string | null; reviewedAt: string | null; shareDecidedBy: string | null; shareDecidedAt: string | null; notes: QuestionNote[] }
 export interface StaffQuestionListResult { questions: StaffQuestion[]; pagination: { page: number; limit: number; total: number; pageCount: number } }
 
-/** Document types readers can filter by. "series" and "question" are kinds; the rest are content types. */
+/**
+ * Document types readers can filter by. "series" and "question" are kinds; the rest are content types.
+ * "resource_list" is a content type that outranks the kind: a roster of people or programs is built as
+ * a series so its entries nest, but it reads as a list, so it is labelled and filtered as one.
+ */
 export const DOC_TYPES: { key: string; label: string }[] = [
-  { key: "series", label: "Series" }, { key: "guide", label: "Guides" }, { key: "template", label: "Templates" }, { key: "example", label: "Examples" }, { key: "data", label: "Data" },
+  { key: "series", label: "Series" }, { key: "resource_list", label: "Resource lists" }, { key: "guide", label: "Guides" }, { key: "template", label: "Templates" }, { key: "example", label: "Examples" }, { key: "data", label: "Data" },
   { key: "training", label: "Training" }, { key: "directory", label: "Directories" }, { key: "policy", label: "Policies" }, { key: "news", label: "News" }, { key: "question", label: "Q&A" }, { key: "link", label: "Links" }, { key: "other", label: "Other" },
 ];

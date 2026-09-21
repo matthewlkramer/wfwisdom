@@ -13,6 +13,8 @@ export const users = pgTable("users", {
   stage: text("stage"),
   /** Which resource language the reader last chose: all | en | es. Follows them across devices. */
   resourceLanguage: text("resource_language").notNull().default("all"),
+  /** Which region options the reader last ticked (REGIONS keys plus "general"). Empty means no narrowing. */
+  resourceRegions: text("resource_regions").array().notNull().default(sql`'{}'::text[]`),
   createdAt: now(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
@@ -104,10 +106,12 @@ export const items = pgTable("items", {
   summaryHash: text("summary_hash"),
   /** Detected from the title, labels and body at index time: en | es | unknown. "unknown" only shows under "All resources". */
   language: text("language").notNull().default("unknown"),
+  /** Regions this is written for (keys from REGIONS), read off Connected's audience taxa. Empty means it applies everywhere. */
+  regions: text("regions").array().notNull().default(sql`'{}'::text[]`),
   indexedAt: timestamp("indexed_at", { withTimezone: true }).defaultNow().notNull(),
   removedAt: timestamp("removed_at", { withTimezone: true }),
   contentHash: text("content_hash"),
-}, (t) => [uniqueIndex("items_source_idx").on(t.sourceKind, t.sourceId), index("items_language_idx").on(t.language)]);
+}, (t) => [uniqueIndex("items_source_idx").on(t.sourceKind, t.sourceId), index("items_language_idx").on(t.language), index("items_regions_idx").using("gin", t.regions)]);
 
 export const itemChunks = pgTable("item_chunks", {
   id: uuid("id").primaryKey().defaultRandom(),

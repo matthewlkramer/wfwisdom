@@ -6,6 +6,7 @@ const search = vi.fn();
 const listMyQuestions = vi.fn();
 const listSharedExamples = vi.fn();
 const readerLanguage = vi.fn();
+const readerRegions = vi.fn();
 const checkChatAllowed = vi.fn();
 const searchLogValues = vi.fn().mockResolvedValue(undefined);
 
@@ -14,7 +15,7 @@ class LimitError extends Error { constructor(message: string, public code: strin
 vi.mock("../services/chat.js", () => ({ answer }));
 vi.mock("../services/search.js", () => ({ search }));
 vi.mock("../services/questions.js", () => ({ listMyQuestions, listSharedExamples }));
-vi.mock("../services/language-pref.js", () => ({ readerLanguage }));
+vi.mock("../services/language-pref.js", () => ({ readerLanguage, readerRegions }));
 vi.mock("../services/limits.js", () => ({ checkChatAllowed, LimitError }));
 vi.mock("@wfw/db", async (importOriginal) => ({ ...(await importOriginal<typeof import("@wfw/db")>()), getDb: () => ({ insert: () => ({ values: searchLogValues }) }) }));
 
@@ -27,6 +28,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   searchLogValues.mockResolvedValue(undefined);
   readerLanguage.mockResolvedValue("all");
+  readerRegions.mockResolvedValue([]);
   checkChatAllowed.mockResolvedValue(undefined);
   answer.mockResolvedValue({ answer: "Yes.", covered: true, citations: [] });
   search.mockResolvedValue({ query: "tuition", rewritten: null, mode: "semantic", results: [] });
@@ -99,8 +101,36 @@ describe("GET / (language filter)", () => {
   });
   it("short-circuits a query of one character but still reports the language", async () => {
     const r = await request(app()).get("/api/search?q=a&lang=es").expect(200);
-    expect(r.body).toEqual({ query: "a", rewritten: null, mode: "keyword", results: [], language: "es" });
+    expect(r.body).toEqual({ query: "a", rewritten: null, mode: "keyword", results: [], language: "es", regions: [] });
     expect(search).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET / (region filter)", () => {
+  it("uses the regions in the query string", async () => {
+    await request(app()).get("/api/search?q=tuition&regions=mn").expect(200);
+    expect(search).toHaveBeenCalledWith("tuition", expect.objectContaining({ regions: ["mn"] }));
+    expect(readerRegions).not.toHaveBeenCalled();
+  });
+  it("takes several at once", async () => {
+    await request(app()).get("/api/search?q=tuition&regions=mn,ma,general").expect(200);
+    expect(search).toHaveBeenCalledWith("tuition", expect.objectContaining({ regions: ["mn", "ma", "general"] }));
+  });
+  it("falls back to what the reader last ticked", async () => {
+    readerRegions.mockResolvedValue(["ma"]);
+    const r = await request(app()).get("/api/search?q=tuition").expect(200);
+    expect(search).toHaveBeenCalledWith("tuition", expect.objectContaining({ regions: ["ma"] }));
+    expect(r.body.regions).toEqual(["ma"]);
+  });
+  it("drops a region it does not know rather than failing", async () => {
+    await request(app()).get("/api/search?q=tuition&regions=mn,mars").expect(200);
+    expect(search).toHaveBeenCalledWith("tuition", expect.objectContaining({ regions: ["mn"] }));
+  });
+  it("an empty regions param means everything, and does not fall back to the reader's choice", async () => {
+    readerRegions.mockResolvedValue(["ma"]);
+    await request(app()).get("/api/search?q=tuition&regions=").expect(200);
+    expect(search).toHaveBeenCalledWith("tuition", expect.objectContaining({ regions: [] }));
+    expect(readerRegions).not.toHaveBeenCalled();
   });
 });
 

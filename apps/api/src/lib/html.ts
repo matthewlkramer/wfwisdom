@@ -16,7 +16,8 @@ export function googleEmbedUrl(kind: string, id: string): string {
 export function sanitizeBody(html: string): string {
   return sanitizeHtml(html, {
     allowedTags: ["p", "br", "span", "div", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "a", "h1", "h2", "h3", "h4", "h5", "table", "thead", "tbody", "tr", "td", "th", "hr", "blockquote", "pre", "img", "iframe", "wbr", "figure", "figcaption", "sub", "sup"],
-    allowedAttributes: { a: ["href", "title"], img: ["src", "alt", "width", "height"], iframe: ["src", "width", "height", "allowfullscreen"], td: ["colspan", "rowspan"], th: ["colspan", "rowspan"] },
+    // "start" is kept so a list that deliberately resumes at a later number still reads right.
+    allowedAttributes: { a: ["href", "title"], img: ["src", "alt", "width", "height"], iframe: ["src", "width", "height", "allowfullscreen"], ol: ["start"], td: ["colspan", "rowspan"], th: ["colspan", "rowspan"] },
     allowedSchemes: ["http", "https", "mailto"],
     allowedIframeHostnames: ["docs.google.com", "drive.google.com", "www.youtube.com", "www.youtube-nocookie.com", "player.vimeo.com", "www.loom.com"],
     transformTags: {
@@ -39,6 +40,29 @@ export function sanitizeBody(html: string): string {
   });
 }
 
+
+/**
+ * Only whitespace, line breaks and empty paragraphs may sit between two lists for them to count as one:
+ * real prose between them means the author meant two lists.
+ */
+const LIST_GAP = String.raw`(?:\s|<br\s*/?>|<p>(?:\s|<br\s*/?>|&nbsp;)*</p>)*`;
+const SPLIT_LIST = new RegExp(String.raw`</(ol|ul)>${LIST_GAP}<\1\b[^>]*>`, "gi");
+
+/**
+ * Join lists that the source split into one-item pieces.
+ *
+ * Connected's editor writes a numbered list as a run of separate single-item `<ol>` blocks
+ * (`<ol><li>Loans</li></ol><br /><ol><li>Grants</li></ol>…`). Each one restarts the counter, so a
+ * three-item list renders as "1. 1. 1.". Dropping the boundary between two lists that are only
+ * separated by blank space makes one list that numbers straight through. The `start` attribute on the
+ * later piece goes with the boundary, which is right: the numbering is continuous again.
+ *
+ * Runs on the way in (so newly indexed items are stored clean) and at render time (so items indexed
+ * before this existed are fixed without a re-index). Safe to run twice.
+ */
+export function mergeAdjacentLists(html: string): string {
+  return html ? html.replace(SPLIT_LIST, "") : html;
+}
 
 /**
  * Connected embeds a file inside a post body with a token like [content|2595515|]; render that file in place.
@@ -85,7 +109,7 @@ export function buildBodyHtml(kind: "post" | "series" | "question", it: BfItem):
     const who = a.author ? `${a.author.first_name ?? ""} ${a.author.last_name ?? ""}`.trim() : "";
     parts.push(`<section class="answer"><h3>Answer${who ? ` from ${esc(who)}` : ""}</h3>${sanitizeBody(html)}</section>`);
   }
-  return stripContentTokens(parts.join("\n"));
+  return mergeAdjacentLists(stripContentTokens(parts.join("\n")));
 }
 
 

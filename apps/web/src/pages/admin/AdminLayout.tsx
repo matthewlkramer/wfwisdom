@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 const SECTIONS: Record<string, [string, string]> = {
   "": ["Overview", "Index health, usage, spend, and the kill switch."],
-  taxonomy: ["Taxonomy", "Jobs and sub-jobs on the map, and the stages each belongs to."],
+  taxonomy: ["Taxonomy", "Jobs and sub-jobs on the map, and the stages each belongs to. Move resources between sub-jobs by dragging them onto the tree."],
   curation: ["Curation", "Essential, Recommended, pins, hides, and Dated labels. Overrides outrank the computed score."],
   retirement: ["Retirement queue", "Items the audit flagged as dated, thin, or superseded. Keep, label, or hide each one."],
   types: ["Material types", "The material types teacher leaders can get feedback on: guides, rubrics, review prompts, and linked resources."],

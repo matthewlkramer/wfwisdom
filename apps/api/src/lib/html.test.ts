@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBodyHtml, extractPrimaryVideo, mediaHtml, nativeMediaHtml, replaceMediaFigures, stripContentTokens } from "./html.js";
+import { buildBodyHtml, extractPrimaryVideo, mediaHtml, mergeAdjacentLists, nativeMediaHtml, replaceMediaFigures, stripContentTokens } from "./html.js";
 import type { BfContent, BfItem } from "./bloomfire.js";
 
 const video = (id: number): BfContent => ({ id, type: "Video", title: "Walkthrough", original_file_name: "walkthrough.mp4", original_file_size: 1024, original_content_type: "video/mp4" } as BfContent);
@@ -85,5 +85,40 @@ describe("import helpers", () => {
     const html = `<p>Hi</p>${mediaHtml(video(42))}${mediaHtml({ id: 7, type: "Image", original_file_name: "a.png" } as BfContent)}<p>Bye</p>`;
     const out = replaceMediaFigures(html, (id) => (id === 42 ? "<p>VIDEO</p>" : ""));
     expect(out).toBe("<p>Hi</p><p>VIDEO</p><p>Bye</p>");
+  });
+});
+
+describe("mergeAdjacentLists", () => {
+  it("joins the single-item lists Connected writes, so the numbering runs 1-2-3", () => {
+    const html = "<ol><li>Loans</li></ol><br /><ol><li>Grants</li></ol><br /><ol><li>Teacher Led Fundraising</li></ol>";
+    expect(mergeAdjacentLists(html)).toBe("<ol><li>Loans</li><li>Grants</li><li>Teacher Led Fundraising</li></ol>");
+  });
+  it("drops the start attribute with the boundary, because the count is continuous again", () => {
+    expect(mergeAdjacentLists('<ol><li>a</li></ol> <ol start="1"><li>b</li></ol>')).toBe("<ol><li>a</li><li>b</li></ol>");
+  });
+  it("joins across whitespace and empty paragraphs as well as <br>", () => {
+    expect(mergeAdjacentLists("<ul><li>a</li></ul>\n  <ul><li>b</li></ul>")).toBe("<ul><li>a</li><li>b</li></ul>");
+    expect(mergeAdjacentLists("<ol><li>a</li></ol><p><br /></p><ol><li>b</li></ol>")).toBe("<ol><li>a</li><li>b</li></ol>");
+  });
+  it("leaves two lists separated by real prose as two lists", () => {
+    const html = "<ol><li>a</li></ol><p>Then, separately:</p><ol><li>b</li></ol>";
+    expect(mergeAdjacentLists(html)).toBe(html);
+  });
+  it("never merges a list into one of the other kind", () => {
+    const html = "<ol><li>a</li></ol><br /><ul><li>b</li></ul>";
+    expect(mergeAdjacentLists(html)).toBe(html);
+  });
+  it("leaves a nested list alone", () => {
+    const html = "<ol><li>a<ol><li>a1</li></ol></li><li>b</li></ol>";
+    expect(mergeAdjacentLists(html)).toBe(html);
+  });
+  it("is safe to run twice and on an empty string", () => {
+    const once = mergeAdjacentLists("<ol><li>a</li></ol><br /><ol><li>b</li></ol>");
+    expect(mergeAdjacentLists(once)).toBe(once);
+    expect(mergeAdjacentLists("")).toBe("");
+  });
+  it("runs as part of building a body, so newly indexed items are stored joined", () => {
+    const it = { id: 1, post_body: "<ol><li>One</li></ol><br /><ol><li>Two</li></ol>" } as unknown as BfItem;
+    expect(buildBodyHtml("post", it)).toContain("<li>One</li><li>Two</li>");
   });
 });
