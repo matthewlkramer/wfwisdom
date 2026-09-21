@@ -2,8 +2,16 @@ import { and, desc, eq, getDb, inArray, itemMeta, items, placements, sql, subjob
 import { GENERAL_REGION, type ItemLanguage, type ItemSummary, type ResourceLanguage, type StageKey } from "@wfw/shared";
 import { stripContentTokens } from "../lib/html.js";
 
+/**
+ * The title a reader sees: staff's own, or Connected's when staff have not set one.
+ *
+ * Used everywhere a title is read rather than only in the lists, so a renamed item reads the same on the
+ * map, on its own page, in a series' contents and in search. Every query using it has to join item_meta.
+ */
+export const titleExpr = sql<string>`coalesce(${itemMeta.displayTitle}, ${items.title})`;
+
 export const itemSelect = {
-  id: items.id, title: items.title, url: items.url, kind: items.sourceKind, description: items.description, summary: items.summary, contentType: items.contentType,
+  id: items.id, title: titleExpr, url: items.url, kind: items.sourceKind, description: items.description, summary: items.summary, contentType: items.contentType,
   updatedAt: items.sourceUpdatedAt, views: items.views, linkOnly: items.linkOnly, attachments: items.attachments, seriesTitles: items.seriesTitles, language: items.language, regions: items.regions,
   score: sql<number>`coalesce(${itemMeta.score}, 0)`, curation: itemMeta.curation, hidden: sql<boolean>`coalesce(${itemMeta.hidden}, false)`, dated: itemMeta.datedLabel, reviewStatus: itemMeta.reviewStatus,
   nativeKind: items.nativeKind, childPostIds: items.childPostIds, childItemIds: items.childItemIds, nativeAttachments: items.nativeAttachments,
@@ -172,7 +180,7 @@ export async function nestSeries(rows: (ItemRow & { why?: string | null })[], st
   const nativeIds = [...new Set(series.flatMap((s) => s.childItemIds ?? []))];
   const byPost = new Map<number, { id: string; title: string }>(); const byId = new Map<string, { id: string; title: string }>();
   for (const [sid, c] of await postsBySourceId(postIds, staff)) byPost.set(sid, { id: c.id, title: c.title });
-  if (nativeIds.length) for (const c of await db.select({ id: items.id, title: items.title }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, nativeIds), visibleWhere(staff)))) byId.set(c.id, { id: c.id, title: c.title });
+  if (nativeIds.length) for (const c of await db.select({ id: items.id, title: titleExpr }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, nativeIds), visibleWhere(staff)))) byId.set(c.id, { id: c.id, title: c.title });
   const nested = new Set<string>();
   const parentOf = new Map<string, string>();
   const childrenOf = (s: ItemRow) => { const out: { id: string; title: string }[] = []; for (const pid of s.childPostIds ?? []) { const c = byPost.get(pid); if (c) out.push(c); } for (const id of s.childItemIds ?? []) { const c = byId.get(id); if (c) out.push(c); } for (const c of out) { nested.add(c.id); if (!parentOf.has(c.id)) parentOf.set(c.id, s.id); } return out; };
