@@ -2,7 +2,7 @@ import { Readable } from "node:stream";
 import { and, desc, eq, getDb, itemVersions, items, sql } from "@wfw/db";
 import { env } from "../env.js";
 import { driveToken } from "../lib/google-docs.js";
-import { googleEmbedUrl, sanitizeBody } from "../lib/html.js";
+import { googleEmbedUrl, mergeAdjacentLists, promoteGoogleEmphasis, sanitizeBody } from "../lib/html.js";
 import { normalizeWs, sha, stripHtml } from "../lib/text.js";
 import { logger } from "../logger.js";
 import { resolveLanguage } from "./language.js";
@@ -55,8 +55,10 @@ export async function exportGoogle(kind: GoogleKind, id: string, mime?: string |
   };
   if (kind === "document") {
     const r = await fetchExport("text/html", "export?format=html"); if (!r.ok) return { status: r.status, text: "", html: "", title: null };
-    const body = unwrapGoogleLinks(r.body.replace(/^[\s\S]*?<body[^>]*>/i, "").replace(/<\/body>[\s\S]*$/i, ""));
-    const html = sanitizeBody(body).replace(/<p>\s*<\/p>/g, "");
+    // Emphasis is promoted from the export's own stylesheet before the body is taken out of the document:
+    // Google keeps the styles in the head, and the sanitizer drops style attributes, so bold was being lost.
+    const body = unwrapGoogleLinks(promoteGoogleEmphasis(r.body));
+    const html = mergeAdjacentLists(sanitizeBody(body).replace(/<p>\s*<\/p>/g, ""));
     const text = normalizeWs(stripHtml(html)).slice(0, 400_000);
     // The export carries no <title>; the first line of the document is the best public fallback.
     const title = /<title[^>]*>([^<]{1,200})<\/title>/i.exec(r.body)?.[1]?.trim() || text.split("\n").find((l) => l.trim().length > 2)?.trim().slice(0, 120) || null;

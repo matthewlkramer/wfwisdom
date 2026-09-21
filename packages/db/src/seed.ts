@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { eq, sql } from "drizzle-orm";
 import { closeDb, getDb } from "./index.js";
-import { basePromptVersions, jobs, materialTypeVersions, materialTypes, placementSeeds, settings, subjobs, typeResourceSeeds } from "./schema.js";
+import { basePromptVersions, jobs, materialTypeVersions, materialTypes, placementSeeds, settings, subjobs, taxonomyRetirements, typeResourceSeeds } from "./schema.js";
 import { SETTING_DEFAULTS } from "@wfw/shared";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -29,14 +29,19 @@ export async function seed(): Promise<Record<string, number>> {
   const seeds = JSON.parse(read("seed-placements.json")) as { source_kind: string; source_id: number; primary: string; secondary: string[]; stages: string[]; content_type: string; outdated: boolean; outdated_reason: string; why: string }[];
   for (const s of seeds) { const cur = subStages.get(s.primary) ?? []; for (const st of s.stages) if (!cur.includes(st)) cur.push(st); subStages.set(s.primary, cur); }
   const order = ["discovery", "visioning", "planning", "startup", "open"];
+  // A job or sub-job staff removed stays removed. Without this the seed recreated it empty on the next
+  // deploy, because a deleted key leaves nothing for "insert what is missing" to conflict with.
+  const retired = new Set((await db.select({ kind: taxonomyRetirements.kind, key: taxonomyRetirements.key }).from(taxonomyRetirements)).map((r) => `${r.kind}:${r.key}`));
   let nj = 0, ns = 0;
   for (const [ji, j] of tax.jobs.entries()) {
+    if (retired.has(`job:${j.key}`)) continue;
     const staffOnly = j.key === "foundation";
     const inserted = await db.insert(jobs).values({ key: j.key, name: j.name, description: j.desc ?? null, sort: ji * 10, staffOnly }).onConflictDoNothing().returning({ id: jobs.id });
     nj += inserted.length;
     const jobRow = inserted[0] ?? (await db.select({ id: jobs.id }).from(jobs).where(eq(jobs.key, j.key)))[0];
     if (!jobRow) continue;
     for (const [si, s] of j.subs.entries()) {
+      if (retired.has(`subjob:${s.key}`)) continue;
       const stages = (subStages.get(s.key) ?? []).sort((a, b) => order.indexOf(a) - order.indexOf(b));
       const r = await db.insert(subjobs).values({ jobId: jobRow.id, key: s.key, name: s.name, sort: si * 10, stages }).onConflictDoNothing();
       ns += r.rowCount ?? 0;

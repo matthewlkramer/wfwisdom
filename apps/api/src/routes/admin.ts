@@ -1,6 +1,6 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
-import { and, asc, auditLog, inArray, basePromptVersions, desc, eq, getDb, indexRuns, itemMeta, items, jobs, materialTypeVersions, materialTypes, placements, sql, submissions, subjobs, typeResources, users, chatTurns, searchLog } from "@wfw/db";
+import { and, asc, auditLog, inArray, basePromptVersions, desc, eq, getDb, indexRuns, itemMeta, items, jobs, materialTypeVersions, materialTypes, placements, sql, submissions, subjobs, taxonomyRetirements, typeResources, users, chatTurns, searchLog } from "@wfw/db";
 import { DOC_TYPES, REGIONS, SETTING_DEFAULTS, STAGES, type ReviewResult, type Settings } from "@wfw/shared";
 import { actor, requireStaff } from "../auth.js";
 import { respondJson } from "../lib/openai.js";
@@ -60,9 +60,21 @@ adminRouter.get("/runs", async (_req, res) => res.json({ runs: await getDb().sel
 adminRouter.get("/runs/:id", async (req, res) => { const [r] = await getDb().select().from(indexRuns).where(eq(indexRuns.id, String(req.params.id))); r ? res.json(r) : res.status(404).json({ error: "Not found" }); });
 
 // ---- taxonomy
+/**
+ * The seed inserts every job and sub-job in seed-taxonomy.json and skips the ones already there, so a
+ * removed one used to reappear empty on the next deploy — its key was gone, and there was nothing left for
+ * the insert to conflict with. Removing one records that its absence is deliberate; creating one with the
+ * same key again takes the record away.
+ */
+const retire = (req: Request, kind: "job" | "subjob", key: string, reason: string) =>
+  getDb().insert(taxonomyRetirements).values({ kind, key, retiredBy: actor(req), reason }).onConflictDoNothing();
+const unretire = (kind: "job" | "subjob", key: string) =>
+  getDb().delete(taxonomyRetirements).where(and(eq(taxonomyRetirements.kind, kind), eq(taxonomyRetirements.key, key)));
+
 adminRouter.post("/jobs", async (req, res) => {
   const b = z.object({ key: z.string().regex(/^[a-z][a-z0-9_]*$/), name: z.string().min(1), description: z.string().nullable().optional(), staffOnly: z.boolean().optional(), hidden: z.boolean().optional() }).parse(req.body);
   const [max] = await getDb().select({ m: sql<number>`coalesce(max(sort),0)` }).from(jobs);
+  await unretire("job", b.key);
   const [j] = await getDb().insert(jobs).values({ key: b.key, name: b.name, description: b.description ?? null, staffOnly: b.staffOnly ?? false, hidden: b.hidden ?? false, sort: (max?.m ?? 0) + 10 }).returning();
   await audit(req, "job.create", b.key); res.json(j);
 });
@@ -74,11 +86,14 @@ adminRouter.patch("/jobs/:id", async (req, res) => {
 adminRouter.delete("/jobs/:id", async (req, res) => {
   const [n] = await getDb().select({ n: sql<number>`count(*)::int` }).from(subjobs).where(eq(subjobs.jobId, String(req.params.id)));
   if ((n?.n ?? 0) > 0) { res.status(400).json({ error: "Move or delete its sub-jobs first" }); return; }
-  await getDb().delete(jobs).where(eq(jobs.id, String(req.params.id))); await audit(req, "job.delete", String(req.params.id)); res.json({ ok: true });
+  const [gone] = await getDb().delete(jobs).where(eq(jobs.id, String(req.params.id))).returning({ key: jobs.key });
+  if (gone) await retire(req, "job", gone.key, "deleted");
+  await audit(req, "job.delete", String(req.params.id), gone ? { key: gone.key } : undefined); res.json({ ok: true });
 });
 adminRouter.post("/subjobs", async (req, res) => {
   const b = z.object({ jobId: z.string().uuid(), key: z.string().regex(/^[a-z][a-z0-9_.]*$/), name: z.string().min(1), description: z.string().nullable().optional(), stages: z.array(z.enum(STAGES.map((s) => s.key) as [string, ...string[]])).optional() }).parse(req.body);
   const [max] = await getDb().select({ m: sql<number>`coalesce(max(sort),0)` }).from(subjobs).where(eq(subjobs.jobId, b.jobId));
+  await unretire("subjob", b.key);
   const [s] = await getDb().insert(subjobs).values({ jobId: b.jobId, key: b.key, name: b.name, description: b.description ?? null, stages: b.stages ?? [], sort: (max?.m ?? 0) + 10 }).returning();
   await audit(req, "subjob.create", b.key); res.json(s);
 });
@@ -90,13 +105,16 @@ adminRouter.patch("/subjobs/:id", async (req, res) => {
 adminRouter.post("/subjobs/:id/merge-into/:targetId", async (req, res) => {
   const db = getDb(); const from = String(req.params.id), to = String(req.params.targetId);
   await db.execute(sql`insert into placements (item_id, subjob_id, is_primary, source, why, position) select item_id, ${to}::uuid, is_primary, source, why, position from placements where subjob_id = ${from}::uuid on conflict (item_id, subjob_id) do nothing`);
-  await db.delete(subjobs).where(eq(subjobs.id, from));
-  await audit(req, "subjob.merge", from, { into: to }); res.json({ ok: true });
+  const [merged] = await db.delete(subjobs).where(eq(subjobs.id, from)).returning({ key: subjobs.key });
+  if (merged) await retire(req, "subjob", merged.key, `merged into ${to}`);
+  await audit(req, "subjob.merge", from, { into: to, ...(merged ? { key: merged.key } : {}) }); res.json({ ok: true });
 });
 adminRouter.delete("/subjobs/:id", async (req, res) => {
   const [n] = await getDb().select({ n: sql<number>`count(*)::int` }).from(placements).where(eq(placements.subjobId, String(req.params.id)));
   if ((n?.n ?? 0) > 0) { res.status(400).json({ error: "This sub-job still has items; merge it into another sub-job instead" }); return; }
-  await getDb().delete(subjobs).where(eq(subjobs.id, String(req.params.id))); await audit(req, "subjob.delete", String(req.params.id)); res.json({ ok: true });
+  const [gone] = await getDb().delete(subjobs).where(eq(subjobs.id, String(req.params.id))).returning({ key: subjobs.key });
+  if (gone) await retire(req, "subjob", gone.key, "deleted");
+  await audit(req, "subjob.delete", String(req.params.id), gone ? { key: gone.key } : undefined); res.json({ ok: true });
 });
 adminRouter.put("/reorder", async (req, res) => {
   const b = z.object({ jobs: z.array(z.string().uuid()).optional(), subjobs: z.array(z.string().uuid()).optional() }).parse(req.body);

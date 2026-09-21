@@ -9,6 +9,7 @@ import { RegionProvider } from "./region";
 import { Loading } from "./components/ui";
 import { AdminLayout } from "./pages/admin/AdminLayout";
 import { AdminOverview } from "./pages/admin/Overview";
+import { OrganizeLayout, QueuesLayout } from "./pages/admin/Groups";
 import { AdminTaxonomy } from "./pages/admin/Taxonomy";
 import { AdminCuration } from "./pages/admin/Curation";
 import { AdminRetirement } from "./pages/admin/Retirement";
@@ -55,22 +56,36 @@ export default function App() {
         <Route path="drafts/:id" element={<SubmissionPage />} />
         {user.role === "staff" ? (
           <Route path="admin" element={<AdminLayout />}>
-            <Route index element={<AdminOverview />} />
-            <Route path="taxonomy" element={<AdminTaxonomy />} />
-            <Route path="curation" element={<AdminCuration />} />
-            <Route path="retirement" element={<AdminRetirement />} />
+            {/* Overview folded into Admin settings, so the landing page is the one that holds it. */}
+            <Route index element={<Navigate to="/admin/settings" replace />} />
+            <Route path="organize" element={<OrganizeLayout />}>
+              <Route index element={<Navigate to="/admin/organize/taxonomy" replace />} />
+              <Route path="taxonomy" element={<AdminTaxonomy />} />
+              <Route path="curation" element={<AdminCuration />} />
+            </Route>
+            <Route path="queues" element={<QueuesLayout />}>
+              <Route index element={<Navigate to="/admin/queues/contributions" replace />} />
+              <Route path="contributions" element={<AdminContributions />} />
+              <Route path="retirement" element={<AdminRetirement />} />
+              <Route path="submissions" element={<AdminSubmissions />} />
+              <Route path="questions" element={<AdminQuestions />} />
+            </Route>
             <Route path="types" element={<AdminTypes />} />
             <Route path="types/:id" element={<AdminTypeEditor />} />
             <Route path="base-prompt" element={<AdminBasePrompt />} />
-            <Route path="submissions" element={<AdminSubmissions />} />
             <Route path="submissions/:id" element={<AdminSubmissionDetail />} />
             <Route path="feedback" element={<AdminFeedback />} />
-            <Route path="contributions" element={<AdminContributions />} />
             <Route path="resources/new" element={<AdminResourceNew />} />
             <Route path="resources/:id" element={<AdminResourceEdit />} />
-            <Route path="questions" element={<AdminQuestions />} />
-            <Route path="settings" element={<AdminSettings />} />
+            <Route path="settings" element={<><AdminOverview /><AdminSettings /></>} />
             <Route path="activity" element={<AdminActivity />} />
+            {/* The pages moved into groups; old links and bookmarks still land in the right place. */}
+            <Route path="taxonomy" element={<Navigate to="/admin/organize/taxonomy" replace />} />
+            <Route path="curation" element={<Navigate to="/admin/organize/curation" replace />} />
+            <Route path="contributions" element={<Navigate to="/admin/queues/contributions" replace />} />
+            <Route path="retirement" element={<Navigate to="/admin/queues/retirement" replace />} />
+            <Route path="submissions" element={<Navigate to="/admin/queues/submissions" replace />} />
+            <Route path="questions" element={<Navigate to="/admin/queues/questions" replace />} />
           </Route>
         ) : null}
         <Route path="*" element={<Navigate to="/" replace />} />

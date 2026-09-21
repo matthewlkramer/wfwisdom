@@ -53,6 +53,22 @@ export const subjobs = pgTable("subjobs", {
   stages: text("stages").array().notNull().default(sql`'{}'::text[]`),
 }, (t) => [index("subjobs_job_idx").on(t.jobId)]);
 
+/**
+ * Jobs and sub-jobs staff removed, by key.
+ *
+ * The seed inserts every job and sub-job from seed-taxonomy.json and skips the ones that already exist,
+ * which meant a merged or deleted one came back empty on the next deploy: its key no longer existed, so
+ * there was nothing for the insert to conflict with. A retirement is the record that its absence is
+ * deliberate. Creating a job or sub-job with the same key again clears it.
+ */
+export const taxonomyRetirements = pgTable("taxonomy_retirements", {
+  kind: text("kind").notNull(), // job | subjob
+  key: text("key").notNull(),
+  retiredAt: timestamp("retired_at", { withTimezone: true }).notNull().defaultNow(),
+  retiredBy: text("retired_by"),
+  reason: text("reason"),
+}, (t) => [primaryKey({ columns: [t.kind, t.key] }), check("taxonomy_retirements_kind", sql`${t.kind} in ('job','subjob')`)]);
+
 export const items = pgTable("items", {
   id: uuid("id").primaryKey().defaultRandom(),
   sourceKind: text("source_kind").notNull(), // post | series | question

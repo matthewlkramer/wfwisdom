@@ -63,7 +63,7 @@ export function Ask() {
         <button className="primary-button" type="submit" disabled={ask.isPending || !q.trim()}>Ask</button>
       </form>
       <div className="ask-options">
-        <label className="ask-check"><input type="checkbox" checked={staffReview} onChange={(e) => setStaffReview(e.target.checked)} /> Let Wildflower Foundation staff review this question and answer to improve the tool</label>
+        <label className="ask-check"><input type="checkbox" checked={staffReview} onChange={(e) => setStaffReview(e.target.checked)} /> Let Wildflower Foundation partners review this question and answer to improve the tool</label>
         <label className="ask-check"><input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} /> Share this question on this page as an example of what people are asking</label>
         {share ? (
           <label className="ask-check indent">How should it appear?
