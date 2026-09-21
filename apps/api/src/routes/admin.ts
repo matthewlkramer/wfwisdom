@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
 import { and, asc, auditLog, inArray, basePromptVersions, desc, eq, getDb, indexRuns, itemMeta, items, jobs, materialTypeVersions, materialTypes, placements, sql, submissions, subjobs, typeResources, users, chatTurns, searchLog } from "@wfw/db";
-import { DOC_TYPES, SETTING_DEFAULTS, STAGES, type ReviewResult, type Settings } from "@wfw/shared";
+import { DOC_TYPES, REGIONS, SETTING_DEFAULTS, STAGES, type ReviewResult, type Settings } from "@wfw/shared";
 import { actor, requireStaff } from "../auth.js";
 import { respondJson } from "../lib/openai.js";
 import { isIndexing, runReindex, applySeeds } from "../services/indexer.js";
@@ -143,6 +143,19 @@ adminRouter.patch("/items/:id/type", async (req, res) => {
   const [updated] = await getDb().update(items).set({ contentType: b.contentType }).where(eq(items.id, id)).returning({ id: items.id });
   if (!updated) { res.status(404).json({ error: "Item not found" }); return; }
   await audit(req, "item.type", id, b); res.json({ ok: true });
+});
+/**
+ * Which regions an item is written for. Material mirrored from Connected gets these from its audience
+ * taxa at index time; an item written here has no audiences, so staff set them by hand. Empty means it
+ * applies wherever the reader is.
+ */
+adminRouter.patch("/items/:id/regions", async (req, res) => {
+  const keys = REGIONS.map((r) => r.key);
+  const b = z.object({ regions: z.array(z.string().refine((v) => keys.includes(v), "Unknown region")).max(keys.length) }).parse(req.body);
+  const id = String(req.params.id);
+  const [updated] = await getDb().update(items).set({ regions: [...new Set(b.regions)].sort() }).where(eq(items.id, id)).returning({ id: items.id });
+  if (!updated) { res.status(404).json({ error: "Item not found" }); return; }
+  await audit(req, "item.regions", id, b); res.json({ ok: true });
 });
 adminRouter.put("/items/:id/placements", async (req, res) => {
   const b = z.object({ placements: z.array(z.object({ subjobKey: z.string(), isPrimary: z.boolean(), position: z.number().int().nullable().optional() })).max(6) }).parse(req.body);

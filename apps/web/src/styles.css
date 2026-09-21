@@ -131,6 +131,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .wf-status-attention { border-color: #e1c978; background: var(--wf-warning-bg); color: var(--wf-warning); }
 .wf-status-danger { border-color: #e0afa2; background: var(--wf-danger-bg); color: var(--wf-danger); }
 .wf-status-stage { background: #f0f4f2; color: var(--wf-muted); }
+.wf-status-region { background: #eef1fa; color: #3b4a7a; border-color: #ccd5ef; }
 
 /* Buttons and inputs */
 button:not([class]), button.secondary-button, a.secondary-button, .wf-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: var(--wf-control-height); border: 1px solid var(--wf-border); border-radius: var(--wf-control-radius); padding: 7px 12px; background: white; color: var(--teal-deep); font: inherit; font-size: .85rem; font-weight: 600; text-decoration: none; }

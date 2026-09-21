@@ -4,7 +4,7 @@ import { Download, ExternalLink, Pencil, ThumbsDown, ThumbsUp } from "lucide-rea
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { ItemSummary } from "@wfw/shared";
 import { api, fmtDate } from "../api";
-import { ErrorState, ItemGrid, Linkify, Loading, Pill } from "../components/ui";
+import { ErrorState, ItemGrid, Linkify, Loading, Pill, RegionTags } from "../components/ui";
 import { useMe } from "../me";
 
 type Attachment = { key: string; src: string; name: string; kind: string; bytes: number; mime: string | null; openUrl: string | null };
@@ -51,7 +51,7 @@ export function ItemPage() {
       {primary ? <Link to={`/map/${primary.key}`} className="wf-page-back">← {primary.jobName} · {primary.name}</Link> : <Link to="/map" className="wf-page-back">← Map</Link>}
       <div className="wf-page-header">
         <div>
-          <div className="wf-record-tags" style={{ marginBottom: 8 }}><Pill item={item} /><span className="wf-status wf-status-stage">{kindLabel}</span></div>
+          <div className="wf-record-tags" style={{ marginBottom: 8 }}><Pill item={item} /><RegionTags item={item} /><span className="wf-status wf-status-stage">{kindLabel}</span></div>
           <h1>{item.title}</h1>
           <p className="muted" style={{ marginTop: 6 }}>
             {item.native?.author ? <>{item.native.author.name}</> : item.authorName ? <>{item.authorName}</> : null}

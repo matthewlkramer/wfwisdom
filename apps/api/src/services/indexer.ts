@@ -8,7 +8,7 @@ import { buildBodyHtml, stripContentTokens } from "../lib/html.js";
 import { stripSeriesPrefix } from "../lib/titles.js";
 import { embed, respond } from "../lib/openai.js";
 import { GOOGLE_DOC_RE, chunk, normalizeWs, sha, stripHtml } from "../lib/text.js";
-import type { ItemLanguage } from "@wfw/shared";
+import { regionsOfAudiences, type ItemLanguage } from "@wfw/shared";
 import { resolveLanguage } from "./language.js";
 import { logger } from "../logger.js";
 import { getSettings } from "../settings.js";
@@ -24,7 +24,7 @@ export async function markStaleRuns(): Promise<void> {
 export function isIndexing(): boolean { return running !== null; }
 
 type Kind = "post" | "series" | "question";
-interface Prepared { kind: Kind; sourceId: number; title: string; description: string | null; url: string; authorName: string | null; publishedAt: Date | null; sourceUpdatedAt: Date | null; views: number; likes: number; comments: number; seriesTitles: string[]; categories: string[]; audiences: string[]; contentType: string | null; bodyText: string; bodyHtml: string; childPostIds: number[]; attachments: { id: number; name: string; type: string; bytes: number; chars: number; mime?: string | null }[]; linkedDocs: { url: string; kind: string; status: string; chars: number }[]; linkOnly: boolean; hasText: boolean; language: ItemLanguage | null; contentHash: string; }
+interface Prepared { kind: Kind; sourceId: number; title: string; description: string | null; url: string; authorName: string | null; publishedAt: Date | null; sourceUpdatedAt: Date | null; views: number; likes: number; comments: number; seriesTitles: string[]; categories: string[]; audiences: string[]; regions: string[]; contentType: string | null; bodyText: string; bodyHtml: string; childPostIds: number[]; attachments: { id: number; name: string; type: string; bytes: number; chars: number; mime?: string | null }[]; linkedDocs: { url: string; kind: string; status: string; chars: number }[]; linkOnly: boolean; hasText: boolean; language: ItemLanguage | null; contentHash: string; }
 
 const MAX_ATTACHMENT_BYTES = 40 * 1024 * 1024;
 
@@ -79,7 +79,8 @@ async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) =
     kind, sourceId: it.id, title, description: stripHtml(it.description) || null, url, authorName: it.author ? `${it.author.first_name ?? ""} ${it.author.last_name ?? ""}`.trim() || null : null,
     publishedAt: it.published_at ? new Date(it.published_at) : null, sourceUpdatedAt: it.updated_at ? new Date(it.updated_at) : null,
     views: it.views_count ?? 0, likes: it.likes_count ?? 0, comments: it.comments_count ?? 0,
-    seriesTitles: (it.series ?? []).map((s) => s.title), categories: cats, audiences: auds, contentType: null,
+    // Connected already says which region a post is for, in its audience taxa; nothing has to guess at it.
+    seriesTitles: (it.series ?? []).map((s) => s.title), categories: cats, audiences: auds, regions: regionsOfAudiences(auds), contentType: null,
     bodyText, bodyHtml: buildBodyHtml(kind, it), childPostIds: kind === "series" ? (it.posts ?? []).map((p) => p.id) : [], attachments, linkedDocs, linkOnly: realText < 200 && (linkCount > 0 || linkedDocs.length > 0), hasText: realText >= 300,
     // null means the check could not run; the upsert then leaves whatever language is already stored.
     language: await resolveLanguage({ title, description: stripHtml(it.description), body: bodyText, categories: cats, seriesTitles: (it.series ?? []).map((s) => s.title) }, log),
@@ -141,8 +142,8 @@ export async function runReindex(triggeredBy: string, opts: { full?: boolean; li
               (stats.unchanged as number)++;
             } else {
               const p = await prepare(bf, kind, detail, log, { fetchAttachments: true });
-              const [row] = await db.insert(items).values({ sourceKind: kind, sourceId: p.sourceId, title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, language: p.language ?? "unknown", contentHash: p.contentHash, indexedAt: new Date(), removedAt: null })
-                .onConflictDoUpdate({ target: [items.sourceKind, items.sourceId], set: { title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, ...(p.language ? { language: p.language } : {}), contentHash: p.contentHash, indexedAt: new Date(), removedAt: null } }).returning({ id: items.id });
+              const [row] = await db.insert(items).values({ sourceKind: kind, sourceId: p.sourceId, title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, regions: p.regions, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, language: p.language ?? "unknown", contentHash: p.contentHash, indexedAt: new Date(), removedAt: null })
+                .onConflictDoUpdate({ target: [items.sourceKind, items.sourceId], set: { title: p.title, description: p.description, url: p.url, authorName: p.authorName, publishedAt: p.publishedAt, sourceUpdatedAt: p.sourceUpdatedAt, views: p.views, likes: p.likes, comments: p.comments, seriesTitles: p.seriesTitles, categories: p.categories, audiences: p.audiences, regions: p.regions, bodyText: p.bodyText, bodyHtml: p.bodyHtml, childPostIds: p.childPostIds, attachments: p.attachments, linkedDocs: p.linkedDocs, linkOnly: p.linkOnly, hasText: p.hasText, ...(p.language ? { language: p.language } : {}), contentHash: p.contentHash, indexedAt: new Date(), removedAt: null } }).returning({ id: items.id });
               if (row && (!prev || prev.hash !== p.contentHash)) changedIds.push(row.id);
               (stats.changed as number)++;
             }

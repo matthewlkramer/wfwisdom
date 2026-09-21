@@ -5,6 +5,7 @@ import { STAGES, type ItemSummary, type JobSummary, type StageKey } from "@wfw/s
 import { api } from "../api";
 import { ErrorState, ItemCard, ItemGrid, Loading } from "../components/ui";
 import { LanguageFilter, langParam, useLanguage } from "../language";
+import { RegionFilter, regionParam, useRegion } from "../region";
 import { TypeFilter, typesParam, useDocTypes } from "../filters";
 
 type MapData = { jobs: JobSummary[]; stages: { key: StageKey; name: string; blurb?: string }[]; stageCounts: Record<string, number> };
@@ -14,13 +15,13 @@ const isStage = (s: string | null): s is StageKey => !!s && STAGES.some((x) => x
 /** The map: a stage rail on top, jobs on the left, and the selected job's sub-jobs with their best resources on the right. */
 export function MapPage() {
   const [sp, setSp] = useSearchParams();
-  const { language } = useLanguage(); const { types } = useDocTypes();
+  const { language } = useLanguage(); const { region } = useRegion(); const { types } = useDocTypes();
   const stage = isStage(sp.get("stage")) ? (sp.get("stage") as StageKey) : "";
   // The type filter goes to the job list too, so the count beside a job matches the cards the job page shows.
-  const m = useQuery({ queryKey: ["map", language, types], queryFn: () => api.get<MapData>(`/api/map?${langParam(language)}&${typesParam(types)}`) });
+  const m = useQuery({ queryKey: ["map", language, region, types], queryFn: () => api.get<MapData>(`/api/map?${langParam(language)}&${regionParam(region)}&${typesParam(types)}`) });
   const jobs = (m.data?.jobs ?? []).filter((j) => !stage || j.subjobs.some((s) => s.stages.includes(stage)));
   const jobKey = sp.get("job") && jobs.some((j) => j.key === sp.get("job")) ? sp.get("job")! : jobs[0]?.key ?? "";
-  const j = useQuery({ queryKey: ["map-job", jobKey, language, types], queryFn: () => api.get<JobData>(`/api/map/job/${jobKey}?${langParam(language)}&${typesParam(types)}`), enabled: !!jobKey });
+  const j = useQuery({ queryKey: ["map-job", jobKey, language, region, types], queryFn: () => api.get<JobData>(`/api/map/job/${jobKey}?${langParam(language)}&${regionParam(region)}&${typesParam(types)}`), enabled: !!jobKey });
   useEffect(() => { document.getElementById("map-detail")?.scrollTo?.(0, 0); }, [jobKey]);
   if (m.isLoading) return <div className="wf-page"><Loading /></div>;
   if (m.error) return <div className="wf-page"><ErrorState error={m.error} retry={() => m.refetch()} /></div>;
@@ -35,7 +36,7 @@ export function MapPage() {
           <button className={stage === "" ? "active" : ""} onClick={() => set({ stage: "" })}><strong>All stages</strong><span>{Object.values(counts).length ? "every resource" : ""}</span></button>
           {STAGES.map((s) => <button key={s.key} className={stage === s.key ? "active" : ""} onClick={() => set({ stage: s.key })}><strong>{s.name}</strong><span>{counts[s.key] ?? 0} resources</span></button>)}
         </div>
-        <div className="filter-group"><TypeFilter /><LanguageFilter /></div>
+        <div className="filter-group"><TypeFilter /><RegionFilter /><LanguageFilter /></div>
       </div>
       <div className="map-explorer">
         <nav className="map-jobs" aria-label="Jobs">
@@ -62,15 +63,15 @@ export function MapPage() {
 }
 
 export function SubjobPage() {
-  const { key } = useParams(); const { language } = useLanguage(); const { types } = useDocTypes();
-  const q = useQuery({ queryKey: ["subjob", key, language, types], queryFn: () => api.get<{ subjob: { key: string; name: string; description: string | null; stages: StageKey[] }; job: { key: string; name: string } | null; items: ItemSummary[] }>(`/api/map/subjob/${key}?${langParam(language)}&${typesParam(types)}`) });
+  const { key } = useParams(); const { language } = useLanguage(); const { region } = useRegion(); const { types } = useDocTypes();
+  const q = useQuery({ queryKey: ["subjob", key, language, region, types], queryFn: () => api.get<{ subjob: { key: string; name: string; description: string | null; stages: StageKey[] }; job: { key: string; name: string } | null; items: ItemSummary[] }>(`/api/map/subjob/${key}?${langParam(language)}&${regionParam(region)}&${typesParam(types)}`) });
   if (q.isLoading) return <div className="wf-page"><Loading /></div>;
   if (q.error) return <div className="wf-page"><ErrorState error={q.error} retry={() => q.refetch()} /></div>;
   const d = q.data!;
   return (
     <div className="wf-page">
       <Link to={d.job ? `/map?job=${d.job.key}` : "/map"} className="wf-page-back">← Map{d.job ? ` · ${d.job.name}` : ""}</Link>
-      <div className="wf-page-header"><div><h1>{d.subjob.name}</h1><p>{d.items.length} resource{d.items.length === 1 ? "" : "s"}, best first. Staff picks and Essentials are marked.{d.subjob.stages.length ? ` Relevant in: ${d.subjob.stages.map((k) => STAGES.find((x) => x.key === k)?.name ?? k).join(", ")}.` : ""}</p></div><div className="wf-record-actions filter-group"><TypeFilter /><LanguageFilter /></div></div>
+      <div className="wf-page-header"><div><h1>{d.subjob.name}</h1><p>{d.items.length} resource{d.items.length === 1 ? "" : "s"}, best first. Staff picks and Essentials are marked.{d.subjob.stages.length ? ` Relevant in: ${d.subjob.stages.map((k) => STAGES.find((x) => x.key === k)?.name ?? k).join(", ")}.` : ""}</p></div><div className="wf-record-actions filter-group"><TypeFilter /><RegionFilter /><LanguageFilter /></div></div>
       <ItemGrid items={d.items} context={{ from: "map", subjob: d.subjob.key }} empty="No resources placed here yet." />
     </div>
   );

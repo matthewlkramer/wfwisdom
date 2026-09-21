@@ -1,13 +1,13 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
 import { and, desc, eq, getDb, inArray, isNull, itemMeta, items, jobs, placements, signals, sql, subjobs, users } from "@wfw/db";
-import { STAGES, isResourceLanguage, type JobSummary, type ResourceLanguage, type StageKey } from "@wfw/shared";
+import { STAGES, isResourceLanguage, isResourceRegion, type JobSummary, type ResourceLanguage, type ResourceRegion, type StageKey } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { getSettings } from "../settings.js";
-import { itemsForSubjob, mostUsed, parseTypes, postsBySourceId, startHere, subjobItemCounts, toSummary, itemSelect, type ItemRow, visibleWhere } from "../services/items.js";
+import { itemsForSubjob, mostUsed, parseTypes, postsBySourceId, startHere, subjobItemCounts, toSummary, itemSelect, type ItemRow, type ReaderFilters, visibleWhere } from "../services/items.js";
 import { mergeAdjacentLists, stripContentTokens } from "../lib/html.js";
 import { googleKindOfMime, googleUrl, isGoogleAppsMime } from "../services/native.js";
-import { readerLanguage } from "../services/language-pref.js";
+import { readerLanguage, readerRegion } from "../services/language-pref.js";
 
 export const mapRouter = Router();
 mapRouter.use(requireUser);
@@ -15,20 +15,29 @@ const isStage = (s: unknown): s is StageKey => typeof s === "string" && STAGES.s
 /** The language filter comes from the query string; when it is missing we use what the reader last chose. */
 const requestLanguage = (req: Request): Promise<ResourceLanguage> =>
   isResourceLanguage(req.query.lang) ? Promise.resolve(req.query.lang) : readerLanguage(req.user!.id);
+/** Likewise for the region. */
+const requestRegion = (req: Request): Promise<ResourceRegion> =>
+  isResourceRegion(req.query.region) ? Promise.resolve(req.query.region) : readerRegion(req.user!.id);
+/** The whole filter row, as every list route needs it. */
+async function requestFilters(req: Request): Promise<ReaderFilters & { language: ResourceLanguage; region: ResourceRegion }> {
+  const [language, region] = await Promise.all([requestLanguage(req), requestRegion(req)]);
+  return { language, region, types: parseTypes(req.query.types) };
+}
 
 mapRouter.get("/", async (req, res) => {
   const staff = req.user!.role === "staff";
   const db = getDb();
   const js = await db.select().from(jobs).orderBy(jobs.sort);
   const ss = await db.select().from(subjobs).orderBy(subjobs.sort);
-  const lang = await requestLanguage(req);
+  const f = await requestFilters(req);
+  const lang = f.language;
   // The same filters the job page applies, so the number beside a job matches the cards under it.
-  const cmap = await subjobItemCounts(staff, lang, parseTypes(req.query.types));
-  const stageRows = await db.execute(sql`select s as stage, count(distinct i.id)::int as n from items i join item_meta m on m.item_id = i.id cross join lateral unnest(m.stages) as s where i.removed_at is null and coalesce(m.hidden, false) = false ${lang === "all" ? sql`` : sql`and i.language = ${lang}`} ${staff ? sql`` : sql`and not exists (select 1 from placements p join subjobs sj on sj.id = p.subjob_id join jobs j on j.id = sj.job_id where p.item_id = i.id and p.is_primary and j.staff_only)`} group by s`);
+  const cmap = await subjobItemCounts(staff, f);
+  const stageRows = await db.execute(sql`select s as stage, count(distinct i.id)::int as n from items i join item_meta m on m.item_id = i.id cross join lateral unnest(m.stages) as s where i.removed_at is null and coalesce(m.hidden, false) = false ${lang === "all" ? sql`` : sql`and i.language = ${lang}`} ${f.region === "all" ? sql`` : f.region === "general" ? sql`and coalesce(array_length(i.regions, 1), 0) = 0` : sql`and (i.regions @> array[${f.region}]::text[] or coalesce(array_length(i.regions, 1), 0) = 0)`} ${staff ? sql`` : sql`and not exists (select 1 from placements p join subjobs sj on sj.id = p.subjob_id join jobs j on j.id = sj.job_id where p.item_id = i.id and p.is_primary and j.staff_only)`} group by s`);
   const stageCounts = Object.fromEntries((stageRows.rows as { stage: string; n: number }[]).map((r) => [r.stage, r.n]));
   const out: JobSummary[] = js.filter((j) => staff || !j.hidden).map((j) => ({ id: j.id, key: j.key, name: j.name, description: j.description, staffOnly: j.staffOnly, hidden: j.hidden,
     subjobs: ss.filter((s) => s.jobId === j.id).map((s) => ({ id: s.id, key: s.key, name: s.name, description: s.description, stages: s.stages as StageKey[], itemCount: cmap.get(s.id) ?? 0 })) }));
-  res.json({ jobs: out, stages: STAGES, stageCounts, language: lang });
+  res.json({ jobs: out, stages: STAGES, stageCounts, language: lang, region: f.region });
 });
 
 mapRouter.get("/home", async (req, res) => {
@@ -37,10 +46,9 @@ mapRouter.get("/home", async (req, res) => {
   const stage = isStage(req.query.stage) ? req.query.stage : null;
   const [u] = await getDb().select({ stage: users.stage }).from(users).where(eq(users.id, req.user!.id));
   const effective = stage ?? (isStage(u?.stage) ? u!.stage as StageKey : null);
-  const lang = await requestLanguage(req);
-  const types = parseTypes(req.query.types);
-  const [start, used] = await Promise.all([effective ? startHere(effective, staff, s.startHereCap, lang, types) : Promise.resolve([]), mostUsed(staff, 8, lang, types)]);
-  res.json({ stage: effective, startHere: start, mostUsed: used, stages: STAGES, language: lang });
+  const f = await requestFilters(req);
+  const [start, used] = await Promise.all([effective ? startHere(effective, staff, s.startHereCap, f) : Promise.resolve([]), mostUsed(staff, 8, f)]);
+  res.json({ stage: effective, startHere: start, mostUsed: used, stages: STAGES, language: f.language, region: f.region });
 });
 
 mapRouter.post("/stage", async (req, res) => {
@@ -58,9 +66,8 @@ mapRouter.get("/job/:key", async (req, res) => {
   if (!j || (j.hidden && !staff)) { res.status(404).json({ error: "Not found" }); return; }
   const ss = await db.select().from(subjobs).where(eq(subjobs.jobId, j.id)).orderBy(subjobs.sort);
   const perSub = Number(req.query.limit ?? 3);
-  const lang = await requestLanguage(req);
-  const types = parseTypes(req.query.types);
-  const out = await Promise.all(ss.map(async (sj) => { const list = await itemsForSubjob(sj.id, staff, lang, types); return { id: sj.id, key: sj.key, name: sj.name, description: sj.description, stages: sj.stages as StageKey[], itemCount: list.length, items: list.slice(0, perSub) }; }));
+  const f = await requestFilters(req);
+  const out = await Promise.all(ss.map(async (sj) => { const list = await itemsForSubjob(sj.id, staff, f); return { id: sj.id, key: sj.key, name: sj.name, description: sj.description, stages: sj.stages as StageKey[], itemCount: list.length, items: list.slice(0, perSub) }; }));
   res.json({ job: { id: j.id, key: j.key, name: j.name, description: j.description, staffOnly: j.staffOnly }, subjobs: out });
 });
 
@@ -70,7 +77,7 @@ mapRouter.get("/subjob/:key", async (req, res) => {
   const [s] = await db.select({ id: subjobs.id, key: subjobs.key, name: subjobs.name, description: subjobs.description, stages: subjobs.stages, jobId: subjobs.jobId }).from(subjobs).where(eq(subjobs.key, String(req.params.key)));
   if (!s) { res.status(404).json({ error: "Not found" }); return; }
   const [j] = await db.select().from(jobs).where(eq(jobs.id, s.jobId));
-  const list = await itemsForSubjob(s.id, staff, await requestLanguage(req), parseTypes(req.query.types));
+  const list = await itemsForSubjob(s.id, staff, await requestFilters(req));
   res.json({ subjob: { ...s, stages: s.stages as StageKey[] }, job: j ? { id: j.id, key: j.key, name: j.name } : null, items: list });
 });
 

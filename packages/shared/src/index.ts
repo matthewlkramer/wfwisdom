@@ -1,10 +1,12 @@
 // Types shared by the API and the web app. Keep this file dependency-free.
 export * from "./language.js";
 export * from "./linkify.js";
+export * from "./region.js";
 import type { ItemLanguage, ResourceLanguage } from "./language.js";
+import type { ResourceRegion } from "./region.js";
 
 export type Role = "teacher_leader" | "staff";
-export interface SessionUser { id: string; email: string; name: string; role: Role; resourceLanguage: ResourceLanguage; }
+export interface SessionUser { id: string; email: string; name: string; role: Role; resourceLanguage: ResourceLanguage; resourceRegion: ResourceRegion; }
 export type StageKey = "discovery" | "visioning" | "planning" | "startup" | "open";
 export const STAGES: { key: StageKey; name: string; description: string }[] = [
   { key: "discovery", name: "Discovery", description: "Exploring whether to open a Wildflower school" },
@@ -19,6 +21,8 @@ export interface ItemSummary {
   description: string | null; summary: string | null; contentType: string | null;
   updatedAt: string | null; views: number; score: number; curation: Curation; dated: string | null;
   linkOnly: boolean; attachmentCount: number; seriesTitles: string[]; language: ItemLanguage; why?: string | null;
+  /** The regions this is written for (keys from REGIONS). Empty means it applies wherever you are. */
+  regions: string[];
   /** For a series card on the map: the items inside it, in order. */
   children?: { id: string; title: string }[];
   isSeries?: boolean;

@@ -5,6 +5,7 @@ import { api } from "./api";
 import { Shell } from "./components/Shell";
 import { TypeFilterProvider } from "./filters";
 import { LanguageProvider } from "./language";
+import { RegionProvider } from "./region";
 import { Loading } from "./components/ui";
 import { AdminLayout } from "./pages/admin/AdminLayout";
 import { AdminOverview } from "./pages/admin/Overview";
@@ -35,9 +36,9 @@ export default function App() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => api.get<{ user: SessionUser | null }>("/api/me") });
   if (me.isLoading) return <div className="wf-page"><Loading what="Signing you in" /></div>;
   const user = me.data?.user ?? null;
-  if (!user) return <LanguageProvider user={null}><Routes><Route path="*" element={<Landing next={loc.pathname + loc.search} />} /></Routes></LanguageProvider>;
+  if (!user) return <LanguageProvider user={null}><RegionProvider user={null}><Routes><Route path="*" element={<Landing next={loc.pathname + loc.search} />} /></Routes></RegionProvider></LanguageProvider>;
   return (
-    <LanguageProvider user={user}><TypeFilterProvider>
+    <LanguageProvider user={user}><RegionProvider user={user}><TypeFilterProvider>
     <Routes>
       <Route element={<Shell user={user} onSignOut={() => qc.setQueryData(["me"], { user: null })} />}>
         <Route index element={<Home />} />
@@ -75,6 +76,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
-    </TypeFilterProvider></LanguageProvider>
+    </TypeFilterProvider></RegionProvider></LanguageProvider>
   );
 }

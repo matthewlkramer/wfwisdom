@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, Info, Loader2, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { linkifyParts, type ItemSummary } from "@wfw/shared";
+import { linkifyParts, regionLabel, type ItemSummary } from "@wfw/shared";
 import { fmtMonth, signalClick } from "../api";
 
 export function State({ kind = "info", title, children, icon }: { kind?: "info" | "error" | "success" | "loading" | "empty"; title: string; children?: ReactNode; icon?: ReactNode }) {
@@ -21,6 +21,11 @@ export function SearchInput({ value, onChange, placeholder, large, autoFocus, on
 export function Linkify({ text }: { text: string }) {
   return <>{linkifyParts(text).map((p, i) => (p.kind === "link" ? <a key={i} href={p.href} target="_blank" rel="noopener noreferrer">{p.text}</a> : <span key={i}>{p.text}</span>))}</>;
 }
+/** Which regions a resource is written for. Nothing is shown for one that applies wherever you are. */
+export function RegionTags({ item }: { item: ItemSummary }) {
+  if (!item.regions?.length) return null;
+  return <>{item.regions.map((r) => <span key={r} className="wf-status wf-status-region" title={`Written for ${regionLabel(r)}`}>{regionLabel(r)}</span>)}</>;
+}
 export function Pill({ item }: { item: ItemSummary }) {
   return <>{item.curation === "essential" ? <span className="wf-status wf-status-essential">Essential</span> : item.curation === "recommended" ? <span className="wf-status wf-status-recommended">Staff pick</span> : null}{item.dated ? <span className="wf-status wf-status-attention">{item.dated}</span> : null}</>;
 }
@@ -29,7 +34,7 @@ export function ItemCard({ item, context, showWhy = true }: { item: ItemSummary;
   const kindLabel = item.contentType === "resource_list" ? "Resource list" : item.isSeries || item.kind === "series" ? "Series" : item.kind === "question" ? "Q&A" : item.contentType ? item.contentType[0]!.toUpperCase() + item.contentType.slice(1) : "Post";
   return (
     <article className="wf-card wf-card-record">
-      <div className="wf-record-heading"><span><Link className="wf-card-title" to={`/item/${item.id}`} onClick={() => signalClick(item.id, context ?? {})}>{item.title}</Link></span><span className="wf-record-tags"><Pill item={item} /></span></div>
+      <div className="wf-record-heading"><span><Link className="wf-card-title" to={`/item/${item.id}`} onClick={() => signalClick(item.id, context ?? {})}>{item.title}</Link></span><span className="wf-record-tags"><RegionTags item={item} /><Pill item={item} /></span></div>
       {showWhy && item.why ? <p className="item-why">{item.why}</p> : null}
       {item.children?.length ? <ol className="series-items">{item.children.map((c) => <li key={c.id}><Link to={`/item/${c.id}`} onClick={() => signalClick(c.id, { ...(context ?? {}), viaSeries: item.id })}>{c.title}</Link></li>)}</ol> : null}
       {item.summary ? <p className="item-summary">{item.summary}</p> : item.description ? <p className="item-summary">{item.description.slice(0, 220)}{item.description.length > 220 ? "…" : ""}</p> : null}

@@ -1,17 +1,17 @@
 import { and, desc, eq, getDb, inArray, itemMeta, items, placements, sql, subjobs, jobs } from "@wfw/db";
-import type { ItemLanguage, ItemSummary, ResourceLanguage, StageKey } from "@wfw/shared";
+import type { ItemLanguage, ItemSummary, ResourceLanguage, ResourceRegion, StageKey } from "@wfw/shared";
 import { stripContentTokens } from "../lib/html.js";
 
 export const itemSelect = {
   id: items.id, title: items.title, url: items.url, kind: items.sourceKind, description: items.description, summary: items.summary, contentType: items.contentType,
-  updatedAt: items.sourceUpdatedAt, views: items.views, linkOnly: items.linkOnly, attachments: items.attachments, seriesTitles: items.seriesTitles, language: items.language,
+  updatedAt: items.sourceUpdatedAt, views: items.views, linkOnly: items.linkOnly, attachments: items.attachments, seriesTitles: items.seriesTitles, language: items.language, regions: items.regions,
   score: sql<number>`coalesce(${itemMeta.score}, 0)`, curation: itemMeta.curation, hidden: sql<boolean>`coalesce(${itemMeta.hidden}, false)`, dated: itemMeta.datedLabel, reviewStatus: itemMeta.reviewStatus,
   nativeKind: items.nativeKind, childPostIds: items.childPostIds, childItemIds: items.childItemIds, nativeAttachments: items.nativeAttachments,
 };
-export type ItemRow = { id: string; title: string; url: string; kind: string; description: string | null; summary: string | null; contentType: string | null; updatedAt: Date | null; views: number; linkOnly: boolean; attachments: { id: number }[]; seriesTitles: string[]; language: string; score: number; curation: string | null; hidden: boolean; dated: string | null; reviewStatus: string | null; nativeKind?: string | null; childPostIds?: number[]; childItemIds?: string[]; nativeAttachments?: { driveId: string }[] };
+export type ItemRow = { id: string; title: string; url: string; kind: string; description: string | null; summary: string | null; contentType: string | null; updatedAt: Date | null; views: number; linkOnly: boolean; attachments: { id: number }[]; seriesTitles: string[]; language: string; regions: string[]; score: number; curation: string | null; hidden: boolean; dated: string | null; reviewStatus: string | null; nativeKind?: string | null; childPostIds?: number[]; childItemIds?: string[]; nativeAttachments?: { driveId: string }[] };
 
 export function toSummary(r: ItemRow, why?: string | null): ItemSummary {
-  return { id: r.id, title: r.title, url: r.url, kind: r.kind as ItemSummary["kind"], description: r.description ? stripContentTokens(r.description) : null, summary: r.summary ? stripContentTokens(r.summary) : null, contentType: r.contentType, updatedAt: r.updatedAt?.toISOString() ?? null, views: r.views, score: Math.round(r.score), curation: (r.curation as ItemSummary["curation"]) ?? null, dated: r.dated ?? null, linkOnly: r.linkOnly, attachmentCount: r.attachments.length + (r.nativeAttachments?.length ?? 0), seriesTitles: r.seriesTitles, language: (r.language as ItemLanguage) ?? "unknown", why: why ?? null, isSeries: isSeriesRow(r) };
+  return { id: r.id, title: r.title, url: r.url, kind: r.kind as ItemSummary["kind"], description: r.description ? stripContentTokens(r.description) : null, summary: r.summary ? stripContentTokens(r.summary) : null, contentType: r.contentType, updatedAt: r.updatedAt?.toISOString() ?? null, views: r.views, score: Math.round(r.score), curation: (r.curation as ItemSummary["curation"]) ?? null, dated: r.dated ?? null, linkOnly: r.linkOnly, attachmentCount: r.attachments.length + (r.nativeAttachments?.length ?? 0), seriesTitles: r.seriesTitles, language: (r.language as ItemLanguage) ?? "unknown", regions: r.regions ?? [], why: why ?? null, isSeries: isSeriesRow(r) };
 }
 export const isSeriesRow = (r: { kind: string; nativeKind?: string | null }) => r.kind === "series" || r.nativeKind === "series";
 /** Series come first on the map; within each group the usual ranking applies. */
@@ -46,14 +46,28 @@ export function rank(a: ItemRow & { position?: number | null }, b: ItemRow & { p
 export const visibleWhere = (staff: boolean) => staff ? sql`${items.removedAt} is null and ${items.status} = 'published'` : sql`${items.removedAt} is null and ${items.status} = 'published' and coalesce(${itemMeta.hidden}, false) = false`;
 /** The reader's language filter. "all" keeps everything, including items whose language is unknown. */
 export const languageWhere = (lang: ResourceLanguage | null | undefined) => (lang && lang !== "all" ? sql`${items.language} = ${lang}` : undefined);
+/**
+ * The reader's region filter. "all" keeps everything; "general" keeps only what is not written for one
+ * region; a region key keeps that region's material together with the material that applies everywhere,
+ * which is what a teacher leader there actually needs — Massachusetts licensing stays out of Minnesota.
+ */
+export const regionWhere = (region: ResourceRegion | null | undefined) =>
+  !region || region === "all" ? undefined
+    : region === "general" ? sql`coalesce(array_length(${items.regions}, 1), 0) = 0`
+    : sql`(${items.regions} @> array[${region}]::text[] or coalesce(array_length(${items.regions}, 1), 0) = 0)`;
+
+/** What the reader's filter row narrows a list to. A missing field means that filter is not narrowing. */
+export interface ReaderFilters { language?: ResourceLanguage; region?: ResourceRegion; types?: string[] }
+/** Every reader-facing list runs through this, so the filter row means the same thing everywhere. */
+export const filterWhere = (f: ReaderFilters = {}) => and(languageWhere(f.language), regionWhere(f.region), typeWhere(f.types));
 
 /**
  * Items placed in a sub-job for the map: series first, and a post that belongs to one of those series is listed inside
  * the series card rather than as a card of its own.
  */
-export async function itemsForSubjob(subjobId: string, staff: boolean, lang?: ResourceLanguage, types?: string[]): Promise<ItemSummary[]> {
+export async function itemsForSubjob(subjobId: string, staff: boolean, f: ReaderFilters = {}): Promise<ItemSummary[]> {
   const db = getDb();
-  const rows = await db.select({ ...itemSelect, position: placements.position, why: placements.why, isPrimary: placements.isPrimary }).from(placements).innerJoin(items, eq(items.id, placements.itemId)).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(placements.subjobId, subjobId), visibleWhere(staff), languageWhere(lang), typeWhere(types)));
+  const rows = await db.select({ ...itemSelect, position: placements.position, why: placements.why, isPrimary: placements.isPrimary }).from(placements).innerJoin(items, eq(items.id, placements.itemId)).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(placements.subjobId, subjobId), visibleWhere(staff), filterWhere(f)));
   return nestSeries(rows.sort(rankSeriesFirst) as (ItemRow & { why?: string | null })[], staff);
 }
 /**
@@ -67,13 +81,13 @@ export async function itemsForSubjob(subjobId: string, staff: boolean, lang?: Re
  * The reader's filters decide which rows can appear as cards; children are resolved against visibility
  * alone, which is what `nestSeries` does, so an item hidden from the reader never nests anything away.
  */
-export async function subjobItemCounts(staff: boolean, lang?: ResourceLanguage, types?: string[]): Promise<Map<string, number>> {
-  const lw = languageWhere(lang), tw = typeWhere(types);
+export async function subjobItemCounts(staff: boolean, f: ReaderFilters = {}): Promise<Map<string, number>> {
+  const fw = filterWhere(f);
   const rows = await getDb().execute(sql`
     with vis as (
       select items.id, items.source_kind, items.native_kind, items.child_post_ids, items.child_item_ids
       from items left join item_meta on item_meta.item_id = items.id
-      where ${visibleWhere(staff)}${lw ? sql` and ${lw}` : sql``}${tw ? sql` and ${tw}` : sql``}
+      where ${visibleWhere(staff)}${fw ? sql` and ${fw}` : sql``}
     ),
     vis_all as (
       select items.id, items.source_kind, items.source_id, items.imported_from
@@ -130,26 +144,26 @@ export async function nestSeries(rows: (ItemRow & { why?: string | null })[], st
   const withChildren = rows.map((r) => ({ r, children: isSeriesRow(r) ? childrenOf(r) : [] }));
   return withChildren.filter(({ r }) => isSeriesRow(r) || !nested.has(r.id)).map(({ r, children }) => ({ ...toSummary(r, r.why ?? null), ...(children.length ? { children } : {}) }));
 }
-export async function startHere(stage: StageKey, staff: boolean, cap: number, lang?: ResourceLanguage, types?: string[]): Promise<ItemSummary[]> {
+export async function startHere(stage: StageKey, staff: boolean, cap: number, f: ReaderFilters = {}): Promise<ItemSummary[]> {
   const db = getDb();
-  const pinned = await db.select({ ...itemSelect, position: itemMeta.pinnedPosition }).from(items).innerJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(itemMeta.pinnedStage, stage), visibleWhere(staff), languageWhere(lang), typeWhere(types))).orderBy(itemMeta.pinnedPosition);
+  const pinned = await db.select({ ...itemSelect, position: itemMeta.pinnedPosition }).from(items).innerJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(itemMeta.pinnedStage, stage), visibleWhere(staff), filterWhere(f))).orderBy(itemMeta.pinnedPosition);
   const out: (ItemRow & { position?: number | null })[] = [...pinned];
   if (out.length < cap) {
     const ids = new Set(out.map((o) => o.id));
     const ess = await db.selectDistinctOn([items.id], { ...itemSelect }).from(items).innerJoin(itemMeta, eq(itemMeta.itemId, items.id)).innerJoin(placements, eq(placements.itemId, items.id)).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).innerJoin(jobs, eq(jobs.id, subjobs.jobId))
-      .where(and(sql`${itemMeta.curation} in ('essential','recommended')`, sql`${stage} = any(${subjobs.stages})`, eq(jobs.hidden, false), eq(jobs.staffOnly, false), visibleWhere(staff), languageWhere(lang), typeWhere(types)));
+      .where(and(sql`${itemMeta.curation} in ('essential','recommended')`, sql`${stage} = any(${subjobs.stages})`, eq(jobs.hidden, false), eq(jobs.staffOnly, false), visibleWhere(staff), filterWhere(f)));
     for (const e of ess.sort(rank)) if (!ids.has(e.id)) { out.push(e); ids.add(e.id); }
   }
   return out.slice(0, cap).map((r) => toSummary(r));
 }
-export async function mostUsed(staff: boolean, limit = 8, lang?: ResourceLanguage, types?: string[]): Promise<ItemSummary[]> {
+export async function mostUsed(staff: boolean, limit = 8, f: ReaderFilters = {}): Promise<ItemSummary[]> {
   const db = getDb();
   const rows = await db.select({ ...itemSelect, clicks: itemMeta.wfClicks30d }).from(items).innerJoin(itemMeta, eq(itemMeta.itemId, items.id)).innerJoin(placements, and(eq(placements.itemId, items.id), eq(placements.isPrimary, true))).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).innerJoin(jobs, eq(jobs.id, subjobs.jobId))
-    .where(and(visibleWhere(staff), eq(jobs.staffOnly, false), sql`${itemMeta.datedLabel} is null`, languageWhere(lang), typeWhere(types))).orderBy(desc(sql`coalesce(${itemMeta.wfClicks30d},0) * 10 + ${items.views} / greatest(1, extract(epoch from (now() - coalesce(${items.publishedAt}, now()))) / 2592000)`)).limit(limit);
+    .where(and(visibleWhere(staff), eq(jobs.staffOnly, false), sql`${itemMeta.datedLabel} is null`, filterWhere(f))).orderBy(desc(sql`coalesce(${itemMeta.wfClicks30d},0) * 10 + ${items.views} / greatest(1, extract(epoch from (now() - coalesce(${items.publishedAt}, now()))) / 2592000)`)).limit(limit);
   return rows.map((r) => toSummary(r as ItemRow));
 }
-export async function itemsByIds(ids: string[], staff: boolean, lang?: ResourceLanguage): Promise<Map<string, ItemRow>> {
+export async function itemsByIds(ids: string[], staff: boolean, f: ReaderFilters = {}): Promise<Map<string, ItemRow>> {
   if (!ids.length) return new Map();
-  const rows = await getDb().select(itemSelect).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, ids), visibleWhere(staff), languageWhere(lang)));
+  const rows = await getDb().select(itemSelect).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, ids), visibleWhere(staff), filterWhere(f)));
   return new Map(rows.map((r) => [r.id, r as ItemRow]));
 }
