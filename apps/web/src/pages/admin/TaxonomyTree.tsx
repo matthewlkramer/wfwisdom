@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, GripVertical } from "lucide-react";
+import { ChevronDown, ChevronRight, FolderMinus, GripVertical } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { ItemSummary, JobSummary } from "@wfw/shared";
@@ -14,7 +14,8 @@ const DRAG_TYPE = "application/x-wfw-item";
  * selected sub-job on the right, and a drag from right to left to move one.
  *
  * Only the placement moves. A resource that also sits in other sub-jobs keeps those, and a resource that
- * was the primary of where it came from stays primary where it lands.
+ * was the primary of where it came from stays primary where it lands. Each row also carries a button to
+ * take the resource out of the sub-job on screen without putting it anywhere else.
  */
 export function TaxonomyTree() {
   const qc = useQueryClient();
@@ -31,15 +32,35 @@ export function TaxonomyTree() {
     queryFn: () => api.get<{ items: Row[] }>(`/api/admin/items?q=&filter=&subjob=${encodeURIComponent(selected)}&page=0`),
     enabled: !!selected,
   });
+  const inv = () => { qc.invalidateQueries({ queryKey: ["admin-items"] }); qc.invalidateQueries({ queryKey: ["map"] }); };
   const move = useMutation({
     mutationFn: (b: { id: string; from: string; to: string; copy: boolean }) => api.post(`/api/admin/items/${b.id}/move`, { from: b.from, to: b.to, copy: b.copy }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-items"] }); qc.invalidateQueries({ queryKey: ["map"] }); },
+    onSuccess: inv,
+  });
+  const place = useMutation({
+    mutationFn: (b: { id: string; placements: { subjobKey: string; isPrimary: boolean }[] }) => api.put(`/api/admin/items/${b.id}/placements`, { placements: b.placements }),
+    onSuccess: inv,
   });
 
   if (map.isLoading) return <Loading />;
   if (map.error) return <ErrorState error={map.error} retry={() => map.refetch()} />;
   const jobs = map.data!.jobs;
   const subName = (key: string) => jobs.flatMap((j) => j.subjobs).find((s) => s.key === key)?.name ?? key;
+
+  /**
+   * Take a resource out of the sub-job on screen and leave its other placements alone. Whatever is left
+   * keeps a primary, so an item is never placed somewhere and primary nowhere — that is what the map
+   * ranks on and what "most used" reads.
+   */
+  const remove = (r: Row) => {
+    const others = r.placements.filter((p) => p.key !== selected);
+    const where = others.length ? `It stays in ${others.map((p) => p.name).join(", ")}.` : "This is its only placement, so it will not appear anywhere on the map until it is placed again.";
+    if (!confirm(`Remove “${r.title}” from ${subName(selected)}?\n\n${where}`)) return;
+    const kept = others.map((p) => ({ subjobKey: p.key, isPrimary: p.isPrimary }));
+    if (kept.length && !kept.some((p) => p.isPrimary)) kept[0]!.isPrimary = true;
+    place.mutate({ id: r.id, placements: kept });
+    setNote(`Removed “${r.title}” from ${subName(selected)}.${others.length ? "" : " It is no longer on the map."}`);
+  };
 
   const drop = (targetKey: string) => {
     setOver("");
@@ -59,7 +80,7 @@ export function TaxonomyTree() {
           Copy instead of moving <span className="muted">(a resource can sit in several sub-jobs)</span>
         </label>
       </div>
-      {move.error ? <ErrorState error={move.error} /> : note ? <State kind="success" title={note} /> : null}
+      {move.error || place.error ? <ErrorState error={move.error ?? place.error} /> : note ? <State kind="success" title={note} /> : null}
       <div className="taxonomy-mover">
         <nav className="taxonomy-tree" aria-label="Jobs and sub-jobs">
           {jobs.map((j) => {
@@ -109,6 +130,10 @@ export function TaxonomyTree() {
                       <GripVertical size={14} className="muted" aria-hidden />
                       <div className="grow"><Link to={`/item/${r.id}`}>{r.title}</Link> <Pill item={r} />{r.hidden ? <span className="wf-status wf-status-danger">hidden</span> : null}
                         {r.placements.length > 1 ? <div className="muted" style={{ fontSize: ".78rem" }}>also in {r.placements.filter((p) => p.key !== selected).map((p) => p.name).join(", ")}</div> : null}</div>
+                      {/* Not a drag handle: grabbing the button must not pick the row up. */}
+                      <button type="button" className="icon-button danger" draggable={false} onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        title={`Remove from ${subName(selected)}`} aria-label={`Remove ${r.title} from ${subName(selected)}`}
+                        onClick={() => remove(r)}><FolderMinus size={15} /></button>
                     </div>
                   ))}
                 </div>
