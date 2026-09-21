@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, BookOpenCheck, Compass, FilePlus, FileText, Flower2, Gauge, Inbox, ListTree, LogOut, Map as MapIcon, MessageSquarePlus, MessageSquareText, MessagesSquare, PenLine, Settings, Sparkles, Archive, Star, type LucideIcon } from "lucide-react";
+import { Activity, BookOpenCheck, Compass, FilePlus, FileText, Flower2, Inbox, ListTree, LogOut, Map as MapIcon, MessageSquarePlus, MessageSquareText, MessagesSquare, PenLine, Settings, Sparkles, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import type { SessionUser } from "@wfw/shared";
 import { api } from "../api";
@@ -14,20 +14,17 @@ const workspace: NavItem[] = [
   { to: "/materials", label: "Create custom materials", icon: Sparkles },
   { to: "/share", label: "Share your materials", icon: PenLine },
 ];
-const staff: NavItem[] = [
-  { to: "/admin", label: "Overview", icon: Gauge, end: true },
-  { to: "/admin/taxonomy", label: "Taxonomy", icon: ListTree },
-  { to: "/admin/curation", label: "Curation", icon: Star },
+/** Taxonomy and curation sit under Organize, and the four decision queues under Review queues, each with
+ *  tabs across the top of the page rather than a line of their own in the sidebar. */
+const foundation: NavItem[] = [
+  { to: "/admin/organize", label: "Organize", icon: ListTree },
   { to: "/admin/resources/new", label: "Add a resource", icon: FilePlus },
-  { to: "/admin/contributions", label: "Contributions", icon: Inbox },
-  { to: "/admin/retirement", label: "Retirement queue", icon: Archive },
+  { to: "/admin/queues", label: "Review queues", icon: Inbox },
   { to: "/admin/types", label: "Material types", icon: BookOpenCheck },
   { to: "/admin/base-prompt", label: "Base prompt", icon: FileText },
-  { to: "/admin/submissions", label: "Submission log", icon: FileText },
   { to: "/admin/feedback", label: "Feedback queue", icon: MessageSquareText },
-  { to: "/admin/questions", label: "Questions", icon: MessagesSquare },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
   { to: "/admin/activity", label: "Activity", icon: Activity },
+  { to: "/admin/settings", label: "Admin settings", icon: Settings },
 ];
 
 function NavButton({ item }: { item: NavItem }) {
@@ -44,9 +41,9 @@ export function Shell({ user, onSignOut }: { user: SessionUser; onSignOut: () =>
         <nav aria-label="Primary navigation">
           <span className="nav-section-label">Workspace</span>
           {workspace.map((i) => <NavButton key={i.to} item={i} />)}
-          {user.role === "staff" ? <><span className="nav-section-label">Staff</span>{staff.map((i) => <NavButton key={i.to} item={i} />)}</> : null}
+          {user.role === "staff" ? <><span className="nav-section-label">Foundation partners</span>{foundation.map((i) => <NavButton key={i.to} item={i} />)}</> : null}
         </nav>
-        <div className="sidebar-foot"><div><span>{user.name}</span><small>{user.role === "staff" ? "Foundation staff" : "Teacher leader"}</small></div>
+        <div className="sidebar-foot"><div><span>{user.name}</span><small>{user.role === "staff" ? "Foundation partner" : "Teacher leader"}</small></div>
           <button className="sidebar-settings-button" aria-label="Sign out" title="Sign out" onClick={async () => { await api.post("/api/auth/logout"); onSignOut(); }}><LogOut size={18} /></button></div>
       </aside>
       <main className="main-content">

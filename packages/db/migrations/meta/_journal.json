@@ -71,6 +71,13 @@
       "when": 1790100000001,
       "tag": "0009_regions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790200000000,
+      "tag": "0010_taxonomy_retirements",
+      "breakpoints": true
     }
   ]
 }

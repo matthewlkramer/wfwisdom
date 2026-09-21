@@ -85,6 +85,7 @@ export async function itemsForSubjob(subjobId: string, staff: boolean, f: Reader
  *
  * The reader's filters decide which rows can appear as cards; children are resolved against visibility
  * alone, which is what `nestSeries` does, so an item hidden from the reader never nests anything away.
+ * A series that belongs to another series on the page nests away like anything else, matching nestSeries.
  */
 export async function subjobItemCounts(staff: boolean, f: ReaderFilters = {}): Promise<Map<string, number>> {
   const fw = filterWhere(f);
@@ -113,26 +114,34 @@ export async function subjobItemCounts(staff: boolean, f: ReaderFilters = {}): P
         union
         select vis_all.id as item_id
         from jsonb_array_elements_text(coalesce(placed.child_post_ids, '[]'::jsonb)) as e2(pid)
-        join vis_all on (vis_all.source_kind = 'post' and vis_all.source_id::text = e2.pid)
-                     or (vis_all.imported_from->>'kind' = 'post' and vis_all.imported_from->>'sourceId' = e2.pid)
+        join vis_all on (vis_all.source_kind <> 'native' and vis_all.source_id::text = e2.pid)
+                     or (vis_all.imported_from->>'sourceId' = e2.pid)
       ) as c
       where placed.source_kind = 'series' or placed.native_kind = 'series'
     )
     select placed.subjob_id as subjob_id, count(*)::int as n
     from placed
-    where placed.source_kind = 'series' or placed.native_kind = 'series'
-       or not exists (select 1 from kids where kids.subjob_id = placed.subjob_id and kids.item_id = placed.item_id)
+    where not exists (select 1 from kids where kids.subjob_id = placed.subjob_id and kids.item_id = placed.item_id)
     group by placed.subjob_id`);
   return new Map((rows.rows as { subjob_id: string; n: number }[]).map((r) => [r.subjob_id, Number(r.n)]));
 }
 
-/** Posts by their Connected id, whether still mirrored (source_kind post) or already imported (imported_from). */
+/**
+ * Items by their Connected id, whether still mirrored or already imported (imported_from).
+ *
+ * A series lists its contents as bare Connected ids, and those contents are not always posts: a series
+ * can gather other series. Matching only posts meant a set of modules gathered under one series resolved
+ * to nothing, so the parent card listed no contents and each module kept a card of its own.
+ *
+ * A post wins a tie, because that is the kind a series' contents nearly always are.
+ */
 export async function postsBySourceId(sourceIds: number[], staff: boolean): Promise<Map<number, ItemRow & { sourceId: number }>> {
   const out = new Map<number, ItemRow & { sourceId: number }>();
   if (!sourceIds.length) return out;
-  const rows = await getDb().select({ ...itemSelect, sourceId: sql<number>`case when ${items.sourceKind} = 'post' then ${items.sourceId} else (${items.importedFrom}->>'sourceId')::bigint end`.mapWith(Number) }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id))
-    .where(and(sql`(${items.sourceKind} = 'post' and ${items.sourceId} in (${sql.join(sourceIds.map((x) => sql`${x}`), sql`, `)})) or (${items.importedFrom}->>'kind' = 'post' and (${items.importedFrom}->>'sourceId')::bigint in (${sql.join(sourceIds.map((x) => sql`${x}`), sql`, `)}))`, visibleWhere(staff)));
-  for (const r of rows) out.set(r.sourceId, r as ItemRow & { sourceId: number });
+  const ids = sql.join(sourceIds.map((x) => sql`${x}`), sql`, `);
+  const rows = await getDb().select({ ...itemSelect, sourceKind: items.sourceKind, sourceId: sql<number>`case when ${items.importedFrom}->>'sourceId' is not null then (${items.importedFrom}->>'sourceId')::bigint else ${items.sourceId} end`.mapWith(Number) }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id))
+    .where(and(sql`(${items.sourceId} in (${ids}) and ${items.sourceKind} <> 'native') or ((${items.importedFrom}->>'sourceId')::bigint in (${ids}))`, visibleWhere(staff)));
+  for (const r of rows) { const prev = out.get(r.sourceId); if (!prev || r.sourceKind === "post") out.set(r.sourceId, r as ItemRow & { sourceId: number }); }
   return out;
 }
 /** Attach each series' items (in order) and drop those items from the standalone list. */
@@ -145,9 +154,23 @@ export async function nestSeries(rows: (ItemRow & { why?: string | null })[], st
   for (const [sid, c] of await postsBySourceId(postIds, staff)) byPost.set(sid, { id: c.id, title: c.title });
   if (nativeIds.length) for (const c of await db.select({ id: items.id, title: items.title }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, nativeIds), visibleWhere(staff)))) byId.set(c.id, { id: c.id, title: c.title });
   const nested = new Set<string>();
-  const childrenOf = (s: ItemRow) => { const out: { id: string; title: string }[] = []; for (const pid of s.childPostIds ?? []) { const c = byPost.get(pid); if (c) out.push(c); } for (const id of s.childItemIds ?? []) { const c = byId.get(id); if (c) out.push(c); } for (const c of out) nested.add(c.id); return out; };
+  const parentOf = new Map<string, string>();
+  const childrenOf = (s: ItemRow) => { const out: { id: string; title: string }[] = []; for (const pid of s.childPostIds ?? []) { const c = byPost.get(pid); if (c) out.push(c); } for (const id of s.childItemIds ?? []) { const c = byId.get(id); if (c) out.push(c); } for (const c of out) { nested.add(c.id); if (!parentOf.has(c.id)) parentOf.set(c.id, s.id); } return out; };
   const withChildren = rows.map((r) => ({ r, children: isSeriesRow(r) ? childrenOf(r) : [] }));
-  return withChildren.filter(({ r }) => isSeriesRow(r) || !nested.has(r.id)).map(({ r, children }) => ({ ...toSummary(r, r.why ?? null), ...(children.length ? { children } : {}) }));
+  /**
+   * A series that belongs to another series on the same page is shown inside it, not beside it. Series
+   * used to be kept at the top level unconditionally, so a set of modules gathered under one series still
+   * listed every module as its own card.
+   *
+   * Two series that each claim the other would otherwise both disappear, so a parent chain that loops
+   * back on itself counts as no parent at all.
+   */
+  const nestedUnderAnother = (id: string) => {
+    const seen = new Set<string>([id]);
+    for (let p = parentOf.get(id); p; p = parentOf.get(p)) { if (seen.has(p)) return false; seen.add(p); }
+    return nested.has(id);
+  };
+  return withChildren.filter(({ r }) => !nestedUnderAnother(r.id)).map(({ r, children }) => ({ ...toSummary(r, r.why ?? null), ...(children.length ? { children } : {}) }));
 }
 export async function startHere(stage: StageKey, staff: boolean, cap: number, f: ReaderFilters = {}): Promise<ItemSummary[]> {
   const db = getDb();

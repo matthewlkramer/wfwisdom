@@ -68,6 +68,12 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .inline-actions.icon-row { flex-wrap: nowrap; }
 .inline-actions.icon-row .icon-button { flex: 0 0 auto; }
 
+/* Tabs across the top of a grouped staff section (Organize, Review queues) */
+.section-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: -6px 0 18px; padding: 4px; border: 1px solid var(--wf-border); border-radius: 11px; background: white; width: fit-content; max-width: 100%; }
+.section-tabs a { border-radius: 8px; padding: 7px 14px; color: var(--wf-muted); text-decoration: none; font-size: .88rem; font-weight: 600; white-space: nowrap; }
+.section-tabs a:hover { background: #f0f4f2; color: var(--wf-text); }
+.section-tabs a.active { background: var(--teal-deep); color: #fffdf8; }
+
 /* Feedback dialog + queue */
 .feedback-dialog-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(28,59,56,.16); }
 .feedback-dialog { position: fixed; left: 50%; top: 50%; width: min(560px, calc(100% - 36px)); max-height: calc(100dvh - 36px); overflow-y: auto; transform: translate(-50%, -50%); border: 1px solid var(--wf-border); border-radius: 16px; padding: 24px; background: #fffdf8; box-shadow: 0 24px 60px rgba(28,59,56,.2); }
@@ -459,7 +465,20 @@ details > summary { cursor: pointer; color: var(--teal-deep); font-weight: 600; 
 .native-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .author-line { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
 .author-line .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--teal-pale); color: var(--teal-deep); display: grid; place-items: center; font-weight: 800; font-size: .8rem; }
-.resource-editor { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+/* Both columns may shrink: a fixed right column let the sub-job picker and the stage chips, whose
+   intrinsic width is wider than 320px, spill outside the card instead of wrapping inside it. */
+.resource-editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); gap: 18px; align-items: start; }
+.resource-editor > * { min-width: 0; }
+/* The side panel is a grid; without a declared column its implicit one is sized to the widest thing in
+   it (a sub-job option runs to 636px) and overflows the card. A 1fr column shrinks to the panel. */
+.resource-editor aside { grid-template-columns: minmax(0, 1fr); }
+.resource-editor aside > *, .resource-editor aside .field { min-width: 0; }
+.resource-editor aside select, .resource-editor aside input { max-width: 100%; }
+/* inline-flex rows size to their content, and a sub-job option is far wider than the panel, so the row
+   is made block-level and the picker is allowed to shrink inside it. */
+.resource-editor aside .chip-group { flex-wrap: wrap; }
+.resource-editor aside .inline-actions { display: flex; flex-wrap: wrap; max-width: 100%; }
+.resource-editor aside .inline-actions > select { flex: 1 1 100%; min-width: 0; }
 .resource-editor textarea { width: 100%; min-height: 360px; font: inherit; font-size: .95rem; line-height: 1.55; border: 1px solid var(--wf-border); border-radius: var(--wf-control-radius); padding: 12px; }
 .kind-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .kind-tabs button { border: 1px solid var(--wf-border); border-radius: 999px; padding: 6px 12px; background: white; font: inherit; font-size: .85rem; font-weight: 600; color: var(--wf-muted); }

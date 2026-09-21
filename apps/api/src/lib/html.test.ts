@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBodyHtml, extractPrimaryVideo, mediaHtml, mergeAdjacentLists, nativeMediaHtml, replaceMediaFigures, stripContentTokens } from "./html.js";
+import { buildBodyHtml, extractPrimaryVideo, isOpaqueFileName, mediaHtml, mergeAdjacentLists, nativeMediaHtml, promoteGoogleEmphasis, replaceMediaFigures, stripContentTokens } from "./html.js";
 import type { BfContent, BfItem } from "./bloomfire.js";
 
 const video = (id: number): BfContent => ({ id, type: "Video", title: "Walkthrough", original_file_name: "walkthrough.mp4", original_file_size: 1024, original_content_type: "video/mp4" } as BfContent);
@@ -120,5 +120,67 @@ describe("mergeAdjacentLists", () => {
   it("runs as part of building a body, so newly indexed items are stored joined", () => {
     const it = { id: 1, post_body: "<ol><li>One</li></ol><br /><ol><li>Two</li></ol>" } as unknown as BfItem;
     expect(buildBodyHtml("post", it)).toContain("<li>One</li><li>Two</li>");
+  });
+});
+
+describe("isOpaqueFileName", () => {
+  it("spots the machine tokens Connected stores some images under", () => {
+    expect(isOpaqueFileName("AGV_vUeS_RLQ0JOYa7F4QUVrw5UCJyYz2MZPzklPRvVsNdhnzXy-_11QFp_gpFGYoH19XJR__s2048")).toBe(true);
+  });
+  it("leaves a name a person would recognise alone", () => {
+    expect(isOpaqueFileName("floor-plan.png")).toBe(false);
+    expect(isOpaqueFileName("Board resolution to open a bank account.docx")).toBe(false);
+    expect(isOpaqueFileName("budget")).toBe(false);
+    expect(isOpaqueFileName("A long descriptive title with spaces but no extension")).toBe(false);
+  });
+});
+
+describe("media captions", () => {
+  it("drops an opaque name from the caption and the alt text", () => {
+    const long = "AGV_vUeS_RLQ0JOYa7F4QUVrw5UCJyYz2MZPzklPRvVsNdhnzXy-_11QFp_gpFGYoH19XJR__s2048";
+    const html = mediaHtml({ id: 1, type: "Image", original_file_name: long, original_file_size: 1024 } as BfContent);
+    expect(html).not.toContain(long);
+    expect(html).toContain('alt=""');
+    expect(html).toContain("Download");
+  });
+  it("keeps a real name", () => {
+    const html = mediaHtml({ id: 1, type: "Image", original_file_name: "floor-plan.png" } as BfContent);
+    expect(html).toContain("<strong>floor-plan.png</strong>");
+    expect(html).toContain('alt="floor-plan.png"');
+  });
+  it("does the same for a file that lives in Drive", () => {
+    const long = "AGV_vUeS_RLQ0JOYa7F4QUVrw5UCJyYz2MZPzklPRvVsNdhnzXy-_11QFp_gpFGYoH19XJR__s2048";
+    expect(nativeMediaHtml({ driveId: "d1", name: long, mime: "image/png", bytes: 10, kind: "image" })).not.toContain(long);
+    expect(nativeMediaHtml({ driveId: "d1", name: "plan.pdf", mime: "application/pdf", bytes: 10, kind: "document" })).toContain("<strong>plan.pdf</strong>");
+  });
+});
+
+describe("promoteGoogleEmphasis", () => {
+  const doc = (style: string, body: string) => `<html><head><style>${style}</style></head><body>${body}</body></html>`;
+  it("turns a class the stylesheet makes bold into real bold", () => {
+    const out = promoteGoogleEmphasis(doc(".c3{font-weight:700}", '<p><span class="c3">HERE IS BOLD</span></p>'));
+    expect(out).toBe("<p><strong>HERE IS BOLD</strong></p>");
+  });
+  it("handles italic and underline, and a class that means several at once", () => {
+    expect(promoteGoogleEmphasis(doc(".a{font-style:italic}", '<p><span class="a">x</span></p>'))).toBe("<p><em>x</em></p>");
+    expect(promoteGoogleEmphasis(doc(".a{text-decoration:underline}", '<p><span class="a">x</span></p>'))).toBe("<p><u>x</u></p>");
+    expect(promoteGoogleEmphasis(doc(".a{font-weight:bold;font-style:italic}", '<p><span class="a">x</span></p>'))).toBe("<p><strong><em>x</em></strong></p>");
+  });
+  it("reads emphasis off an inline style too", () => {
+    expect(promoteGoogleEmphasis(doc("", '<p><span style="font-weight:700">x</span></p>'))).toBe("<p><strong>x</strong></p>");
+  });
+  it("leaves an unstyled span exactly as it was, including a nested one", () => {
+    const body = '<p><span class="c1">plain <span class="c2">also plain</span></span></p>';
+    expect(promoteGoogleEmphasis(doc(".c9{font-weight:700}", body))).toBe(body);
+  });
+  it("closes the right tag when a bold span wraps a plain one", () => {
+    const out = promoteGoogleEmphasis(doc(".b{font-weight:700}", '<p><span class="b">bold <span class="p">still bold</span></span> after</p>'));
+    expect(out).toBe('<p><strong>bold <span class="p">still bold</span></strong> after</p>');
+  });
+  it("ignores a weight that is not bold", () => {
+    expect(promoteGoogleEmphasis(doc(".n{font-weight:400}", '<p><span class="n">x</span></p>'))).toBe('<p><span class="n">x</span></p>');
+  });
+  it("returns just the body when there is nothing to promote", () => {
+    expect(promoteGoogleEmphasis("<html><head></head><body><p>hi</p></body></html>")).toBe("<p>hi</p>");
   });
 });

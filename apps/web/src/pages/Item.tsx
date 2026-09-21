@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, ExternalLink, Pencil, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Download, ExternalLink, Info, Pencil, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { ItemSummary } from "@wfw/shared";
 import { api, fmtDate } from "../api";
@@ -10,7 +10,7 @@ import { useMe } from "../me";
 type Attachment = { key: string; src: string; name: string; kind: string; bytes: number; mime: string | null; openUrl: string | null };
 type LinkedDoc = { url: string; kind: string; status: string };
 type Detail = {
-  item: ItemSummary & { authorName: string | null; publishedAt: string | null; categories: string[]; audiences: string[]; bodyHtml: string; primaryVideo: Attachment | null; attachments: Attachment[]; linkedDocs: LinkedDoc[]; contents: ItemSummary[]; seriesNav: { seriesId: string; seriesTitle: string; posts: { id: string; title: string; current: boolean }[] }[]; native: { kind: string | null; googleKind: string | null; googleFileId: string | null; status: string; author: { id: string; name: string } | null; imported: boolean } | null };
+  item: ItemSummary & { authorName: string | null; publishedAt: string | null; categories: string[]; audiences: string[]; bodyHtml: string; primaryVideo: Attachment | null; attachments: Attachment[]; linkedDocs: LinkedDoc[]; contents: ItemSummary[]; seriesNav: { seriesId: string; seriesTitle: string; posts: { id: string; title: string; current: boolean }[] }[]; native: { kind: string | null; googleKind: string | null; googleFileId: string | null; status: string; author: { id: string; name: string } | null; imported: boolean } | null; importError: string | null };
   placements: { key: string; name: string; jobName: string; jobKey: string; isPrimary: boolean }[];
   votes: { yes: number; no: number; mine: string | null };
 };
@@ -29,6 +29,25 @@ function Media({ a }: { a: Attachment }) {
         : null}
       <figcaption className="caption"><strong>{a.name}</strong><span className="muted">{a.kind}{mb(a.bytes)}</span>{a.openUrl ? <a href={a.openUrl} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Open in Google</a> : null}<a href={`${a.src}?download=1`}><Download size={14} /> Download</a></figcaption>
     </figure>
+  );
+}
+
+/**
+ * Why a page has nothing on it. "Is the source empty or did the import fail?" is the first question a
+ * blank page raises, so it answers that rather than stating the obvious.
+ */
+function EmptyBody({ item }: { item: Detail["item"] }) {
+  const external = item.url && !item.url.startsWith("/");
+  const why = item.importError
+    ? `The last attempt to bring this across failed: ${item.importError}`
+    : item.kind === "question"
+    ? "This question was asked in Connected but carries no explanation of its own, and nobody has answered it yet."
+    : "There is nothing stored for this beyond its title — no text, files or links. It is empty at the source rather than having failed to come across.";
+  return (
+    <div className="wf-state">
+      <span className="wf-state-icon"><Info size={20} /></span>
+      <div><strong>Nothing to show here yet</strong><p>{why}{external ? <> <a href={item.url} target="_blank" rel="noreferrer">Open it at the source</a> to check.</> : null}</p></div>
+    </div>
   );
 }
 
@@ -53,11 +72,14 @@ export function ItemPage() {
         <div>
           <div className="wf-record-tags" style={{ marginBottom: 8 }}><Pill item={item} /><RegionTags item={item} /><span className="wf-status wf-status-stage">{kindLabel}</span></div>
           <h1>{item.title}</h1>
+          {/* Joined on whichever parts exist: the author of an item written here comes from a different field
+              than a Connected author, and the separator used to key off the Connected one only. */}
           <p className="muted" style={{ marginTop: 6 }}>
-            {item.native?.author ? <>{item.native.author.name}</> : item.authorName ? <>{item.authorName}</> : null}
-            {item.authorName && item.publishedAt ? " · " : ""}
-            {item.publishedAt ? <>Published {fmtDate(item.publishedAt)}</> : null}
-            {item.updatedAt && item.updatedAt !== item.publishedAt ? <> · updated {fmtDate(item.updatedAt)}</> : null}
+            {[
+              item.native?.author?.name ?? item.authorName ?? null,
+              item.publishedAt ? `Published ${fmtDate(item.publishedAt)}` : null,
+              item.updatedAt && item.updatedAt !== item.publishedAt ? `updated ${fmtDate(item.updatedAt)}` : null,
+            ].filter(Boolean).join(" · ")}
           </p>
         </div>
         <div className="wf-record-actions native-actions">
@@ -74,7 +96,7 @@ export function ItemPage() {
             {item.bodyHtml ? <div className="wf-doc" dangerouslySetInnerHTML={{ __html: item.bodyHtml }} /> : null}
             {images.map((a) => <Media key={a.key} a={a} />)}
             {(item.isSeries || item.kind === "series" || item.native?.kind === "series") && item.contents.length ? <><h2 style={{ marginTop: 8 }}>In this series</h2><ItemGrid items={item.contents} context={{ from: "series" }} /></> : null}
-            {!item.bodyHtml && !item.attachments.length && !item.linkedDocs.length && !item.contents.length ? <p className="muted">This item has no readable content beyond its title.</p> : null}
+            {!item.bodyHtml && !item.attachments.length && !item.linkedDocs.length && !item.contents.length ? <EmptyBody item={item} /> : null}
           </article>
           {files.length ? <section className="wf-card wf-card-section" style={{ marginTop: 16 }}><h2 style={{ marginTop: 0 }}>Files</h2>{files.map((a) => <Media key={a.key} a={a} />)}</section> : null}
           {item.linkedDocs.length ? <section className="wf-card wf-card-section" style={{ marginTop: 16 }}><h2 style={{ marginTop: 0 }}>Linked Google files</h2>

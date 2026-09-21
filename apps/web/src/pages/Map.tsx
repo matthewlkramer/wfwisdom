@@ -46,7 +46,7 @@ export function MapPage() {
         <div id="map-detail" className="map-detail">
           {j.isLoading || !j.data ? <Loading /> : (
             <>
-              <div className="map-detail-header"><h2>{j.data.job.name}{j.data.job.staffOnly ? <span className="wf-status" style={{ marginLeft: 10 }}>Foundation staff</span> : null}</h2>{j.data.job.description ? <p className="muted">{j.data.job.description}</p> : null}</div>
+              <div className="map-detail-header"><h2>{j.data.job.name}{j.data.job.staffOnly ? <span className="wf-status" style={{ marginLeft: 10 }}>Foundation partners</span> : null}</h2>{j.data.job.description ? <p className="muted">{j.data.job.description}</p> : null}</div>
               {visibleSubs.map((s) => (
                 <section key={s.key} className="map-subjob">
                   <div className="map-subjob-head"><div><Link to={`/map/${s.key}`} className="map-subjob-title">{s.name}</Link>{s.stages.length ? <span className="muted"> · {s.stages.map((k) => STAGES.find((x) => x.key === k)?.name ?? k).join(" · ")}</span> : null}</div><Link to={`/map/${s.key}`} className="map-subjob-all">All {s.itemCount} resource{s.itemCount === 1 ? "" : "s"} →</Link></div>
