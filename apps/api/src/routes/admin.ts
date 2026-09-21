@@ -6,7 +6,7 @@ import { actor, requireStaff } from "../auth.js";
 import { respondJson } from "../lib/openai.js";
 import { isIndexing, runReindex, applySeeds } from "../services/indexer.js";
 import { importStatus, isImporting, runImport } from "../services/import-connected.js";
-import { itemSelect, toSummary, type ItemRow } from "../services/items.js";
+import { itemSelect, subjobPlacementCounts, toSummary, type ItemRow } from "../services/items.js";
 import { usageToday } from "../services/limits.js";
 import { REVIEW_SCHEMA, buildSystemPrompt, currentBasePrompt } from "../services/review.js";
 import { recomputeScores } from "../services/score.js";
@@ -124,11 +124,24 @@ adminRouter.put("/reorder", async (req, res) => {
   res.json({ ok: true });
 });
 
+/**
+ * How many resources sit in each sub-job, for the Organize page.
+ *
+ * The map's own count answers a reader's question — how many cards will I see — and nests a series' posts
+ * inside the series. Staff dragging resources between sub-jobs need the other number: how many rows this
+ * sub-job opens. Keyed by sub-job id.
+ */
+adminRouter.get("/subjob-counts", async (_req, res) => {
+  res.json({ counts: Object.fromEntries(await subjobPlacementCounts()) });
+});
+
 // ---- items and curation
 adminRouter.get("/items", async (req, res) => {
   const db = getDb();
   const q = String(req.query.q ?? "").trim(); const subjobKey = String(req.query.subjob ?? ""); const filter = String(req.query.filter ?? "");
-  const page = Math.max(0, Number(req.query.page ?? 0)); const size = 50;
+  const page = Math.max(0, Number(req.query.page ?? 0));
+  // The Organize page lists a whole sub-job at once, so it asks for more than the default page.
+  const size = Math.min(200, Math.max(1, Number(req.query.size ?? 50) || 50));
   const conds = [sql`${items.removedAt} is null`];
   if (q) conds.push(sql`(lower(${items.title}) like ${"%" + q.toLowerCase() + "%"} or "items"."fts" @@ websearch_to_tsquery('english', ${q}))`);
   if (subjobKey) conds.push(sql`exists (select 1 from placements p join subjobs s on s.id = p.subjob_id where p.item_id = ${items.id} and s.key = ${subjobKey})`);

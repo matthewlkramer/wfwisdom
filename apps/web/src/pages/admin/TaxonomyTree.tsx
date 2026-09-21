@@ -8,6 +8,8 @@ import { ErrorState, Loading, Pill, State } from "../../components/ui";
 
 type Row = ItemSummary & { hidden: boolean; placements: { key: string; name: string; isPrimary: boolean }[] };
 const DRAG_TYPE = "application/x-wfw-item";
+/** Every sub-job holds well under this, so the list is the whole sub-job rather than a first page of it. */
+const PAGE = 200;
 
 /**
  * Moving resources around the taxonomy: the tree of jobs and sub-jobs on the left, the resources in the
@@ -27,12 +29,15 @@ export function TaxonomyTree() {
   const [note, setNote] = useState<string>("");
 
   const map = useQuery({ queryKey: ["map"], queryFn: () => api.get<{ jobs: JobSummary[] }>("/api/map") });
+  // Placements, not cards: the map's own count nests a series' posts inside the series, and every one of
+  // those posts is a row here that can be dragged or removed. See the note on subjobPlacementCounts.
+  const counts = useQuery({ queryKey: ["subjob-counts"], queryFn: () => api.get<{ counts: Record<string, number> }>("/api/admin/subjob-counts") });
   const items = useQuery({
     queryKey: ["admin-items", "", "", selected, 0],
-    queryFn: () => api.get<{ items: Row[] }>(`/api/admin/items?q=&filter=&subjob=${encodeURIComponent(selected)}&page=0`),
+    queryFn: () => api.get<{ items: Row[] }>(`/api/admin/items?q=&filter=&subjob=${encodeURIComponent(selected)}&page=0&size=${PAGE}`),
     enabled: !!selected,
   });
-  const inv = () => { qc.invalidateQueries({ queryKey: ["admin-items"] }); qc.invalidateQueries({ queryKey: ["map"] }); };
+  const inv = () => { qc.invalidateQueries({ queryKey: ["admin-items"] }); qc.invalidateQueries({ queryKey: ["map"] }); qc.invalidateQueries({ queryKey: ["subjob-counts"] }); };
   const move = useMutation({
     mutationFn: (b: { id: string; from: string; to: string; copy: boolean }) => api.post(`/api/admin/items/${b.id}/move`, { from: b.from, to: b.to, copy: b.copy }),
     onSuccess: inv,
@@ -46,6 +51,7 @@ export function TaxonomyTree() {
   if (map.error) return <ErrorState error={map.error} retry={() => map.refetch()} />;
   const jobs = map.data!.jobs;
   const subName = (key: string) => jobs.flatMap((j) => j.subjobs).find((s) => s.key === key)?.name ?? key;
+  const count = (id: string) => counts.data?.counts[id] ?? 0;
 
   /**
    * Take a resource out of the sub-job on screen and leave its other placements alone. Whatever is left
@@ -90,7 +96,7 @@ export function TaxonomyTree() {
                 <button type="button" className="taxonomy-tree-toggle" onClick={() => setOpen({ ...open, [j.id]: !isOpen })} aria-expanded={isOpen}>
                   {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   <span>{j.name}</span>
-                  <span className="count">{j.subjobs.reduce((a, s) => a + s.itemCount, 0)}</span>
+                  <span className="count">{j.subjobs.reduce((a, s) => a + count(s.id), 0)}</span>
                 </button>
                 {isOpen ? j.subjobs.map((s) => (
                   <button
@@ -104,7 +110,7 @@ export function TaxonomyTree() {
                     onDrop={(e) => { e.preventDefault(); drop(s.key); }}
                   >
                     <span>{s.name}</span>
-                    <span className="count">{s.itemCount}</span>
+                    <span className="count">{count(s.id)}</span>
                   </button>
                 )) : null}
               </div>
@@ -117,7 +123,7 @@ export function TaxonomyTree() {
             : items.error ? <ErrorState error={items.error} retry={() => items.refetch()} />
             : !items.data!.items.length ? <State kind="empty" title={`Nothing in ${subName(selected)}`}>Drag resources here from another sub-job, or place them from Curation.</State>
             : <>
-                <p className="muted" style={{ margin: "0 0 8px" }}>{items.data!.items.length} in <strong>{subName(selected)}</strong>{items.data!.items.length === 50 ? " (first 50)" : ""}</p>
+                <p className="muted" style={{ margin: "0 0 8px" }}>{items.data!.items.length} in <strong>{subName(selected)}</strong>{items.data!.items.length === PAGE ? ` (first ${PAGE})` : ""}</p>
                 <div className="sort-list">
                   {items.data!.items.map((r) => (
                     <div

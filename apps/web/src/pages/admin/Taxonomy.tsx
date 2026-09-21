@@ -22,8 +22,11 @@ export function AdminTaxonomy() {
 }
 
 function TaxonomyStructure() {
-  const qc = useQueryClient(); const inv = () => { qc.invalidateQueries({ queryKey: ["map"] }); };
+  const qc = useQueryClient(); const inv = () => { qc.invalidateQueries({ queryKey: ["map"] }); qc.invalidateQueries({ queryKey: ["subjob-counts"] }); };
   const q = useQuery({ queryKey: ["map"], queryFn: () => api.get<MapData>("/api/map") });
+  // Placements, not reader-facing cards — merging a sub-job moves every one of these. Same number the
+  // "Move resources" view shows, so the two tabs of this page never disagree.
+  const counts = useQuery({ queryKey: ["subjob-counts"], queryFn: () => api.get<{ counts: Record<string, number> }>("/api/admin/subjob-counts") });
   const [editing, setEditing] = useState<{ kind: "job" | "subjob"; id: string } | null>(null);
   const [newJob, setNewJob] = useState({ key: "", name: "" }); const [newSub, setNewSub] = useState<{ jobId: string; key: string; name: string } | null>(null);
   const patchJob = useMutation({ mutationFn: ({ id, ...b }: { id: string } & Record<string, unknown>) => api.patch(`/api/admin/jobs/${id}`, b), onSuccess: inv });
@@ -51,7 +54,7 @@ function TaxonomyStructure() {
           <div className="sort-list" style={{ marginTop: 10 }}>
             {j.subjobs.map((s, si) => <div key={s.id} className="sort-row">
               <button className="link-button small" onClick={() => move(j.subjobs.map((x) => x.id), si, -1, "subjobs")} title="Move up"><ArrowUp size={14} /></button><button className="link-button small" onClick={() => move(j.subjobs.map((x) => x.id), si, 1, "subjobs")} title="Move down"><ArrowDown size={14} /></button>
-              {editing?.kind === "subjob" && editing.id === s.id ? <SubjobEditor sub={s} jobs={jobs} stages={stages} onSave={(b) => { patchSub.mutate({ id: s.id, ...b }); setEditing(null); }} onMerge={(into) => { if (confirm("Move every item into the target sub-job and delete this one?")) merge.mutate({ id: s.id, into }); setEditing(null); }} onCancel={() => setEditing(null)} /> : <><div className="grow"><Link to={`/map/${s.key}`}>{s.name}</Link> <span className="muted">· {s.itemCount} items · {s.stages.join(", ") || "no stages"}</span></div><button className="small" onClick={() => setEditing({ kind: "subjob", id: s.id })}>Edit</button></>}
+              {editing?.kind === "subjob" && editing.id === s.id ? <SubjobEditor sub={s} jobs={jobs} stages={stages} onSave={(b) => { patchSub.mutate({ id: s.id, ...b }); setEditing(null); }} onMerge={(into) => { if (confirm("Move every item into the target sub-job and delete this one?")) merge.mutate({ id: s.id, into }); setEditing(null); }} onCancel={() => setEditing(null)} /> : <><div className="grow"><Link to={`/map/${s.key}`}>{s.name}</Link> <span className="muted">· {counts.data?.counts[s.id] ?? 0} items · {s.stages.join(", ") || "no stages"}</span></div><button className="small" onClick={() => setEditing({ kind: "subjob", id: s.id })}>Edit</button></>}
             </div>)}
             {newSub?.jobId === j.id ? <form className="sort-row" onSubmit={(e) => { e.preventDefault(); addSub.mutate(newSub); }}><input placeholder="key (e.g. space.search)" value={newSub.key} onChange={(e) => setNewSub({ ...newSub, key: e.target.value })} /><input className="grow" placeholder="Name" value={newSub.name} onChange={(e) => setNewSub({ ...newSub, name: e.target.value })} /><button className="primary-button small" type="submit">Add</button><button className="small" type="button" onClick={() => setNewSub(null)}>Cancel</button></form> : null}
           </div>

@@ -127,6 +127,26 @@ export async function subjobItemCounts(staff: boolean, f: ReaderFilters = {}): P
 }
 
 /**
+ * How many resources are *placed* in each sub-job, keyed by sub-job id.
+ *
+ * Deliberately not the same number as `subjobItemCounts`. That one counts the cards a reader sees, so a
+ * post belonging to a series is counted once, inside its series. Staff moving resources around are working
+ * on the placements themselves: the series and each of its posts are separate rows they can drag, remove
+ * or merge, so the number beside a sub-job on Organize has to be the number of rows it opens. On "501c3
+ * status and the group exemption" those two readings are 5 and 35.
+ *
+ * Only removed items are left out — a hidden or unpublished one still holds a placement staff can act on.
+ */
+export async function subjobPlacementCounts(): Promise<Map<string, number>> {
+  const rows = await getDb().execute(sql`
+    select placements.subjob_id as subjob_id, count(*)::int as n
+    from placements join items on items.id = placements.item_id
+    where items.removed_at is null
+    group by placements.subjob_id`);
+  return new Map((rows.rows as { subjob_id: string; n: number }[]).map((r) => [r.subjob_id, Number(r.n)]));
+}
+
+/**
  * Items by their Connected id, whether still mirrored or already imported (imported_from).
  *
  * A series lists its contents as bare Connected ids, and those contents are not always posts: a series
