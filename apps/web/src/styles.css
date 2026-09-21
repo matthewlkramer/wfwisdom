@@ -64,6 +64,9 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .icon-button.active { background: var(--teal-deep); color: #fffdf8; }
 .icon-button.danger:hover:not(:disabled) { background: #fbe4e4; color: #8c2f2f; }
 .icon-button:disabled { opacity: .4; cursor: not-allowed; background: #edf4f1; color: var(--teal-deep); }
+/* A row of icon actions in a table cell stays on one line rather than stacking in a narrow column. */
+.inline-actions.icon-row { flex-wrap: nowrap; }
+.inline-actions.icon-row .icon-button { flex: 0 0 auto; }
 
 /* Feedback dialog + queue */
 .feedback-dialog-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(28,59,56,.16); }
@@ -320,6 +323,25 @@ details > summary { cursor: pointer; color: var(--teal-deep); font-weight: 600; 
 .map-subjob-all { font-size: .85rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
 .wf-card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 1100px) { .wf-card-grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stage-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Taxonomy: the tree of jobs and sub-jobs, with resources dragged onto it from the right */
+.taxonomy-mover { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 18px; align-items: start; }
+.taxonomy-tree { position: sticky; top: 80px; display: grid; gap: 2px; background: white; border: 1px solid var(--wf-border); border-radius: 12px; padding: 8px; max-height: calc(100vh - 110px); overflow: auto; }
+.taxonomy-tree-job { display: grid; gap: 2px; }
+.taxonomy-tree-job + .taxonomy-tree-job { margin-top: 6px; }
+.taxonomy-tree-toggle, .taxonomy-tree-sub { display: flex; align-items: center; gap: 7px; width: 100%; border: 1px solid transparent; border-radius: 8px; padding: 7px 10px; background: transparent; color: var(--wf-text); font: inherit; font-size: .85rem; text-align: left; }
+.taxonomy-tree-toggle { font-family: var(--wf-font-title); font-size: .98rem; color: var(--teal-deep); }
+.taxonomy-tree-toggle span:first-of-type, .taxonomy-tree-sub span:first-of-type { flex: 1; min-width: 0; }
+.taxonomy-tree-sub { margin-left: 16px; }
+.taxonomy-tree-toggle:hover, .taxonomy-tree-sub:hover { background: #f0f4f2; }
+.taxonomy-tree-sub.active { background: var(--teal-deep); color: white; font-weight: 700; }
+.taxonomy-tree-sub.drop-target { border-color: var(--teal); border-style: dashed; background: var(--teal-pale); color: var(--teal-deep); font-weight: 700; }
+.taxonomy-tree .count { font-size: .72rem; opacity: .75; }
+.taxonomy-item { cursor: grab; }
+.taxonomy-item:active { cursor: grabbing; }
+.taxonomy-item.dragging { opacity: .45; border-style: dashed; }
+@media (max-width: 900px) { .taxonomy-mover { grid-template-columns: 1fr; } .taxonomy-tree { position: static; max-height: 320px; } }
+
 @media (max-width: 900px) { .map-explorer { grid-template-columns: 1fr; } .map-jobs { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; } .map-jobs-label { width: 100%; } .map-jobs button { width: auto; } .wf-card-grid.three { grid-template-columns: 1fr; } }
 
 /* School materials */

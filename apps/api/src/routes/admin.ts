@@ -166,6 +166,38 @@ adminRouter.put("/items/:id/placements", async (req, res) => {
   for (const p of b.placements) { const sid = byKey.get(p.subjobKey); if (sid) await db.insert(placements).values({ itemId: id, subjobId: sid, isPrimary: p.isPrimary, source: "staff", position: p.position ?? null }).onConflictDoNothing(); }
   await audit(req, "item.placements", id, b); res.json({ ok: true });
 });
+/**
+ * Move one resource from one sub-job to another, or copy it into a second one.
+ *
+ * Kept apart from the placements route, which replaces an item's whole set and so needs the caller to
+ * already know every placement it has. This says what the staff member actually did — dragged this
+ * resource onto that sub-job — and leaves the item's other placements alone. A move that lands where
+ * the item already sits just drops the old placement.
+ */
+adminRouter.post("/items/:id/move", async (req, res) => {
+  const b = z.object({ from: z.string().nullable().optional(), to: z.string(), copy: z.boolean().default(false) }).parse(req.body);
+  const db = getDb(); const id = String(req.params.id);
+  const [item] = await db.select({ id: items.id }).from(items).where(eq(items.id, id));
+  if (!item) { res.status(404).json({ error: "Item not found" }); return; }
+  const subs = await db.select({ id: subjobs.id, key: subjobs.key }).from(subjobs).where(inArray(subjobs.key, [b.to, ...(b.from ? [b.from] : [])]));
+  const to = subs.find((s) => s.key === b.to);
+  const from = b.from ? subs.find((s) => s.key === b.from) : undefined;
+  if (!to || (b.from && !from)) { res.status(404).json({ error: "Sub-job not found" }); return; }
+  if (from && from.id === to.id) { res.json({ ok: true, moved: false }); return; }
+  // The item keeps its standing: a resource that was the primary of where it came from stays primary.
+  const [old] = from ? await db.select({ isPrimary: placements.isPrimary, position: placements.position, why: placements.why }).from(placements).where(and(eq(placements.itemId, id), eq(placements.subjobId, from.id))) : [];
+  await db.insert(placements).values({ itemId: id, subjobId: to.id, isPrimary: !b.copy && (old?.isPrimary ?? false), source: "staff", position: old?.position ?? null, why: old?.why ?? null }).onConflictDoNothing();
+  if (from && !b.copy) await db.delete(placements).where(and(eq(placements.itemId, id), eq(placements.subjobId, from.id)));
+  // Dropping the primary placement — onto a sub-job the item was already in, say — would otherwise leave
+  // it placed everywhere and primary nowhere, which is what the map ranks and "most used" reads.
+  const rest = await db.select({ subjobId: placements.subjobId, isPrimary: placements.isPrimary }).from(placements).where(eq(placements.itemId, id));
+  if (rest.length && !rest.some((p) => p.isPrimary)) {
+    const promote = rest.find((p) => p.subjobId === to.id) ?? rest[0]!;
+    await db.update(placements).set({ isPrimary: true }).where(and(eq(placements.itemId, id), eq(placements.subjobId, promote.subjobId)));
+  }
+  await audit(req, b.copy ? "item.placement.copy" : "item.placement.move", id, b);
+  res.json({ ok: true, moved: true });
+});
 adminRouter.get("/retirement-queue", async (req, res) => {
   const status = String(req.query.status ?? "pending");
   const rows = await getDb().select({ ...itemSelect, reason: itemMeta.modelOutdatedReason, reviewedBy: itemMeta.reviewedBy, reviewedAt: itemMeta.reviewedAt }).from(items).innerJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(sql`${items.removedAt} is null`, eq(itemMeta.reviewStatus, status))).orderBy(desc(items.views)).limit(300);

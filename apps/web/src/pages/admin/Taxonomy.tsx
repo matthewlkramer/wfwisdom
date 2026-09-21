@@ -5,8 +5,23 @@ import { Link } from "react-router-dom";
 import type { JobSummary, StageKey } from "@wfw/shared";
 import { api } from "../../api";
 import { ErrorState, Loading, State } from "../../components/ui";
+import { TaxonomyTree } from "./TaxonomyTree";
 type MapData = { jobs: JobSummary[]; stages: { key: StageKey; name: string }[] };
+/** Two jobs on one page: editing the shape of the taxonomy, and moving resources around inside it. */
 export function AdminTaxonomy() {
+  const [view, setView] = useState<"structure" | "resources">("structure");
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      <div className="wf-toolbar" role="tablist" aria-label="Taxonomy view">
+        <button role="tab" aria-selected={view === "structure"} className={view === "structure" ? "primary-button small" : "small"} onClick={() => setView("structure")}>Structure</button>
+        <button role="tab" aria-selected={view === "resources"} className={view === "resources" ? "primary-button small" : "small"} onClick={() => setView("resources")}>Move resources</button>
+      </div>
+      {view === "structure" ? <TaxonomyStructure /> : <TaxonomyTree />}
+    </div>
+  );
+}
+
+function TaxonomyStructure() {
   const qc = useQueryClient(); const inv = () => { qc.invalidateQueries({ queryKey: ["map"] }); };
   const q = useQuery({ queryKey: ["map"], queryFn: () => api.get<MapData>("/api/map") });
   const [editing, setEditing] = useState<{ kind: "job" | "subjob"; id: string } | null>(null);

@@ -48,7 +48,7 @@ function RowView({ r, open, setOpen, subs, stages, filterSubjob, onMeta, onPlace
       <td><select value={r.curation ?? ""} onChange={(e) => onMeta({ curation: e.target.value || null })}><option value="">—</option><option value="recommended">Staff pick</option><option value="essential">Essential</option></select></td>
       <td><select value={r.pinnedStage ?? ""} onChange={(e) => onMeta({ pinnedStage: e.target.value || null, pinnedPosition: e.target.value ? (r.pinnedPosition ?? 50) : null })}><option value="">—</option>{stages.map((s) => <option key={s.key} value={s.key}>{s.name}</option>)}</select>{r.pinnedStage ? <input type="number" style={{ width: 64, marginLeft: 4 }} value={r.pinnedPosition ?? 50} onChange={(e) => onMeta({ pinnedPosition: Number(e.target.value) })} title="Position within Start here" /> : null}</td>
       <td style={{ fontSize: ".8rem" }}>{r.placements.map((p) => <span key={p.key}>{p.isPrimary ? <strong>{p.name}</strong> : p.name}; </span>)}</td>
-      <td><div className="inline-actions">
+      <td><div className="inline-actions icon-row">
         <button className="icon-button" onClick={setOpen} title={open ? "Close" : "Edit"} aria-label={open ? "Close" : "Edit"}>{open ? <X size={16} /> : <Pencil size={16} />}</button>
         <button className={`icon-button${r.hidden ? " active" : ""}`} onClick={() => onMeta({ hidden: !r.hidden })} title={r.hidden ? "Unhide" : "Hide"} aria-label={r.hidden ? "Unhide" : "Hide"}>{r.hidden ? <EyeOff size={16} /> : <Eye size={16} />}</button>
         {/* Takes the item out of the sub-job picked in the filter row, leaving it wherever else it sits. */}
