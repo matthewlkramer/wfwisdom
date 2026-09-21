@@ -41,7 +41,7 @@ typesRouter.get("/:key/suggested", async (req, res) => {
   if (hit && Date.now() - hit.at < 6 * 3600_000) { res.json({ items: hit.items, basedOn: school.titles }); return; }
   const curated = new Set((await db.select({ itemId: typeResources.itemId }).from(typeResources).where(eq(typeResources.typeId, t.id))).map((r) => r.itemId));
   const q = `${t.name}. ${t.shortDescription ?? ""} For a school described as: ${school.text.replace(/\s+/g, " ").slice(0, 700)}`;
-  const r = await search(q, { staff: req.user!.role === "staff", limit: 10, explain: false, userId: req.user!.id, language: lang });
+  const r = await search(q, { staff: req.user!.role === "staff", limit: 10, userId: req.user!.id, language: lang });
   const picked = r.results.filter((i) => !curated.has(i.id)).slice(0, 4);
   suggestedCache.set(key, { at: Date.now(), items: picked });
   res.json({ items: picked, basedOn: school.titles });

@@ -16,7 +16,8 @@ export function MapPage() {
   const [sp, setSp] = useSearchParams();
   const { language } = useLanguage(); const { types } = useDocTypes();
   const stage = isStage(sp.get("stage")) ? (sp.get("stage") as StageKey) : "";
-  const m = useQuery({ queryKey: ["map", language], queryFn: () => api.get<MapData>(`/api/map?${langParam(language)}`) });
+  // The type filter goes to the job list too, so the count beside a job matches the cards the job page shows.
+  const m = useQuery({ queryKey: ["map", language, types], queryFn: () => api.get<MapData>(`/api/map?${langParam(language)}&${typesParam(types)}`) });
   const jobs = (m.data?.jobs ?? []).filter((j) => !stage || j.subjobs.some((s) => s.stages.includes(stage)));
   const jobKey = sp.get("job") && jobs.some((j) => j.key === sp.get("job")) ? sp.get("job")! : jobs[0]?.key ?? "";
   const j = useQuery({ queryKey: ["map-job", jobKey, language, types], queryFn: () => api.get<JobData>(`/api/map/job/${jobKey}?${langParam(language)}&${typesParam(types)}`), enabled: !!jobKey });

@@ -61,6 +61,9 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .app-footer { border-top: 1px solid var(--wf-border); color: var(--wf-muted); font-size: .8rem; padding: 18px var(--wf-page-gutter); text-align: center; }
 .icon-button { display: inline-grid; place-items: center; border: 0; border-radius: 50%; padding: 7px; background: #edf4f1; color: var(--teal-deep); }
 .icon-button:hover { background: var(--teal-pale); }
+.icon-button.active { background: var(--teal-deep); color: #fffdf8; }
+.icon-button.danger:hover:not(:disabled) { background: #fbe4e4; color: #8c2f2f; }
+.icon-button:disabled { opacity: .4; cursor: not-allowed; background: #edf4f1; color: var(--teal-deep); }
 
 /* Feedback dialog + queue */
 .feedback-dialog-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(28,59,56,.16); }

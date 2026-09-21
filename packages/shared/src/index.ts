@@ -84,8 +84,12 @@ export interface QuestionNote { id: string; body: string; authorName: string; cr
 export interface StaffQuestion extends MyQuestion { askerName: string; askerEmail: string; reviewedBy: string | null; reviewedAt: string | null; shareDecidedBy: string | null; shareDecidedAt: string | null; notes: QuestionNote[] }
 export interface StaffQuestionListResult { questions: StaffQuestion[]; pagination: { page: number; limit: number; total: number; pageCount: number } }
 
-/** Document types readers can filter by. "series" and "question" are kinds; the rest are content types. */
+/**
+ * Document types readers can filter by. "series" and "question" are kinds; the rest are content types.
+ * "resource_list" is a content type that outranks the kind: a roster of people or programs is built as
+ * a series so its entries nest, but it reads as a list, so it is labelled and filtered as one.
+ */
 export const DOC_TYPES: { key: string; label: string }[] = [
-  { key: "series", label: "Series" }, { key: "guide", label: "Guides" }, { key: "template", label: "Templates" }, { key: "example", label: "Examples" }, { key: "data", label: "Data" },
+  { key: "series", label: "Series" }, { key: "resource_list", label: "Resource lists" }, { key: "guide", label: "Guides" }, { key: "template", label: "Templates" }, { key: "example", label: "Examples" }, { key: "data", label: "Data" },
   { key: "training", label: "Training" }, { key: "directory", label: "Directories" }, { key: "policy", label: "Policies" }, { key: "news", label: "News" }, { key: "question", label: "Q&A" }, { key: "link", label: "Links" }, { key: "other", label: "Other" },
 ];

@@ -10,13 +10,10 @@ export function SearchPage() {
   const [sp, setSp] = useSearchParams(); const q = sp.get("q") ?? ""; const [draft, setDraft] = useState(q); const { language } = useLanguage(); const { types } = useDocTypes();
   useEffect(() => setDraft(q), [q]);
   const r = useQuery({ queryKey: ["search", q, language, types], queryFn: () => api.get<{ query: string; rewritten: string | null; mode: string; results: ItemSummary[] }>(`/api/search?q=${encodeURIComponent(q)}&${langParam(language)}&${typesParam(types)}`), enabled: q.length >= 2 });
-  // The list shows as soon as it is ranked; the one-line "why it matches" notes arrive a moment later.
-  const ids = r.data?.results.map((it) => it.id).join(",") ?? "";
-  const why = useQuery({ queryKey: ["explain", q, ids], queryFn: () => api.post<{ lines: Record<string, string> }>("/api/search/explain", { q, items: r.data!.results.map((it) => ({ id: it.id, title: it.title, summary: (it.summary ?? it.description ?? "").slice(0, 1000) })) }), enabled: !!r.data?.results.length, staleTime: 10 * 60_000 });
-  const results = (r.data?.results ?? []).map((it) => ({ ...it, why: why.data?.lines[it.id] ?? it.why ?? null }));
+  const results = r.data?.results ?? [];
   return (
     <div className="wf-page">
-      <div className="wf-page-header"><div><h1>Search</h1><p>Semantic search over everything in Wildflower Wisdom, including attachment text, ranked with helpfulness in mind. Each result says why it matched.</p></div></div>
+      <div className="wf-page-header"><div><h1>Search</h1><p>Semantic search over everything in Wildflower Wisdom, including attachment text, ranked with helpfulness in mind.</p></div></div>
       <div className="filter-row"><div className="grow"><SearchInput large autoFocus value={draft} onChange={setDraft} onSubmit={() => setSp({ q: draft.trim() })} /></div><div className="filter-group"><TypeFilter /><LanguageFilter /></div></div>
       <div style={{ height: 16 }} />
       {q.length < 2 ? <State kind="empty" title="Type a question or a few words">Try “how do we set tuition levels” or “sample board resolution to open a bank account”.</State>

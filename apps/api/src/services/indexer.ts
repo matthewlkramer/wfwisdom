@@ -5,6 +5,7 @@ import { fetchGoogleDocText } from "../lib/google-docs.js";
 import { refreshNativeItems } from "./native.js";
 import { isImporting } from "./import-connected.js";
 import { buildBodyHtml, stripContentTokens } from "../lib/html.js";
+import { stripSeriesPrefix } from "../lib/titles.js";
 import { embed, respond } from "../lib/openai.js";
 import { GOOGLE_DOC_RE, chunk, normalizeWs, sha, stripHtml } from "../lib/text.js";
 import type { ItemLanguage } from "@wfw/shared";
@@ -28,7 +29,7 @@ interface Prepared { kind: Kind; sourceId: number; title: string; description: s
 const MAX_ATTACHMENT_BYTES = 40 * 1024 * 1024;
 
 async function prepare(bf: Bloomfire, kind: Kind, it: BfItem, log: (m: string) => void, opts: { fetchAttachments: boolean }): Promise<Prepared> {
-  const title = (it.title ?? it.name ?? it.question ?? "Untitled").trim();
+  const title = stripSeriesPrefix((it.title ?? it.name ?? it.question ?? "Untitled").trim());
   const url = it.url ?? `https://connected.wildflowerschools.org/${kind === "post" ? "posts" : kind === "series" ? "series" : "questions"}/${it.id}`;
   const parts: string[] = [];
   const body = stripHtml(it.post_body ?? it.explanation ?? "");

@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
 import { and, asc, auditLog, inArray, basePromptVersions, desc, eq, getDb, indexRuns, itemMeta, items, jobs, materialTypeVersions, materialTypes, placements, sql, submissions, subjobs, typeResources, users, chatTurns, searchLog } from "@wfw/db";
-import { SETTING_DEFAULTS, STAGES, type ReviewResult, type Settings } from "@wfw/shared";
+import { DOC_TYPES, SETTING_DEFAULTS, STAGES, type ReviewResult, type Settings } from "@wfw/shared";
 import { actor, requireStaff } from "../auth.js";
 import { respondJson } from "../lib/openai.js";
 import { isIndexing, runReindex, applySeeds } from "../services/indexer.js";
@@ -131,6 +131,19 @@ adminRouter.patch("/items/:id/meta", async (req, res) => {
   await getDb().insert(itemMeta).values({ itemId: String(req.params.id), ...(set as object) }).onConflictDoUpdate({ target: itemMeta.itemId, set });
   await audit(req, "item.meta", String(req.params.id), b); res.json({ ok: true });
 });
+/**
+ * The document type a reader filters by and sees on the card. Kept apart from the meta route because it
+ * lives on the item itself, not on the curation record — and "series" is not offered: that is how an item
+ * is built, not what it is. A roster of people is tagged "resource_list" and still nests like a series.
+ */
+adminRouter.patch("/items/:id/type", async (req, res) => {
+  const allowed = DOC_TYPES.map((t) => t.key).filter((k) => k !== "series");
+  const b = z.object({ contentType: z.string().refine((v) => allowed.includes(v), "Unknown document type").nullable() }).parse(req.body);
+  const id = String(req.params.id);
+  const [updated] = await getDb().update(items).set({ contentType: b.contentType }).where(eq(items.id, id)).returning({ id: items.id });
+  if (!updated) { res.status(404).json({ error: "Item not found" }); return; }
+  await audit(req, "item.type", id, b); res.json({ ok: true });
+});
 adminRouter.put("/items/:id/placements", async (req, res) => {
   const b = z.object({ placements: z.array(z.object({ subjobKey: z.string(), isPrimary: z.boolean(), position: z.number().int().nullable().optional() })).max(6) }).parse(req.body);
   const db = getDb(); const id = String(req.params.id);
@@ -153,7 +166,7 @@ adminRouter.post("/retirement-queue/:id", async (req, res) => {
   await getDb().insert(itemMeta).values({ itemId: id, reviewStatus: b.decision, datedLabel: label, hidden: b.decision === "hidden", reviewedBy: actor(req), reviewedAt: new Date() }).onConflictDoUpdate({ target: itemMeta.itemId, set: { reviewStatus: b.decision, datedLabel: label, hidden: b.decision === "hidden", reviewedBy: actor(req), reviewedAt: new Date(), updatedAt: new Date() } });
   await audit(req, "retirement.decide", id, b); res.json({ ok: true });
 });
-adminRouter.get("/item-search", async (req, res) => { const q = String(req.query.q ?? ""); if (q.length < 2) { res.json({ results: [] }); return; } const r = await search(q, { staff: true, limit: 10, explain: false }); res.json({ results: r.results }); });
+adminRouter.get("/item-search", async (req, res) => { const q = String(req.query.q ?? ""); if (q.length < 2) { res.json({ results: [] }); return; } const r = await search(q, { staff: true, limit: 10 }); res.json({ results: r.results }); });
 
 // ---- material types
 adminRouter.get("/types", async (_req, res) => {

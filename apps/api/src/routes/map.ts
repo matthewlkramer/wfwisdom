@@ -4,8 +4,8 @@ import { and, desc, eq, getDb, inArray, isNull, itemMeta, items, jobs, placement
 import { STAGES, isResourceLanguage, type JobSummary, type ResourceLanguage, type StageKey } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { getSettings } from "../settings.js";
-import { itemsForSubjob, languageWhere, mostUsed, parseTypes, postsBySourceId, startHere, toSummary, itemSelect, type ItemRow, visibleWhere } from "../services/items.js";
-import { stripContentTokens } from "../lib/html.js";
+import { itemsForSubjob, mostUsed, parseTypes, postsBySourceId, startHere, subjobItemCounts, toSummary, itemSelect, type ItemRow, visibleWhere } from "../services/items.js";
+import { mergeAdjacentLists, stripContentTokens } from "../lib/html.js";
 import { googleKindOfMime, googleUrl, isGoogleAppsMime } from "../services/native.js";
 import { readerLanguage } from "../services/language-pref.js";
 
@@ -22,8 +22,8 @@ mapRouter.get("/", async (req, res) => {
   const js = await db.select().from(jobs).orderBy(jobs.sort);
   const ss = await db.select().from(subjobs).orderBy(subjobs.sort);
   const lang = await requestLanguage(req);
-  const counts = await db.select({ subjobId: placements.subjobId, n: sql<number>`count(*)::int` }).from(placements).innerJoin(items, eq(items.id, placements.itemId)).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(visibleWhere(staff), languageWhere(lang))).groupBy(placements.subjobId);
-  const cmap = new Map(counts.map((c) => [c.subjobId, c.n]));
+  // The same filters the job page applies, so the number beside a job matches the cards under it.
+  const cmap = await subjobItemCounts(staff, lang, parseTypes(req.query.types));
   const stageRows = await db.execute(sql`select s as stage, count(distinct i.id)::int as n from items i join item_meta m on m.item_id = i.id cross join lateral unnest(m.stages) as s where i.removed_at is null and coalesce(m.hidden, false) = false ${lang === "all" ? sql`` : sql`and i.language = ${lang}`} ${staff ? sql`` : sql`and not exists (select 1 from placements p join subjobs sj on sj.id = p.subjob_id join jobs j on j.id = sj.job_id where p.item_id = i.id and p.is_primary and j.staff_only)`} group by s`);
   const stageCounts = Object.fromEntries((stageRows.rows as { stage: string; n: number }[]).map((r) => [r.stage, r.n]));
   const out: JobSummary[] = js.filter((j) => staff || !j.hidden).map((j) => ({ id: j.id, key: j.key, name: j.name, description: j.description, staffOnly: j.staffOnly, hidden: j.hidden,
@@ -110,7 +110,9 @@ mapRouter.get("/item/:id", async (req, res) => {
   ];
   // A video is shown at the top of the page rather than in the body, so its figure is taken out of the HTML.
   const video = attachments.find((a) => a.kind === "video") ?? null;
-  const stripped = stripContentTokens(raw);
+  // Lists the source split into single-item pieces are rejoined here as well as at index time, so items
+  // stored before that existed stop rendering "1. 1. 1." without waiting for a re-index.
+  const stripped = mergeAdjacentLists(stripContentTokens(raw));
   const withoutVideo = video ? stripped.replace(new RegExp(`<figure class="wf-media" data-(?:content|drive)-id="${video.key.slice(1)}">[\\s\\S]*?</figure>`, "g"), "") : stripped;
   res.json({ item: { ...toSummary(r as ItemRow), authorName: r.authorName, publishedAt: r.publishedAt, categories: r.categories, audiences: r.audiences, bodyHtml: withoutVideo, primaryVideo: video, attachments, linkedDocs: r.linkedDocs.map((d) => ({ url: d.url, kind: d.kind, status: d.status })), contents, seriesNav, native: r.sourceKind === "native" ? { kind: r.nativeKind, googleKind: r.googleKind, googleFileId: r.googleFileId, status: r.status, author, imported: !!r.importedFrom } : null }, placements: pl, votes: { yes: votes?.yes ?? 0, no: votes?.no ?? 0, mine: mine[0]?.kind ?? null } });
 });

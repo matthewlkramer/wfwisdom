@@ -19,13 +19,19 @@ export function rankSeriesFirst(a: ItemRow & { position?: number | null }, b: It
   const sa = isSeriesRow(a) ? 0 : 1, sb = isSeriesRow(b) ? 0 : 1; if (sa !== sb) return sa - sb;
   return rank(a, b);
 }
+/** A roster of people or programs: built as a series so its entries nest, but presented as a list. */
+export const RESOURCE_LIST = "resource_list";
+export const isResourceListRow = (r: { contentType?: string | null }) => r.contentType === RESOURCE_LIST;
 /** The reader's document type filter (keys from DOC_TYPES). Empty means everything. */
 export const typeWhere = (types: string[] | null | undefined) => {
   if (!types?.length) return undefined;
   const parts = [];
-  if (types.includes("series")) parts.push(sql`(${items.sourceKind} = 'series' or ${items.nativeKind} = 'series')`);
+  // A resource list is a series underneath, so it is matched on its content type and left out of "Series":
+  // otherwise the coaches and consultants rosters would show up under both filters.
+  if (types.includes(RESOURCE_LIST)) parts.push(sql`${items.contentType} = ${RESOURCE_LIST}`);
+  if (types.includes("series")) parts.push(sql`((${items.sourceKind} = 'series' or ${items.nativeKind} = 'series') and coalesce(${items.contentType}, '') <> ${RESOURCE_LIST})`);
   if (types.includes("question")) parts.push(sql`(${items.sourceKind} = 'question' or ${items.contentType} = 'question')`);
-  const ct = types.filter((t) => t !== "series" && t !== "question");
+  const ct = types.filter((t) => t !== "series" && t !== "question" && t !== RESOURCE_LIST);
   if (ct.length) parts.push(sql`(${items.contentType} in (${sql.join(ct.map((t) => sql`${t}`), sql`, `)}) and ${items.sourceKind} <> 'series' and coalesce(${items.nativeKind}, '') <> 'series')`);
   return sql`(${sql.join(parts, sql` or `)})`;
 };
@@ -50,6 +56,57 @@ export async function itemsForSubjob(subjobId: string, staff: boolean, lang?: Re
   const rows = await db.select({ ...itemSelect, position: placements.position, why: placements.why, isPrimary: placements.isPrimary }).from(placements).innerJoin(items, eq(items.id, placements.itemId)).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(placements.subjobId, subjobId), visibleWhere(staff), languageWhere(lang), typeWhere(types)));
   return nestSeries(rows.sort(rankSeriesFirst) as (ItemRow & { why?: string | null })[], staff);
 }
+/**
+ * How many cards each sub-job actually shows, keyed by sub-job id.
+ *
+ * This has to agree with `itemsForSubjob`, which nests a series' own items inside the series card
+ * instead of listing them beside it. Counting placement rows did not: the job list on the map claimed
+ * 87 resources for "Find coaches, consultants, and vendors" where the page showed 42, because every
+ * post belonging to a series was counted once on its own and once inside its series.
+ *
+ * The reader's filters decide which rows can appear as cards; children are resolved against visibility
+ * alone, which is what `nestSeries` does, so an item hidden from the reader never nests anything away.
+ */
+export async function subjobItemCounts(staff: boolean, lang?: ResourceLanguage, types?: string[]): Promise<Map<string, number>> {
+  const lw = languageWhere(lang), tw = typeWhere(types);
+  const rows = await getDb().execute(sql`
+    with vis as (
+      select items.id, items.source_kind, items.native_kind, items.child_post_ids, items.child_item_ids
+      from items left join item_meta on item_meta.item_id = items.id
+      where ${visibleWhere(staff)}${lw ? sql` and ${lw}` : sql``}${tw ? sql` and ${tw}` : sql``}
+    ),
+    vis_all as (
+      select items.id, items.source_kind, items.source_id, items.imported_from
+      from items left join item_meta on item_meta.item_id = items.id
+      where ${visibleWhere(staff)}
+    ),
+    placed as (
+      select placements.subjob_id, vis.id as item_id, vis.source_kind, vis.native_kind, vis.child_post_ids, vis.child_item_ids
+      from placements join vis on vis.id = placements.item_id
+    ),
+    kids as (
+      select placed.subjob_id, c.item_id
+      from placed
+      cross join lateral (
+        select vis_all.id as item_id
+        from jsonb_array_elements_text(coalesce(placed.child_item_ids, '[]'::jsonb)) as e(cid)
+        join vis_all on vis_all.id::text = e.cid
+        union
+        select vis_all.id as item_id
+        from jsonb_array_elements_text(coalesce(placed.child_post_ids, '[]'::jsonb)) as e2(pid)
+        join vis_all on (vis_all.source_kind = 'post' and vis_all.source_id::text = e2.pid)
+                     or (vis_all.imported_from->>'kind' = 'post' and vis_all.imported_from->>'sourceId' = e2.pid)
+      ) as c
+      where placed.source_kind = 'series' or placed.native_kind = 'series'
+    )
+    select placed.subjob_id as subjob_id, count(*)::int as n
+    from placed
+    where placed.source_kind = 'series' or placed.native_kind = 'series'
+       or not exists (select 1 from kids where kids.subjob_id = placed.subjob_id and kids.item_id = placed.item_id)
+    group by placed.subjob_id`);
+  return new Map((rows.rows as { subjob_id: string; n: number }[]).map((r) => [r.subjob_id, Number(r.n)]));
+}
+
 /** Posts by their Connected id, whether still mirrored (source_kind post) or already imported (imported_from). */
 export async function postsBySourceId(sourceIds: number[], staff: boolean): Promise<Map<number, ItemRow & { sourceId: number }>> {
   const out = new Map<number, ItemRow & { sourceId: number }>();

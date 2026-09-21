@@ -25,7 +25,8 @@ export function Pill({ item }: { item: ItemSummary }) {
   return <>{item.curation === "essential" ? <span className="wf-status wf-status-essential">Essential</span> : item.curation === "recommended" ? <span className="wf-status wf-status-recommended">Staff pick</span> : null}{item.dated ? <span className="wf-status wf-status-attention">{item.dated}</span> : null}</>;
 }
 export function ItemCard({ item, context, showWhy = true }: { item: ItemSummary; context?: Record<string, unknown>; showWhy?: boolean }) {
-  const kindLabel = item.isSeries || item.kind === "series" ? "Series" : item.kind === "question" ? "Q&A" : item.contentType ? item.contentType[0]!.toUpperCase() + item.contentType.slice(1) : "Post";
+  // A resource list is a series underneath; it is labelled by what it reads as, not how it is built.
+  const kindLabel = item.contentType === "resource_list" ? "Resource list" : item.isSeries || item.kind === "series" ? "Series" : item.kind === "question" ? "Q&A" : item.contentType ? item.contentType[0]!.toUpperCase() + item.contentType.slice(1) : "Post";
   return (
     <article className="wf-card wf-card-record">
       <div className="wf-record-heading"><span><Link className="wf-card-title" to={`/item/${item.id}`} onClick={() => signalClick(item.id, context ?? {})}>{item.title}</Link></span><span className="wf-record-tags"><Pill item={item} /></span></div>
