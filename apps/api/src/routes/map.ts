@@ -1,13 +1,23 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
 import { and, desc, eq, getDb, inArray, isNull, itemMeta, items, jobs, placements, signals, sql, subjobs, users } from "@wfw/db";
-import { STAGES, isResourceLanguage, isResourceRegion, type JobSummary, type ResourceLanguage, type ResourceRegion, type StageKey } from "@wfw/shared";
+import { GENERAL_REGION, STAGES, isResourceLanguage, parseRegionFilter, type JobSummary, type ResourceLanguage, type StageKey } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { getSettings } from "../settings.js";
 import { itemsForSubjob, mostUsed, parseTypes, postsBySourceId, startHere, subjobItemCounts, toSummary, itemSelect, type ItemRow, type ReaderFilters, visibleWhere } from "../services/items.js";
 import { mergeAdjacentLists, stripContentTokens } from "../lib/html.js";
 import { googleKindOfMime, googleUrl, isGoogleAppsMime } from "../services/native.js";
-import { readerLanguage, readerRegion } from "../services/language-pref.js";
+import { readerLanguage, readerRegions } from "../services/language-pref.js";
+
+/** The region filter for the stage counts, which are raw SQL over an aliased items table. */
+const regionSql = (regions: string[]) => {
+  if (!regions.length) return sql``;
+  const parts = [];
+  if (regions.includes(GENERAL_REGION)) parts.push(sql`coalesce(array_length(i.regions, 1), 0) = 0`);
+  const keys = regions.filter((r) => r !== GENERAL_REGION);
+  if (keys.length) parts.push(sql`i.regions && array[${sql.join(keys.map((k) => sql`${k}`), sql`, `)}]::text[]`);
+  return sql` and (${sql.join(parts, sql` or `)})`;
+};
 
 export const mapRouter = Router();
 mapRouter.use(requireUser);
@@ -15,13 +25,13 @@ const isStage = (s: unknown): s is StageKey => typeof s === "string" && STAGES.s
 /** The language filter comes from the query string; when it is missing we use what the reader last chose. */
 const requestLanguage = (req: Request): Promise<ResourceLanguage> =>
   isResourceLanguage(req.query.lang) ? Promise.resolve(req.query.lang) : readerLanguage(req.user!.id);
-/** Likewise for the region. */
-const requestRegion = (req: Request): Promise<ResourceRegion> =>
-  isResourceRegion(req.query.region) ? Promise.resolve(req.query.region) : readerRegion(req.user!.id);
+/** Likewise for the regions, which the reader may tick several of. */
+const requestRegions = (req: Request): Promise<string[]> =>
+  req.query.regions !== undefined ? Promise.resolve(parseRegionFilter(req.query.regions)) : readerRegions(req.user!.id);
 /** The whole filter row, as every list route needs it. */
-async function requestFilters(req: Request): Promise<ReaderFilters & { language: ResourceLanguage; region: ResourceRegion }> {
-  const [language, region] = await Promise.all([requestLanguage(req), requestRegion(req)]);
-  return { language, region, types: parseTypes(req.query.types) };
+async function requestFilters(req: Request): Promise<ReaderFilters & { language: ResourceLanguage; regions: string[] }> {
+  const [language, regions] = await Promise.all([requestLanguage(req), requestRegions(req)]);
+  return { language, regions, types: parseTypes(req.query.types) };
 }
 
 mapRouter.get("/", async (req, res) => {
@@ -33,11 +43,11 @@ mapRouter.get("/", async (req, res) => {
   const lang = f.language;
   // The same filters the job page applies, so the number beside a job matches the cards under it.
   const cmap = await subjobItemCounts(staff, f);
-  const stageRows = await db.execute(sql`select s as stage, count(distinct i.id)::int as n from items i join item_meta m on m.item_id = i.id cross join lateral unnest(m.stages) as s where i.removed_at is null and coalesce(m.hidden, false) = false ${lang === "all" ? sql`` : sql`and i.language = ${lang}`} ${f.region === "all" ? sql`` : f.region === "general" ? sql`and coalesce(array_length(i.regions, 1), 0) = 0` : sql`and (i.regions @> array[${f.region}]::text[] or coalesce(array_length(i.regions, 1), 0) = 0)`} ${staff ? sql`` : sql`and not exists (select 1 from placements p join subjobs sj on sj.id = p.subjob_id join jobs j on j.id = sj.job_id where p.item_id = i.id and p.is_primary and j.staff_only)`} group by s`);
+  const stageRows = await db.execute(sql`select s as stage, count(distinct i.id)::int as n from items i join item_meta m on m.item_id = i.id cross join lateral unnest(m.stages) as s where i.removed_at is null and coalesce(m.hidden, false) = false ${lang === "all" ? sql`` : sql`and i.language = ${lang}`} ${regionSql(f.regions)} ${staff ? sql`` : sql`and not exists (select 1 from placements p join subjobs sj on sj.id = p.subjob_id join jobs j on j.id = sj.job_id where p.item_id = i.id and p.is_primary and j.staff_only)`} group by s`);
   const stageCounts = Object.fromEntries((stageRows.rows as { stage: string; n: number }[]).map((r) => [r.stage, r.n]));
   const out: JobSummary[] = js.filter((j) => staff || !j.hidden).map((j) => ({ id: j.id, key: j.key, name: j.name, description: j.description, staffOnly: j.staffOnly, hidden: j.hidden,
     subjobs: ss.filter((s) => s.jobId === j.id).map((s) => ({ id: s.id, key: s.key, name: s.name, description: s.description, stages: s.stages as StageKey[], itemCount: cmap.get(s.id) ?? 0 })) }));
-  res.json({ jobs: out, stages: STAGES, stageCounts, language: lang, region: f.region });
+  res.json({ jobs: out, stages: STAGES, stageCounts, language: lang, regions: f.regions });
 });
 
 mapRouter.get("/home", async (req, res) => {
@@ -48,7 +58,7 @@ mapRouter.get("/home", async (req, res) => {
   const effective = stage ?? (isStage(u?.stage) ? u!.stage as StageKey : null);
   const f = await requestFilters(req);
   const [start, used] = await Promise.all([effective ? startHere(effective, staff, s.startHereCap, f) : Promise.resolve([]), mostUsed(staff, 8, f)]);
-  res.json({ stage: effective, startHere: start, mostUsed: used, stages: STAGES, language: f.language, region: f.region });
+  res.json({ stage: effective, startHere: start, mostUsed: used, stages: STAGES, language: f.language, regions: f.regions });
 });
 
 mapRouter.post("/stage", async (req, res) => {

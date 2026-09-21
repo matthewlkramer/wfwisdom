@@ -1,6 +1,6 @@
 ALTER TABLE "items" ADD COLUMN IF NOT EXISTS "regions" text[] DEFAULT '{}'::text[] NOT NULL;
 --> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "resource_region" text DEFAULT 'all' NOT NULL;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "resource_regions" text[] DEFAULT '{}'::text[] NOT NULL;
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "items_regions_idx" ON "items" USING GIN ("regions");
 --> statement-breakpoint

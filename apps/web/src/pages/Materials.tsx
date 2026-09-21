@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, FileText, Link2, Sparkles, Trash2, Upload, Wand2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -7,7 +7,7 @@ import { ApiError, api, fmtDate } from "../api";
 import { ErrorState, ItemCard, Loading, Markdown, State } from "../components/ui";
 import { DraftsSection } from "./Submissions";
 import { LanguageFilter, langParam, useLanguage } from "../language";
-import { RegionFilter, regionParam, useRegion } from "../region";
+import { RegionFilter, regionsParam, useRegions } from "../region";
 
 type TypeRow = { id: string; key: string; name: string; shortDescription: string | null; jobKey: string | null };
 
@@ -67,9 +67,9 @@ type TypeDetail = { type: { id: string; key: string; name: string; shortDescript
 /** The writing workspace: guide on demand, a big writing box, objectives and resources alongside. */
 export function MaterialType() {
   const { key } = useParams(); const nav = useNavigate(); const [sp] = useSearchParams(); const parentId = sp.get("resubmit") ?? undefined;
-  const { language } = useLanguage(); const { region } = useRegion();
-  const q = useQuery({ queryKey: ["type", key, language, region], queryFn: () => api.get<TypeDetail>(`/api/types/${key}?${langParam(language)}&${regionParam(region)}`) });
-  const sug = useQuery({ queryKey: ["type-suggested", key, language, region], queryFn: () => api.get<{ items: ItemSummary[]; basedOn: string[] }>(`/api/types/${key}/suggested?${langParam(language)}&${regionParam(region)}`) });
+  const { language } = useLanguage(); const { regions } = useRegions();
+  const q = useQuery({ queryKey: ["type", key, language, regions], placeholderData: keepPreviousData, queryFn: () => api.get<TypeDetail>(`/api/types/${key}?${langParam(language)}&${regionsParam(regions)}`) });
+  const sug = useQuery({ queryKey: ["type-suggested", key, language, regions], placeholderData: keepPreviousData, queryFn: () => api.get<{ items: ItemSummary[]; basedOn: string[] }>(`/api/types/${key}/suggested?${langParam(language)}&${regionsParam(regions)}`) });
   const mats = useQuery({ queryKey: ["my-materials"], queryFn: () => api.get<{ materials: SchoolMaterial[] }>("/api/me/materials") });
   const [mode, setMode] = useState<"write" | "upload" | "link">("write");
   const [guideOpen, setGuideOpen] = useState(false);

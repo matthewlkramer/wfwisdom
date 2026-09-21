@@ -1,5 +1,5 @@
 import { and, eq, getDb, inArray, itemChunks, itemMeta, items, jobs, placements, sql, subjobs } from "@wfw/db";
-import type { ItemSummary, ResourceLanguage, ResourceRegion } from "@wfw/shared";
+import type { ItemSummary, ResourceLanguage } from "@wfw/shared";
 import { embed, respondJson, respond } from "../lib/openai.js";
 import { logger } from "../logger.js";
 import { getSettings } from "../settings.js";
@@ -34,12 +34,12 @@ export function ftsQuery(texts: string[]): ReturnType<typeof sql> | null {
   return sql`(${sql.join(arms.map((t) => sql`websearch_to_tsquery('english', ${t})`), sql` || `)})`;
 }
 
-export async function search(query: string, opts: { staff: boolean; limit?: number; userId?: string | null; language?: ResourceLanguage; region?: ResourceRegion }): Promise<SearchResponse> {
+export async function search(query: string, opts: { staff: boolean; limit?: number; userId?: string | null; language?: ResourceLanguage; regions?: string[] }): Promise<SearchResponse> {
   const s = await getSettings();
   const db = getDb();
   const limit = opts.limit ?? 10;
-  const reader = { language: opts.language, region: opts.region };
-  const key = `${query.trim().toLowerCase()}|${opts.staff}|${opts.language ?? "all"}|${opts.region ?? "all"}|${limit}`;
+  const reader = { language: opts.language, regions: opts.regions };
+  const key = `${query.trim().toLowerCase()}|${opts.staff}|${opts.language ?? "all"}|${[...(opts.regions ?? [])].sort().join("+") || "all"}|${limit}`;
   const hit = cached(key);
   if (hit) return hit;
   let rewritten: string | null = null; let keywords: string[] = []; let jobKey: string | null = null;

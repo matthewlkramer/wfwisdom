@@ -1,16 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { ItemSummary } from "@wfw/shared";
 import { api } from "../api";
 import { ErrorState, ItemGrid, Loading, SearchInput, State } from "../components/ui";
 import { LanguageFilter, langParam, useLanguage } from "../language";
-import { RegionFilter, regionParam, useRegion } from "../region";
+import { RegionFilter, regionsParam, useRegions } from "../region";
 import { TypeFilter, typesParam, useDocTypes } from "../filters";
 export function SearchPage() {
-  const [sp, setSp] = useSearchParams(); const q = sp.get("q") ?? ""; const [draft, setDraft] = useState(q); const { language } = useLanguage(); const { region } = useRegion(); const { types } = useDocTypes();
+  const [sp, setSp] = useSearchParams(); const q = sp.get("q") ?? ""; const [draft, setDraft] = useState(q); const { language } = useLanguage(); const { regions } = useRegions(); const { types } = useDocTypes();
   useEffect(() => setDraft(q), [q]);
-  const r = useQuery({ queryKey: ["search", q, language, region, types], queryFn: () => api.get<{ query: string; rewritten: string | null; mode: string; results: ItemSummary[] }>(`/api/search?q=${encodeURIComponent(q)}&${langParam(language)}&${regionParam(region)}&${typesParam(types)}`), enabled: q.length >= 2 });
+  const r = useQuery({ queryKey: ["search", q, language, regions, types], placeholderData: keepPreviousData, queryFn: () => api.get<{ query: string; rewritten: string | null; mode: string; results: ItemSummary[] }>(`/api/search?q=${encodeURIComponent(q)}&${langParam(language)}&${regionsParam(regions)}&${typesParam(types)}`), enabled: q.length >= 2 });
   const results = r.data?.results ?? [];
   return (
     <div className="wf-page">

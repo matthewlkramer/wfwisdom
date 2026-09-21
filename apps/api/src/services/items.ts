@@ -1,5 +1,5 @@
 import { and, desc, eq, getDb, inArray, itemMeta, items, placements, sql, subjobs, jobs } from "@wfw/db";
-import type { ItemLanguage, ItemSummary, ResourceLanguage, ResourceRegion, StageKey } from "@wfw/shared";
+import { GENERAL_REGION, type ItemLanguage, type ItemSummary, type ResourceLanguage, type StageKey } from "@wfw/shared";
 import { stripContentTokens } from "../lib/html.js";
 
 export const itemSelect = {
@@ -47,19 +47,24 @@ export const visibleWhere = (staff: boolean) => staff ? sql`${items.removedAt} i
 /** The reader's language filter. "all" keeps everything, including items whose language is unknown. */
 export const languageWhere = (lang: ResourceLanguage | null | undefined) => (lang && lang !== "all" ? sql`${items.language} = ${lang}` : undefined);
 /**
- * The reader's region filter. "all" keeps everything; "general" keeps only what is not written for one
- * region; a region key keeps that region's material together with the material that applies everywhere,
- * which is what a teacher leader there actually needs — Massachusetts licensing stays out of Minnesota.
+ * The reader's region filter: the union of whatever options they ticked, and everything when they
+ * ticked none. Each tick stands on its own — Minnesota means Minnesota's material and nothing else —
+ * so a teacher leader who also wants the material written for nowhere in particular ticks that too.
  */
-export const regionWhere = (region: ResourceRegion | null | undefined) =>
-  !region || region === "all" ? undefined
-    : region === "general" ? sql`coalesce(array_length(${items.regions}, 1), 0) = 0`
-    : sql`(${items.regions} @> array[${region}]::text[] or coalesce(array_length(${items.regions}, 1), 0) = 0)`;
+export const regionWhere = (regions: string[] | null | undefined) => {
+  if (!regions?.length) return undefined;
+  const parts = [];
+  if (regions.includes(GENERAL_REGION)) parts.push(sql`coalesce(array_length(${items.regions}, 1), 0) = 0`);
+  const keys = regions.filter((r) => r !== GENERAL_REGION);
+  // Array overlap: the item carries any one of the ticked regions. Uses the GIN index on items.regions.
+  if (keys.length) parts.push(sql`${items.regions} && array[${sql.join(keys.map((k) => sql`${k}`), sql`, `)}]::text[]`);
+  return parts.length ? sql`(${sql.join(parts, sql` or `)})` : undefined;
+};
 
 /** What the reader's filter row narrows a list to. A missing field means that filter is not narrowing. */
-export interface ReaderFilters { language?: ResourceLanguage; region?: ResourceRegion; types?: string[] }
+export interface ReaderFilters { language?: ResourceLanguage; regions?: string[]; types?: string[] }
 /** Every reader-facing list runs through this, so the filter row means the same thing everywhere. */
-export const filterWhere = (f: ReaderFilters = {}) => and(languageWhere(f.language), regionWhere(f.region), typeWhere(f.types));
+export const filterWhere = (f: ReaderFilters = {}) => and(languageWhere(f.language), regionWhere(f.regions), typeWhere(f.types));
 
 /**
  * Items placed in a sub-job for the map: series first, and a post that belongs to one of those series is listed inside

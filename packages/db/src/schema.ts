@@ -13,8 +13,8 @@ export const users = pgTable("users", {
   stage: text("stage"),
   /** Which resource language the reader last chose: all | en | es. Follows them across devices. */
   resourceLanguage: text("resource_language").notNull().default("all"),
-  /** Which region the reader last chose: all | general | a REGIONS key. Follows them across devices. */
-  resourceRegion: text("resource_region").notNull().default("all"),
+  /** Which region options the reader last ticked (REGIONS keys plus "general"). Empty means no narrowing. */
+  resourceRegions: text("resource_regions").array().notNull().default(sql`'{}'::text[]`),
   createdAt: now(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });

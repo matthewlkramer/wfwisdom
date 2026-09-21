@@ -1,5 +1,5 @@
 import { eq, getDb, users } from "@wfw/db";
-import { isResourceLanguage, isResourceRegion, type ResourceLanguage, type ResourceRegion } from "@wfw/shared";
+import { isResourceLanguage, parseRegionFilter, type ResourceLanguage } from "@wfw/shared";
 
 /** The language filter the reader last chose, stored on their user record so it follows them across devices. */
 export async function readerLanguage(userId: string): Promise<ResourceLanguage> {
@@ -10,11 +10,11 @@ export async function setReaderLanguage(userId: string, lang: ResourceLanguage):
   await getDb().update(users).set({ resourceLanguage: lang }).where(eq(users.id, userId));
 }
 
-/** The region filter the reader last chose, stored on their user record so it follows them across devices. */
-export async function readerRegion(userId: string): Promise<ResourceRegion> {
-  const [u] = await getDb().select({ region: users.resourceRegion }).from(users).where(eq(users.id, userId));
-  return isResourceRegion(u?.region) ? u!.region : "all";
+/** The region options the reader last ticked, stored on their user record so they follow them across devices. */
+export async function readerRegions(userId: string): Promise<string[]> {
+  const [u] = await getDb().select({ regions: users.resourceRegions }).from(users).where(eq(users.id, userId));
+  return parseRegionFilter(u?.regions ?? []);
 }
-export async function setReaderRegion(userId: string, region: ResourceRegion): Promise<void> {
-  await getDb().update(users).set({ resourceRegion: region }).where(eq(users.id, userId));
+export async function setReaderRegions(userId: string, regions: string[]): Promise<void> {
+  await getDb().update(users).set({ resourceRegions: regions }).where(eq(users.id, userId));
 }

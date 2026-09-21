@@ -15,5 +15,5 @@ export function testApp(path: string, router: Router, user: SessionUser | null):
   app.use(onError);
   return app;
 }
-export const teacher: SessionUser = { id: "11111111-1111-4111-8111-111111111111", email: "tl@example.org", name: "Tara Leader", role: "teacher_leader", resourceLanguage: "all", resourceRegion: "all" };
-export const staffUser: SessionUser = { id: "22222222-2222-4222-8222-222222222222", email: "staff@wildflowerschools.org", name: "Sam Staff", role: "staff", resourceLanguage: "all", resourceRegion: "all" };
+export const teacher: SessionUser = { id: "11111111-1111-4111-8111-111111111111", email: "tl@example.org", name: "Tara Leader", role: "teacher_leader", resourceLanguage: "all", resourceRegions: [] };
+export const staffUser: SessionUser = { id: "22222222-2222-4222-8222-222222222222", email: "staff@wildflowerschools.org", name: "Sam Staff", role: "staff", resourceLanguage: "all", resourceRegions: [] };

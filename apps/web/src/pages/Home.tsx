@@ -1,18 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import type { ItemSummary, StageKey } from "@wfw/shared";
 import { api } from "../api";
 import { ErrorState, ItemGrid, Loading, SearchInput, State } from "../components/ui";
 import { LanguageFilter, langParam, useLanguage } from "../language";
-import { RegionFilter, regionParam, useRegion } from "../region";
+import { RegionFilter, regionsParam, useRegions } from "../region";
 import { TypeFilter, typesParam, useDocTypes } from "../filters";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 interface HomeData { stage: StageKey | null; startHere: ItemSummary[]; mostUsed: ItemSummary[]; stages: { key: StageKey; name: string; description: string }[] }
 export function Home() {
-  const qc = useQueryClient(); const nav = useNavigate(); const [q, setQ] = useState(""); const { language } = useLanguage(); const { region } = useRegion(); const { types: docTypes } = useDocTypes();
-  const home = useQuery({ queryKey: ["home", language, region, docTypes], queryFn: () => api.get<HomeData>(`/api/map/home?${langParam(language)}&${regionParam(region)}&${typesParam(docTypes)}`) });
+  const qc = useQueryClient(); const nav = useNavigate(); const [q, setQ] = useState(""); const { language } = useLanguage(); const { regions } = useRegions(); const { types: docTypes } = useDocTypes();
+  const home = useQuery({ queryKey: ["home", language, regions, docTypes], placeholderData: keepPreviousData, queryFn: () => api.get<HomeData>(`/api/map/home?${langParam(language)}&${regionsParam(regions)}&${typesParam(docTypes)}`) });
   const types = useQuery({ queryKey: ["types"], queryFn: () => api.get<{ types: { key: string; name: string }[] }>("/api/types") });
   const setStage = useMutation({ mutationFn: (stage: StageKey | null) => api.post("/api/map/stage", { stage }), onSuccess: () => qc.invalidateQueries({ queryKey: ["home"] }) });
   if (home.isLoading) return <div className="wf-page"><Loading /></div>;

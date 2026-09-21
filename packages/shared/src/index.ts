@@ -3,10 +3,9 @@ export * from "./language.js";
 export * from "./linkify.js";
 export * from "./region.js";
 import type { ItemLanguage, ResourceLanguage } from "./language.js";
-import type { ResourceRegion } from "./region.js";
 
 export type Role = "teacher_leader" | "staff";
-export interface SessionUser { id: string; email: string; name: string; role: Role; resourceLanguage: ResourceLanguage; resourceRegion: ResourceRegion; }
+export interface SessionUser { id: string; email: string; name: string; role: Role; resourceLanguage: ResourceLanguage; resourceRegions: string[]; }
 export type StageKey = "discovery" | "visioning" | "planning" | "startup" | "open";
 export const STAGES: { key: StageKey; name: string; description: string }[] = [
   { key: "discovery", name: "Discovery", description: "Exploring whether to open a Wildflower school" },

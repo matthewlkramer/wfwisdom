@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { isResourceLanguage, isResourceRegion, type ResourceLanguage, type ResourceRegion } from "@wfw/shared";
+import { isResourceLanguage, parseRegionFilter, type ResourceLanguage } from "@wfw/shared";
 import { and, asc, eq, getDb, items, jobs, materialTypes, typeResources } from "@wfw/db";
 import { requireUser } from "../auth.js";
 import { filterWhere, itemSelect, toSummary, type ItemRow } from "../services/items.js";
-import { readerLanguage, readerRegion } from "../services/language-pref.js";
+import { readerLanguage, readerRegions } from "../services/language-pref.js";
 import { schoolContext } from "../services/school.js";
 import { search } from "../services/search.js";
 import { sha } from "../lib/text.js";
@@ -14,11 +14,11 @@ typesRouter.use(requireUser);
 type Ctx = { query: Record<string, unknown>; user: { id: string } };
 const requestLanguage = (req: Ctx): Promise<ResourceLanguage> =>
   isResourceLanguage(req.query.lang) ? Promise.resolve(req.query.lang) : readerLanguage(req.user.id);
-const requestRegion = (req: Ctx): Promise<ResourceRegion> =>
-  isResourceRegion(req.query.region) ? Promise.resolve(req.query.region) : readerRegion(req.user.id);
+const requestRegions = (req: Ctx): Promise<string[]> =>
+  req.query.regions !== undefined ? Promise.resolve(parseRegionFilter(req.query.regions)) : readerRegions(req.user.id);
 const requestFilters = async (req: Ctx) => {
-  const [language, region] = await Promise.all([requestLanguage(req), requestRegion(req)]);
-  return { language, region };
+  const [language, regions] = await Promise.all([requestLanguage(req), requestRegions(req)]);
+  return { language, regions };
 };
 typesRouter.get("/", async (_req, res) => {
   const db = getDb();
@@ -43,7 +43,7 @@ typesRouter.get("/:key/suggested", async (req, res) => {
   const school = await schoolContext(req.user!.id, 3000);
   if (!school.count) { res.json({ items: [], basedOn: [] }); return; }
   const f = await requestFilters({ query: req.query as Record<string, unknown>, user: req.user! });
-  const key = `${req.user!.id}:${t.id}:${f.language}:${f.region}:${sha(school.text)}`;
+  const key = `${req.user!.id}:${t.id}:${f.language}:${[...f.regions].sort().join("+")}:${sha(school.text)}`;
   const hit = suggestedCache.get(key);
   if (hit && Date.now() - hit.at < 6 * 3600_000) { res.json({ items: hit.items, basedOn: school.titles }); return; }
   const curated = new Set((await db.select({ itemId: typeResources.itemId }).from(typeResources).where(eq(typeResources.typeId, t.id))).map((r) => r.itemId));

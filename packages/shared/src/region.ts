@@ -20,25 +20,36 @@ export const REGIONS: { key: string; label: string; audience: string }[] = [
   { key: "pr", label: "Puerto Rico", audience: "Puerto Rico" },
 ];
 
-/**
- * What a reader picked in the region filter.
- *
- * - "all" — everything, including material written for somebody else's region.
- * - "general" — only what is not written for one region, so it applies wherever you are.
- * - a region key — that region's material *and* the material that applies everywhere: what a teacher
- *   leader there actually needs, without Massachusetts licensing showing up in Minnesota.
- */
-export type ResourceRegion = "all" | "general" | (string & {});
-export const isResourceRegion = (v: unknown): v is ResourceRegion =>
-  v === "all" || v === "general" || (typeof v === "string" && REGIONS.some((r) => r.key === v));
+/** The filter option for material that is not written for any one region. */
+export const GENERAL_REGION = "general";
 
-export const REGION_CHOICES: { key: ResourceRegion; label: string }[] = [
-  { key: "all", label: "All regions" },
-  { key: "general", label: "Not region-specific" },
-  ...REGIONS.map((r) => ({ key: r.key as ResourceRegion, label: r.label })),
+/**
+ * What a reader can tick in the region filter: the material that belongs to nowhere in particular,
+ * then each region. Ticking nothing means no narrowing at all.
+ */
+export const REGION_FILTER_OPTIONS: { key: string; label: string }[] = [
+  { key: GENERAL_REGION, label: "Not region-specific" },
+  ...REGIONS.map((r) => ({ key: r.key, label: r.label })),
 ];
 
-export const regionLabel = (key: string): string => REGIONS.find((r) => r.key === key)?.label ?? key;
+export const isRegionFilterKey = (v: unknown): v is string =>
+  v === GENERAL_REGION || (typeof v === "string" && REGIONS.some((r) => r.key === v));
+
+/**
+ * The reader's region filter, as a list of the options they ticked.
+ *
+ * Each tick stands on its own: ticking Minnesota shows Minnesota's material and nothing else, and
+ * ticking "Not region-specific" shows only what is written for nowhere in particular. Ticking several
+ * shows the union, so a Minnesota teacher leader who also wants the universal material ticks both.
+ * An empty list means everything.
+ */
+export function parseRegionFilter(v: unknown): string[] {
+  const raw = Array.isArray(v) ? v : typeof v === "string" && v ? v.split(",") : [];
+  return [...new Set(raw.map((x) => String(x).trim()).filter(isRegionFilterKey))].slice(0, REGION_FILTER_OPTIONS.length);
+}
+
+export const regionLabel = (key: string): string =>
+  key === GENERAL_REGION ? "Not region-specific" : REGIONS.find((r) => r.key === key)?.label ?? key;
 
 /** The regions an item is for, read off the audience taxa Connected already carries. */
 export function regionsOfAudiences(audiences: readonly string[] | null | undefined): string[] {

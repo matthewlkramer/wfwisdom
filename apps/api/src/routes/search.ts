@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
 import { getDb, searchLog } from "@wfw/db";
-import { isResourceLanguage, isResourceRegion, type ResourceLanguage, type ResourceRegion } from "@wfw/shared";
+import { isResourceLanguage, parseRegionFilter, type ResourceLanguage } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { search } from "../services/search.js";
 import { parseTypes, RESOURCE_LIST } from "../services/items.js";
 import { answer } from "../services/chat.js";
 import { listMyQuestions, listSharedExamples } from "../services/questions.js";
-import { readerLanguage, readerRegion } from "../services/language-pref.js";
+import { readerLanguage, readerRegions } from "../services/language-pref.js";
 import { checkChatAllowed, LimitError } from "../services/limits.js";
 
 export const chatSchema = z.object({
@@ -25,14 +25,14 @@ searchRouter.use(requireUser);
 searchRouter.get("/", async (req, res) => {
   const q = String(req.query.q ?? "").trim().slice(0, 300);
   const language: ResourceLanguage = isResourceLanguage(req.query.lang) ? req.query.lang : await readerLanguage(req.user!.id);
-  const region: ResourceRegion = isResourceRegion(req.query.region) ? req.query.region : await readerRegion(req.user!.id);
-  if (q.length < 2) { res.json({ query: q, rewritten: null, mode: "keyword", results: [], language, region }); return; }
+  const regions: string[] = req.query.regions !== undefined ? parseRegionFilter(req.query.regions) : await readerRegions(req.user!.id);
+  if (q.length < 2) { res.json({ query: q, rewritten: null, mode: "keyword", results: [], language, regions }); return; }
   const types = parseTypes(req.query.types);
-  const r = await search(q, { staff: req.user!.role === "staff", limit: types.length ? 30 : 12, userId: req.user!.id, language, region });
+  const r = await search(q, { staff: req.user!.role === "staff", limit: types.length ? 30 : 12, userId: req.user!.id, language, regions });
   // Mirrors typeWhere: a resource list answers to its own filter rather than to "Series".
   if (types.length) { const ct = new Set(types); r.results = r.results.filter((it) => (it.contentType === RESOURCE_LIST ? ct.has(RESOURCE_LIST) : it.isSeries ? ct.has("series") : it.kind === "question" ? ct.has("question") : ct.has(it.contentType ?? "other"))).slice(0, 12); }
   await getDb().insert(searchLog).values({ userId: req.user!.id, query: q, rewritten: r.rewritten, mode: r.mode, resultCount: r.results.length });
-  res.json({ ...r, language, region });
+  res.json({ ...r, language, regions });
 });
 searchRouter.post("/chat", async (req, res) => {
   const body = chatSchema.parse(req.body);
