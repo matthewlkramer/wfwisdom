@@ -149,6 +149,8 @@ Run `node scripts/check-secrets.mjs` in the Repl shell to verify every secret ag
 
 ## Deploying changes
 
-GitHub `main` is the source of truth. Replit pulls from it; the post-merge hook installs dependencies, runs migrations and the idempotent seed, and builds. Publishing to wfwisdom.replit.app is done from Replit (Deploy). Before merging to main, run `pnpm typecheck`, `pnpm test`, and `pnpm build`.
+GitHub `main` is the source of truth. Replit pulls from it; the deployment runs migrations and the idempotent seed and then starts, so **every deploy migrates and seeds**. Before merging to main, run `pnpm build` and `pnpm test` and read their exit codes directly — piping them into `tail` reports the pipe's exit code, not the build's, which has hidden a broken build before now.
+
+The full sequence, including the publish review that can propose a destructive migration when the workspace's development database is behind production, is in [`.claude/skills/release`](../.claude/skills/release/SKILL.md). The short version: merge to `main`, sync the workspace, **apply any new migration to the development database before publishing**, publish, then confirm the live bundle hash matches the one the build printed.
 
 After deploying the Questions and language release, run `pnpm backfill:language` once in the Repl shell. The migration itself already marks items whose title or category says "Español"/"Spanish"; the backfill catches the rest. Until it runs, items read as *unknown* and show only under **All resources**.
