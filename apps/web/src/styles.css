@@ -25,6 +25,9 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 
 /* Shell: teal sidebar, sticky header with search and feedback (same anatomy as the TLs & Schools workspace) */
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 245px minmax(0, 1fr); }
+/* Signed out there is no sidebar, so the page takes the whole width instead of being squeezed into the
+   column the sidebar would have filled. Beats the narrower columns the media queries set, by specificity. */
+.app-shell.no-sidebar { grid-template-columns: minmax(0, 1fr); }
 .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 18px 14px 14px; background: var(--teal-deep); color: white; }
 .brand-lockup { display: flex; align-items: center; gap: 12px; color: white; text-decoration: none; }
 .brand-lockup.compact { padding: 0 8px 14px; }
@@ -503,3 +506,7 @@ details > summary { cursor: pointer; color: var(--teal-deep); font-weight: 600; 
 .filter-row .stage-rail button { padding: 9px 10px; }
 .filter-row .stage-rail button strong { font-size: 1rem; white-space: nowrap; }
 .filter-row .stage-rail button span { white-space: nowrap; }
+
+/* The pasted-screenshot area of the feedback dialog: a hint until there is one, then the image itself. */
+.feedback-paste { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .82rem; }
+.feedback-paste-preview { max-width: 100%; max-height: 160px; border-radius: var(--wf-radius); border: 1px solid var(--wf-border); display: block; }

@@ -5,7 +5,7 @@ export function Landing({ next }: { next: string }) {
   const cfg = useQuery({ queryKey: ["auth-config"], queryFn: () => api.get<{ googleConfigured: boolean }>("/api/auth/config") });
   const err = new URLSearchParams(window.location.search).get("auth_error");
   return (
-    <div className="app-shell"><main className="app-main"><div className="wf-page narrow">
+    <div className="app-shell no-sidebar"><main className="app-main"><div className="wf-page narrow">
       <div className="hero"><div className="hero-copy">
         <p className="eyebrow">Wildflower Schools</p>
         <h1>Wildflower Wisdom</h1>
