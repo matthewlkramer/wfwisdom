@@ -4,7 +4,7 @@ import { and, desc, eq, getDb, inArray, isNull, itemMeta, items, jobs, placement
 import { GENERAL_REGION, STAGES, isResourceLanguage, parseRegionFilter, type JobSummary, type ResourceLanguage, type StageKey } from "@wfw/shared";
 import { requireUser } from "../auth.js";
 import { getSettings } from "../settings.js";
-import { itemsForSubjob, mostUsed, parseTypes, postsBySourceId, startHere, subjobItemCounts, toSummary, itemSelect, type ItemRow, type ReaderFilters, visibleWhere } from "../services/items.js";
+import { itemsForSubjob, mostUsed, parseTypes, postsBySourceId, startHere, subjobItemCounts, titleExpr, toSummary, itemSelect, type ItemRow, type ReaderFilters, visibleWhere } from "../services/items.js";
 import { mergeAdjacentLists, stripContentTokens } from "../lib/html.js";
 import { googleKindOfMime, googleUrl, isGoogleAppsMime } from "../services/native.js";
 import { readerLanguage, readerRegions } from "../services/language-pref.js";
@@ -106,11 +106,11 @@ mapRouter.get("/item/:id", async (req, res) => {
   const nativeChildIds = (r.childItemIds ?? []).slice(0, 200);
   if (nativeChildIds.length) { const kids = await db.select({ ...itemSelect }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, nativeChildIds), visibleWhere(staff))); const kById = new Map(kids.map((k) => [k.id, k])); contents = nativeChildIds.map((id) => kById.get(id)).filter((k): k is NonNullable<typeof k> => !!k).map((k) => toSummary(k as ItemRow)); }
   const author = r.authorUserId ? (await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, r.authorUserId)))[0] ?? null : null;
-  const nativeSeries = r.sourceKind === "native" ? await db.select({ id: items.id, title: items.title, childItemIds: items.childItemIds }).from(items).where(and(eq(items.sourceKind, "native"), eq(items.nativeKind, "series"), eq(items.status, "published"), isNull(items.removedAt), sql`${items.childItemIds} @> ${JSON.stringify([r.id])}::jsonb`)) : [];
+  const nativeSeries = r.sourceKind === "native" ? await db.select({ id: items.id, title: titleExpr, childItemIds: items.childItemIds }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.sourceKind, "native"), eq(items.nativeKind, "series"), eq(items.status, "published"), isNull(items.removedAt), sql`${items.childItemIds} @> ${JSON.stringify([r.id])}::jsonb`)) : [];
   // Series this post belongs to, with every post in order, so the page can show its siblings.
   const connectedPostId = r.sourceKind === "post" ? r.sourceId : r.importedFrom?.kind === "post" ? r.importedFrom.sourceId : null;
-  const seriesRows = connectedPostId ? await db.select({ id: items.id, title: items.title, childPostIds: items.childPostIds }).from(items).where(and(eq(items.sourceKind, "series"), isNull(items.removedAt), sql`${items.childPostIds} @> ${JSON.stringify([connectedPostId])}::jsonb`)) : [];
-  const nativeSeriesNav = await Promise.all(nativeSeries.map(async (sr) => { const ids = (sr.childItemIds ?? []).slice(0, 200); const rows = ids.length ? await db.select({ id: items.id, title: items.title }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, ids), visibleWhere(staff))) : []; const m = new Map(rows.map((x) => [x.id, x])); return { seriesId: sr.id, seriesTitle: sr.title, posts: ids.map((id) => m.get(id)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => ({ id: x.id, title: x.title, current: x.id === r.id })) }; }));
+  const seriesRows = connectedPostId ? await db.select({ id: items.id, title: titleExpr, childPostIds: items.childPostIds }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(eq(items.sourceKind, "series"), isNull(items.removedAt), sql`${items.childPostIds} @> ${JSON.stringify([connectedPostId])}::jsonb`)) : [];
+  const nativeSeriesNav = await Promise.all(nativeSeries.map(async (sr) => { const ids = (sr.childItemIds ?? []).slice(0, 200); const rows = ids.length ? await db.select({ id: items.id, title: titleExpr }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(inArray(items.id, ids), visibleWhere(staff))) : []; const m = new Map(rows.map((x) => [x.id, x])); return { seriesId: sr.id, seriesTitle: sr.title, posts: ids.map((id) => m.get(id)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => ({ id: x.id, title: x.title, current: x.id === r.id })) }; }));
   const connectedSeriesNav = await Promise.all(seriesRows.map(async (sr) => {
     const ids = (sr.childPostIds ?? []).slice(0, 200);
     const bySource = await postsBySourceId(ids, staff);
@@ -139,7 +139,7 @@ mapRouter.get("/item/:id", async (req, res) => {
 mapRouter.get("/by-source/:kind/:sourceId", async (req, res) => {
   const kind = String(req.params.kind), sourceId = Number(req.params.sourceId);
   if (!["post", "series", "question"].includes(kind) || !Number.isFinite(sourceId)) { res.status(400).json({ error: "Bad reference" }); return; }
-  const [r] = await getDb().select({ id: items.id, title: items.title, url: items.url }).from(items).where(and(sql`(${items.sourceKind} = ${kind} and ${items.sourceId} = ${sourceId}) or ${items.importedFrom} @> ${JSON.stringify({ kind, sourceId })}::jsonb`, isNull(items.removedAt))).limit(1);
+  const [r] = await getDb().select({ id: items.id, title: titleExpr, url: items.url }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(sql`(${items.sourceKind} = ${kind} and ${items.sourceId} = ${sourceId}) or ${items.importedFrom} @> ${JSON.stringify({ kind, sourceId })}::jsonb`, isNull(items.removedAt))).limit(1);
   if (!r) { res.status(404).json({ error: "Not in Wildflower Wisdom" }); return; }
   res.json(r);
 });

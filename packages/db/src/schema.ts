@@ -153,6 +153,8 @@ export const itemMeta = pgTable("item_meta", {
   itemId: uuid("item_id").primaryKey().references(() => items.id, { onDelete: "cascade" }),
   curation: text("curation"), // essential | recommended | null
   hidden: boolean("hidden").notNull().default(false),
+  /** Staff's own title, preferred over the one Connected carries. The indexer never touches it. */
+  displayTitle: text("display_title"),
   datedLabel: text("dated_label"),
   pinnedStage: text("pinned_stage"),
   pinnedPosition: integer("pinned_position"),

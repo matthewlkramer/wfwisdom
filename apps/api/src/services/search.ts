@@ -71,7 +71,7 @@ export async function search(query: string, opts: { staff: boolean; limit?: numb
     mode = "keyword";
     ranked = ftsRows.map((r) => ({ itemId: r.id, rel: Number(r.rank) }));
     if (ranked.length === 0) {
-      const like = await db.select({ id: items.id }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(visibleWhere(opts.staff), filterWhere(reader), sql`lower(${items.title}) like ${"%" + query.toLowerCase() + "%"}`)).limit(30);
+      const like = await db.select({ id: items.id }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(visibleWhere(opts.staff), filterWhere(reader), sql`lower(coalesce(${itemMeta.displayTitle}, ${items.title})) like ${"%" + query.toLowerCase() + "%"}`)).limit(30);
       ranked = like.map((r) => ({ itemId: r.id, rel: 0.5 }));
     }
   } else {

@@ -78,6 +78,13 @@
       "when": 1790200000000,
       "tag": "0010_taxonomy_retirements",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790300000000,
+      "tag": "0011_display_title",
+      "breakpoints": true
     }
   ]
 }

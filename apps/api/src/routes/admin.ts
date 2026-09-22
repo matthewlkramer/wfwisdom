@@ -6,7 +6,7 @@ import { actor, requireStaff } from "../auth.js";
 import { respondJson } from "../lib/openai.js";
 import { isIndexing, runReindex, applySeeds } from "../services/indexer.js";
 import { importStatus, isImporting, runImport } from "../services/import-connected.js";
-import { itemSelect, toSummary, type ItemRow } from "../services/items.js";
+import { itemSelect, subjobPlacementCounts, toSummary, type ItemRow } from "../services/items.js";
 import { usageToday } from "../services/limits.js";
 import { REVIEW_SCHEMA, buildSystemPrompt, currentBasePrompt } from "../services/review.js";
 import { recomputeScores } from "../services/score.js";
@@ -124,27 +124,42 @@ adminRouter.put("/reorder", async (req, res) => {
   res.json({ ok: true });
 });
 
+/**
+ * How many resources sit in each sub-job, for the Organize page.
+ *
+ * The map's own count answers a reader's question — how many cards will I see — and nests a series' posts
+ * inside the series. Staff dragging resources between sub-jobs need the other number: how many rows this
+ * sub-job opens. Keyed by sub-job id.
+ */
+adminRouter.get("/subjob-counts", async (_req, res) => {
+  res.json({ counts: Object.fromEntries(await subjobPlacementCounts()) });
+});
+
 // ---- items and curation
 adminRouter.get("/items", async (req, res) => {
   const db = getDb();
   const q = String(req.query.q ?? "").trim(); const subjobKey = String(req.query.subjob ?? ""); const filter = String(req.query.filter ?? "");
-  const page = Math.max(0, Number(req.query.page ?? 0)); const size = 50;
+  const page = Math.max(0, Number(req.query.page ?? 0));
+  // The Organize page lists a whole sub-job at once, so it asks for more than the default page.
+  const size = Math.min(200, Math.max(1, Number(req.query.size ?? 50) || 50));
   const conds = [sql`${items.removedAt} is null`];
-  if (q) conds.push(sql`(lower(${items.title}) like ${"%" + q.toLowerCase() + "%"} or "items"."fts" @@ websearch_to_tsquery('english', ${q}))`);
+  if (q) conds.push(sql`(lower(coalesce(${itemMeta.displayTitle}, ${items.title})) like ${"%" + q.toLowerCase() + "%"} or "items"."fts" @@ websearch_to_tsquery('english', ${q}))`);
   if (subjobKey) conds.push(sql`exists (select 1 from placements p join subjobs s on s.id = p.subjob_id where p.item_id = ${items.id} and s.key = ${subjobKey})`);
   if (filter === "unplaced") conds.push(sql`not exists (select 1 from placements p where p.item_id = ${items.id})`);
   if (filter === "hidden") conds.push(sql`coalesce(${itemMeta.hidden}, false)`);
   if (filter === "curated") conds.push(sql`${itemMeta.curation} is not null`);
   if (filter === "dated") conds.push(sql`${itemMeta.datedLabel} is not null`);
   if (filter === "linkonly") conds.push(eq(items.linkOnly, true));
-  const rows = await db.select({ ...itemSelect, pinnedStage: itemMeta.pinnedStage, pinnedPosition: itemMeta.pinnedPosition, staffNote: itemMeta.staffNote, hasText: items.hasText }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(...conds)).orderBy(desc(sql`coalesce(${itemMeta.score},0)`), desc(items.views)).limit(size).offset(page * size);
+  const rows = await db.select({ ...itemSelect, displayTitle: itemMeta.displayTitle, pinnedStage: itemMeta.pinnedStage, pinnedPosition: itemMeta.pinnedPosition, staffNote: itemMeta.staffNote, hasText: items.hasText }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(...conds)).orderBy(desc(sql`coalesce(${itemMeta.score},0)`), desc(items.views)).limit(size).offset(page * size);
   const ids = rows.map((r) => r.id);
   const pl = ids.length ? await db.select({ itemId: placements.itemId, key: subjobs.key, name: subjobs.name, isPrimary: placements.isPrimary, position: placements.position }).from(placements).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).where(inArray(placements.itemId, ids)) : [];
-  res.json({ items: rows.map((r) => ({ ...toSummary(r as ItemRow), hidden: r.hidden, pinnedStage: r.pinnedStage, pinnedPosition: r.pinnedPosition, staffNote: r.staffNote, reviewStatus: r.reviewStatus, hasText: r.hasText, placements: pl.filter((p) => p.itemId === r.id) })), page, size });
+  res.json({ items: rows.map((r) => ({ ...toSummary(r as ItemRow), displayTitle: r.displayTitle, hidden: r.hidden, pinnedStage: r.pinnedStage, pinnedPosition: r.pinnedPosition, staffNote: r.staffNote, reviewStatus: r.reviewStatus, hasText: r.hasText, placements: pl.filter((p) => p.itemId === r.id) })), page, size });
 });
 adminRouter.patch("/items/:id/meta", async (req, res) => {
-  const b = z.object({ curation: z.enum(["essential", "recommended"]).nullable().optional(), hidden: z.boolean().optional(), datedLabel: z.string().max(40).nullable().optional(), pinnedStage: z.string().nullable().optional(), pinnedPosition: z.number().int().nullable().optional(), staffNote: z.string().max(500).nullable().optional(), reviewStatus: z.enum(["none", "pending", "keep", "dated", "hidden"]).optional() }).parse(req.body);
+  const b = z.object({ curation: z.enum(["essential", "recommended"]).nullable().optional(), hidden: z.boolean().optional(), displayTitle: z.string().trim().max(300).nullable().optional(), datedLabel: z.string().max(40).nullable().optional(), pinnedStage: z.string().nullable().optional(), pinnedPosition: z.number().int().nullable().optional(), staffNote: z.string().max(500).nullable().optional(), reviewStatus: z.enum(["none", "pending", "keep", "dated", "hidden"]).optional() }).parse(req.body);
   const set: Record<string, unknown> = { ...b, updatedAt: new Date() };
+  // An emptied box means "use the title Connected carries", not a title that is the empty string.
+  if (b.displayTitle !== undefined) set.displayTitle = b.displayTitle || null;
   if (b.reviewStatus && b.reviewStatus !== "pending" && b.reviewStatus !== "none") { set.reviewedBy = actor(req); set.reviewedAt = new Date(); }
   await getDb().insert(itemMeta).values({ itemId: String(req.params.id), ...(set as object) }).onConflictDoUpdate({ target: itemMeta.itemId, set });
   await audit(req, "item.meta", String(req.params.id), b); res.json({ ok: true });
