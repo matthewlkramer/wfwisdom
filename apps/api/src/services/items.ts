@@ -11,7 +11,7 @@ import { stripContentTokens } from "../lib/html.js";
 export const titleExpr = sql<string>`coalesce(${itemMeta.displayTitle}, ${items.title})`;
 
 export const itemSelect = {
-  id: items.id, title: titleExpr, url: items.url, kind: items.sourceKind, description: items.description, summary: items.summary, contentType: items.contentType,
+  id: items.id, title: titleExpr, url: items.url, kind: items.sourceKind, description: sql<string | null>`nullif(coalesce(${itemMeta.displayDescription}, ${items.description}), '')`, summary: items.summary, contentType: items.contentType,
   updatedAt: items.sourceUpdatedAt, views: items.views, linkOnly: items.linkOnly, attachments: items.attachments, seriesTitles: items.seriesTitles, language: items.language, regions: items.regions,
   score: sql<number>`coalesce(${itemMeta.score}, 0)`, curation: itemMeta.curation, hidden: sql<boolean>`coalesce(${itemMeta.hidden}, false)`, dated: itemMeta.datedLabel, reviewStatus: itemMeta.reviewStatus,
   nativeKind: items.nativeKind, childPostIds: items.childPostIds, childItemIds: items.childItemIds, nativeAttachments: items.nativeAttachments,

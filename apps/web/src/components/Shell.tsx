@@ -14,15 +14,15 @@ const workspace: NavItem[] = [
   { to: "/materials", label: "Create custom materials", icon: Sparkles },
   { to: "/share", label: "Share your materials", icon: PenLine },
 ];
-/** Taxonomy and curation sit under Organize, and the four decision queues under Review queues, each with
+/** Taxonomy and curation sit under Organize resources, and the four decision queues under Resource review queues, each with
  *  tabs across the top of the page rather than a line of their own in the sidebar. */
 const foundation: NavItem[] = [
-  { to: "/admin/organize", label: "Organize", icon: ListTree },
+  { to: "/admin/organize", label: "Organize resources", icon: ListTree },
   { to: "/admin/resources/new", label: "Add a resource", icon: FilePlus },
-  { to: "/admin/queues", label: "Review queues", icon: Inbox },
-  { to: "/admin/types", label: "Material types", icon: BookOpenCheck },
+  { to: "/admin/queues", label: "Resource review queues", icon: Inbox },
+  { to: "/admin/types", label: "Custom material types", icon: BookOpenCheck },
   { to: "/admin/base-prompt", label: "Base prompt", icon: FileText },
-  { to: "/admin/feedback", label: "Feedback queue", icon: MessageSquareText },
+  { to: "/admin/feedback", label: "App feedback queue", icon: MessageSquareText },
   { to: "/admin/activity", label: "Activity", icon: Activity },
   { to: "/admin/settings", label: "Admin settings", icon: Settings },
 ];

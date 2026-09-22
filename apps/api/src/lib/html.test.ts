@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBodyHtml, extractPrimaryVideo, isOpaqueFileName, mediaHtml, mergeAdjacentLists, nativeMediaHtml, promoteGoogleEmphasis, replaceMediaFigures, stripContentTokens } from "./html.js";
+import { buildBodyHtml, dropDuplicateByline, extractPrimaryVideo, isOpaqueFileName, mediaHtml, mergeAdjacentLists, nativeMediaHtml, promoteGoogleEmphasis, replaceMediaFigures, stripContentTokens } from "./html.js";
 import type { BfContent, BfItem } from "./bloomfire.js";
 
 const video = (id: number): BfContent => ({ id, type: "Video", title: "Walkthrough", original_file_name: "walkthrough.mp4", original_file_size: 1024, original_content_type: "video/mp4" } as BfContent);
@@ -182,5 +182,33 @@ describe("promoteGoogleEmphasis", () => {
   });
   it("returns just the body when there is nothing to promote", () => {
     expect(promoteGoogleEmphasis("<html><head></head><body><p>hi</p></body></html>")).toBe("<p>hi</p>");
+  });
+});
+
+describe("dropDuplicateByline", () => {
+  it("removes an opening byline that repeats the author shown", () => {
+    expect(dropDuplicateByline("<p><span>By Sep Kamvar</span></p><p>Body.</p>", "Sep Kamvar")).toBe("<p>Body.</p>");
+  });
+  it("keeps the wrapping divs the body came in", () => {
+    expect(dropDuplicateByline("<div><div><p>By Sep Kamvar</p><p>Body.</p></div></div>", "Sep Kamvar"))
+      .toBe("<div><div><p>Body.</p></div></div>");
+  });
+  it("handles the Spanish translations and a named co-author", () => {
+    expect(dropDuplicateByline("<p><strong>Por Sep Kamvar</strong></p><p>Cuerpo.</p>", "Sep Kamvar")).toBe("<p>Cuerpo.</p>");
+    expect(dropDuplicateByline("<p>By Sep Kamvar (and Matt Kramer)</p><p>Body.</p>", "Sep Kamvar and Matt Kramer")).toBe("<p>Body.</p>");
+  });
+  it("leaves a byline naming someone else alone", () => {
+    const html = "<p>By Matt Kramer</p><p>Body.</p>";
+    expect(dropDuplicateByline(html, "Sep Kamvar")).toBe(html);
+  });
+  it("only looks at the opening paragraph, and only when it is nothing else", () => {
+    const later = "<p>Body.</p><p>By Sep Kamvar</p>";
+    expect(dropDuplicateByline(later, "Sep Kamvar")).toBe(later);
+    const prose = "<p>By Sep Kamvar, written in 2014, this essay argues that…</p><p>Body.</p>";
+    expect(dropDuplicateByline(prose, "Sep Kamvar")).toBe(prose);
+  });
+  it("does nothing without an author", () => {
+    const html = "<p>By Sep Kamvar</p><p>Body.</p>";
+    expect(dropDuplicateByline(html, null)).toBe(html);
   });
 });

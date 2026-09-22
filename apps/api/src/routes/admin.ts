@@ -6,7 +6,7 @@ import { actor, requireStaff } from "../auth.js";
 import { respondJson } from "../lib/openai.js";
 import { isIndexing, runReindex, applySeeds } from "../services/indexer.js";
 import { importStatus, isImporting, runImport } from "../services/import-connected.js";
-import { itemSelect, subjobPlacementCounts, toSummary, type ItemRow } from "../services/items.js";
+import { itemSelect, parseTypes, subjobPlacementCounts, toSummary, typeWhere, type ItemRow } from "../services/items.js";
 import { usageToday } from "../services/limits.js";
 import { REVIEW_SCHEMA, buildSystemPrompt, currentBasePrompt } from "../services/review.js";
 import { recomputeScores } from "../services/score.js";
@@ -150,16 +150,22 @@ adminRouter.get("/items", async (req, res) => {
   if (filter === "curated") conds.push(sql`${itemMeta.curation} is not null`);
   if (filter === "dated") conds.push(sql`${itemMeta.datedLabel} is not null`);
   if (filter === "linkonly") conds.push(eq(items.linkOnly, true));
-  const rows = await db.select({ ...itemSelect, displayTitle: itemMeta.displayTitle, pinnedStage: itemMeta.pinnedStage, pinnedPosition: itemMeta.pinnedPosition, staffNote: itemMeta.staffNote, hasText: items.hasText }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(...conds)).orderBy(desc(sql`coalesce(${itemMeta.score},0)`), desc(items.views)).limit(size).offset(page * size);
+  // The same document types a reader filters by, so staff narrow the list the way the map reads it.
+  const typed = typeWhere(parseTypes(req.query.types));
+  if (typed) conds.push(typed);
+  const rows = await db.select({ ...itemSelect, displayTitle: itemMeta.displayTitle, displayAuthor: itemMeta.displayAuthor, pinnedStage: itemMeta.pinnedStage, pinnedPosition: itemMeta.pinnedPosition, staffNote: itemMeta.staffNote, hasText: items.hasText }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(...conds)).orderBy(desc(sql`coalesce(${itemMeta.score},0)`), desc(items.views)).limit(size).offset(page * size);
   const ids = rows.map((r) => r.id);
   const pl = ids.length ? await db.select({ itemId: placements.itemId, key: subjobs.key, name: subjobs.name, isPrimary: placements.isPrimary, position: placements.position }).from(placements).innerJoin(subjobs, eq(subjobs.id, placements.subjobId)).where(inArray(placements.itemId, ids)) : [];
-  res.json({ items: rows.map((r) => ({ ...toSummary(r as ItemRow), displayTitle: r.displayTitle, hidden: r.hidden, pinnedStage: r.pinnedStage, pinnedPosition: r.pinnedPosition, staffNote: r.staffNote, reviewStatus: r.reviewStatus, hasText: r.hasText, placements: pl.filter((p) => p.itemId === r.id) })), page, size });
+  res.json({ items: rows.map((r) => ({ ...toSummary(r as ItemRow), displayTitle: r.displayTitle, displayAuthor: r.displayAuthor, hidden: r.hidden, pinnedStage: r.pinnedStage, pinnedPosition: r.pinnedPosition, staffNote: r.staffNote, reviewStatus: r.reviewStatus, hasText: r.hasText, placements: pl.filter((p) => p.itemId === r.id) })), page, size });
 });
 adminRouter.patch("/items/:id/meta", async (req, res) => {
-  const b = z.object({ curation: z.enum(["essential", "recommended"]).nullable().optional(), hidden: z.boolean().optional(), displayTitle: z.string().trim().max(300).nullable().optional(), datedLabel: z.string().max(40).nullable().optional(), pinnedStage: z.string().nullable().optional(), pinnedPosition: z.number().int().nullable().optional(), staffNote: z.string().max(500).nullable().optional(), reviewStatus: z.enum(["none", "pending", "keep", "dated", "hidden"]).optional() }).parse(req.body);
+  const b = z.object({ curation: z.enum(["essential", "recommended"]).nullable().optional(), hidden: z.boolean().optional(), displayTitle: z.string().trim().max(300).nullable().optional(), displayAuthor: z.string().trim().max(200).nullable().optional(), displayDescription: z.string().trim().max(2000).nullable().optional(), datedLabel: z.string().max(40).nullable().optional(), pinnedStage: z.string().nullable().optional(), pinnedPosition: z.number().int().nullable().optional(), staffNote: z.string().max(500).nullable().optional(), reviewStatus: z.enum(["none", "pending", "keep", "dated", "hidden"]).optional() }).parse(req.body);
   const set: Record<string, unknown> = { ...b, updatedAt: new Date() };
   // An emptied box means "use the title Connected carries", not a title that is the empty string.
   if (b.displayTitle !== undefined) set.displayTitle = b.displayTitle || null;
+  if (b.displayAuthor !== undefined) set.displayAuthor = b.displayAuthor || null;
+  // Empty is meaningful here: it shows no description at all, where null falls back to Connected's.
+  if (b.displayDescription !== undefined) set.displayDescription = b.displayDescription;
   if (b.reviewStatus && b.reviewStatus !== "pending" && b.reviewStatus !== "none") { set.reviewedBy = actor(req); set.reviewedAt = new Date(); }
   await getDb().insert(itemMeta).values({ itemId: String(req.params.id), ...(set as object) }).onConflictDoUpdate({ target: itemMeta.itemId, set });
   await audit(req, "item.meta", String(req.params.id), b); res.json({ ok: true });

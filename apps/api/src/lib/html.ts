@@ -215,3 +215,32 @@ export function extractPrimaryVideo(html: string, attachments: { id: number; nam
   const stripped = html.replace(FIGURE_RE, (m, id: string) => (Number(id) === v.id ? "" : m));
   return { html: stripped, video: { id: v.id, name: v.name, type: v.type, bytes: v.bytes, mime: v.mime ?? null } };
 }
+
+/**
+ * Drop a byline at the top of the body that only repeats the author the page already shows.
+ *
+ * Essays brought over from Connected open with a line like "By Sep Kamvar", directly under the byline
+ * the page prints from the author. Only the opening paragraph is considered, only when it is nothing but
+ * that line, and only when the name matches the author shown — a mention of someone else, or the same
+ * words further down, is left alone. "Por" covers the Spanish translations; a parenthetical co-author
+ * ("By Sep Kamvar (and Matt Kramer)") still counts as a match.
+ */
+export function dropDuplicateByline(html: string, author: string | null | undefined): string {
+  if (!html || !author) return html;
+  const first = author.trim().split(/\s*(?:,| and | y |\(and )/i)[0]?.trim();
+  if (!first || first.length < 3) return html;
+  // Up to two wrapping <div>s, then the first paragraph, tags inside it ignored.
+  const m = html.match(/^((?:\s*<div[^>]*>){0,3}\s*)<p[^>]*>([\s\S]*?)<\/p>/i);
+  if (!m) return html;
+  const text = m[2]!.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+  // A byline is short and has no prose in it. "By Sep Kamvar, written in 2014, this essay argues…" opens
+  // with the same words but is the first sentence of the piece, so length and a comma rule it out.
+  if (text.length > 60 || text.replace(/\s*\((?:and|y)\s+[^)]*\)/i, "").includes(",")) return html;
+  const by = text.match(/^(?:by|por)\s+(.+?)[.\s]*$/i);
+  if (!by) return html;
+  const named = by[1]!.replace(/\s*\((?:and|y)\s+[^)]*\)\s*$/i, "").trim().toLowerCase();
+  const wanted = first.toLowerCase();
+  // Either the byline names exactly who the page credits, or it names them and then a co-author.
+  if (named !== wanted && named !== author.trim().toLowerCase() && !new RegExp(`^${wanted.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+(?:and|y)\\s+\\S`).test(named)) return html;
+  return m[1]! + html.slice(m[0]!.length);
+}

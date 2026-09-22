@@ -44,7 +44,7 @@ export function AdminTypeEditor() {
   const dirty = JSON.stringify(f) !== JSON.stringify(q.data!.type);
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <Link to="/admin/types" className="wf-page-back">← Material types</Link>
+      <Link to="/admin/types" className="wf-page-back">← Custom material types</Link>
       <div className="wf-page-header" style={{ marginBottom: 0 }}><div><h2>{q.data!.type.name}</h2><p>Version {q.data!.type.version} · <Link to={`/materials/${q.data!.type.key}`}>view as a teacher leader</Link></p></div></div>
       <div className="wf-tabs">{(["edit", "resources", "test", "history"] as const).map((t) => <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{{ edit: "Guide and prompt", resources: `Linked resources (${q.data!.resources.length})`, test: "Test the prompt", history: `Version history (${q.data!.versions.length})` }[t]}</button>)}</div>
       {tab === "edit" ? <form onSubmit={(e) => { e.preventDefault(); save.mutate(f); }} style={{ display: "grid", gap: 14 }}>

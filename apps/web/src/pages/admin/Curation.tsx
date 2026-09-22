@@ -5,12 +5,12 @@ import { Eye, EyeOff, FolderMinus, Pencil, X } from "lucide-react";
 import { DOC_TYPES, REGIONS, type ItemSummary, type JobSummary, type StageKey } from "@wfw/shared";
 import { api, fmtMonth } from "../../api";
 import { ErrorState, Loading, Pill, SearchInput, State } from "../../components/ui";
-type Row = ItemSummary & { displayTitle: string | null; hidden: boolean; pinnedStage: string | null; pinnedPosition: number | null; staffNote: string | null; reviewStatus: string | null; hasText: boolean; placements: { key: string; name: string; isPrimary: boolean; position: number | null }[] };
+type Row = ItemSummary & { displayTitle: string | null; displayAuthor: string | null; hidden: boolean; pinnedStage: string | null; pinnedPosition: number | null; staffNote: string | null; reviewStatus: string | null; hasText: boolean; placements: { key: string; name: string; isPrimary: boolean; position: number | null }[] };
 export function AdminCuration() {
-  const qc = useQueryClient(); const [q, setQ] = useState(""); const [applied, setApplied] = useState(""); const [filter, setFilter] = useState(""); const [subjob, setSubjob] = useState(""); const [page, setPage] = useState(0); const [open, setOpen] = useState<string | null>(null);
+  const qc = useQueryClient(); const [q, setQ] = useState(""); const [applied, setApplied] = useState(""); const [filter, setFilter] = useState(""); const [docType, setDocType] = useState(""); const [subjob, setSubjob] = useState(""); const [page, setPage] = useState(0); const [open, setOpen] = useState<string | null>(null);
   const map = useQuery({ queryKey: ["map"], queryFn: () => api.get<{ jobs: JobSummary[]; stages: { key: StageKey; name: string }[] }>("/api/map") });
-  const key = ["admin-items", applied, filter, subjob, page];
-  const items = useQuery({ queryKey: key, queryFn: () => api.get<{ items: Row[] }>(`/api/admin/items?q=${encodeURIComponent(applied)}&filter=${filter}&subjob=${subjob}&page=${page}`) });
+  const key = ["admin-items", applied, filter, subjob, page, docType];
+  const items = useQuery({ queryKey: key, queryFn: () => api.get<{ items: Row[] }>(`/api/admin/items?q=${encodeURIComponent(applied)}&filter=${filter}&subjob=${subjob}&page=${page}&types=${encodeURIComponent(docType)}`) });
   const inv = () => { qc.invalidateQueries({ queryKey: ["admin-items"] }); qc.invalidateQueries({ queryKey: ["home"] }); };
   const meta = useMutation({ mutationFn: ({ id, ...b }: { id: string } & Record<string, unknown>) => api.patch(`/api/admin/items/${id}/meta`, b), onSuccess: inv });
   const place = useMutation({ mutationFn: ({ id, placements }: { id: string; placements: { subjobKey: string; isPrimary: boolean }[] }) => api.put(`/api/admin/items/${id}/placements`, { placements }), onSuccess: inv });
@@ -22,6 +22,7 @@ export function AdminCuration() {
     <div style={{ display: "grid", gap: 14 }}>
       <div className="wf-toolbar"><SearchInput value={q} onChange={setQ} placeholder="Find an item by title or text" onSubmit={() => { setApplied(q); setPage(0); }} />
         <select value={subjob} onChange={(e) => { setSubjob(e.target.value); setPage(0); }}><option value="">Any sub-job</option>{subs.map((s) => <option key={s.id} value={s.key}>{s.jobName} › {s.name}</option>)}</select>
+        <select value={docType} onChange={(e) => { setDocType(e.target.value); setPage(0); }} aria-label="Document type"><option value="">Any type</option>{DOC_TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}</select>
         <select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }}><option value="">All items</option><option value="curated">Essential or Staff pick</option><option value="unplaced">Not on the map</option><option value="hidden">Hidden</option><option value="dated">Labeled dated</option><option value="linkonly">Link-only</option></select>
         <div className="wf-toolbar-actions"><button onClick={() => { setApplied(q); setPage(0); }}>Search</button></div></div>
       <State kind="info" title="How curation ranks">Hidden beats everything, then pinned position, then Essential, then Staff pick, then the computed score. Overrides survive re-indexing.</State>
@@ -34,7 +35,7 @@ export function AdminCuration() {
   );
 }
 function RowView({ r, open, setOpen, subs, stages, filterSubjob, onMeta, onPlace, onRetype, onRegions }: { r: Row; open: boolean; setOpen: () => void; subs: { key: string; name: string; jobName: string }[]; stages: { key: StageKey; name: string }[]; filterSubjob: { key: string; name: string } | null; onMeta: (b: Record<string, unknown>) => void; onPlace: (p: { subjobKey: string; isPrimary: boolean }[]) => void; onRetype: (t: string | null) => void; onRegions: (r: string[]) => void }) {
-  const [pl, setPl] = useState(r.placements.map((p) => ({ subjobKey: p.key, isPrimary: p.isPrimary }))); const [addKey, setAddKey] = useState(""); const [note, setNote] = useState(r.staffNote ?? ""); const [dated, setDated] = useState(r.dated ?? ""); const [title, setTitle] = useState(r.displayTitle ?? "");
+  const [pl, setPl] = useState(r.placements.map((p) => ({ subjobKey: p.key, isPrimary: p.isPrimary }))); const [addKey, setAddKey] = useState(""); const [note, setNote] = useState(r.staffNote ?? ""); const [dated, setDated] = useState(r.dated ?? ""); const [title, setTitle] = useState(r.displayTitle ?? ""); const [author, setAuthor] = useState(r.displayAuthor ?? "");
   // Only offered when the filter row has a sub-job chosen and this item is actually in it.
   const removeFrom = filterSubjob && r.placements.some((p) => p.key === filterSubjob.key) ? filterSubjob : null;
   // Whatever is left keeps a primary, so an item never ends up placed with none.
@@ -64,7 +65,7 @@ function RowView({ r, open, setOpen, subs, stages, filterSubjob, onMeta, onPlace
             <input type="checkbox" checked={r.regions.includes(g.key)} onChange={(e) => onRegions(e.target.checked ? [...r.regions, g.key] : r.regions.filter((x) => x !== g.key))} />{g.label}</label>)}</div></div>
         <div className="field-row"><label className="field"><span>Document type <span className="muted">(what readers filter by; a roster of people or programs is a Resource list)</span></span>
           <select value={r.contentType ?? ""} onChange={(e) => onRetype(e.target.value || null)}><option value="">—</option>{DOC_TYPES.filter((t) => t.key !== "series").map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}</select></label></div>
-        <div className="field-row"><label className="field"><span>Title shown to readers (leave empty to use the one from Connected)</span><div className="inline-actions"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={r.title} /><button className="small" onClick={() => onMeta({ displayTitle: title || null })}>Save</button></div></label></div>
+        <div className="field-row"><label className="field"><span>Title shown to readers (leave empty to use the one from Connected)</span><div className="inline-actions"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={r.title} /><button className="small" onClick={() => onMeta({ displayTitle: title || null })}>Save</button></div></label><label className="field"><span>Author shown to readers (leave empty to use the one from Connected)</span><div className="inline-actions"><input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="e.g. Sep Kamvar" /><button className="small" onClick={() => onMeta({ displayAuthor: author || null })}>Save</button></div></label></div>
         <div className="field-row"><label className="field"><span>Dated label (leave empty to clear)</span><div className="inline-actions"><input value={dated} onChange={(e) => setDated(e.target.value)} placeholder="e.g. Dated 2021" /><button className="small" onClick={() => onMeta({ datedLabel: dated || null })}>Save</button></div></label><label className="field"><span>Staff note (internal)</span><div className="inline-actions"><input value={note} onChange={(e) => setNote(e.target.value)} /><button className="small" onClick={() => onMeta({ staffNote: note || null })}>Save</button></div></label></div>
       </div></td></tr> : null}
   </>;

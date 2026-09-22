@@ -155,6 +155,10 @@ export const itemMeta = pgTable("item_meta", {
   hidden: boolean("hidden").notNull().default(false),
   /** Staff's own title, preferred over the one Connected carries. The indexer never touches it. */
   displayTitle: text("display_title"),
+  /** Staff's own author, for material credited to whoever posted it rather than to whoever wrote it. */
+  displayAuthor: text("display_author"),
+  /** Staff's own description. Null falls back to Connected's; an empty string shows none at all. */
+  displayDescription: text("display_description"),
   datedLabel: text("dated_label"),
   pinnedStage: text("pinned_stage"),
   pinnedPosition: integer("pinned_position"),
