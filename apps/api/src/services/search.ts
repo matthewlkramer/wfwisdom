@@ -6,7 +6,9 @@ import { getSettings } from "../settings.js";
 import { filterWhere, itemsByIds, toSummary, visibleWhere, type ItemRow } from "./items.js";
 import { loadVectors, searchVectors, vectorCount, vectorsVersion } from "./vectors.js";
 
-const REWRITE_SYSTEM = (jobs: { key: string; name: string }[]) => `You rewrite a teacher leader's search into a precise query for Wildflower Schools' knowledge base (Connected). Expand shorthand (SSJ = School Startup Journey, TL = teacher leader, ETL = emerging teacher leader, ops guide, hub, flexible tuition, 501c3, TC = Transparent Classroom). Keep the query under 20 words and do not add topics the searcher did not ask about. Also pick the one job the search is about, or "none".
+const REWRITE_SYSTEM = (jobs: { key: string; name: string }[]) => `You widen a teacher leader's search for Wildflower Schools' knowledge base (Connected). Expand shorthand (SSJ = School Startup Journey, TL = teacher leader, ETL = emerging teacher leader, ops guide, hub, flexible tuition, 501c3, TC = Transparent Classroom). Keep the query under 20 words and do not add topics the searcher did not ask about.
+Return search terms, not a question and not a sentence: no "what is", no "how do I". Do not add "Wildflower" or "Wildflower Schools" to words that did not carry it. If the words are already plain search terms with no shorthand to expand, return them exactly as typed.
+Also pick the one job the search is about, or "none".
 Jobs: ${jobs.map((j) => `${j.key} = ${j.name}`).join("; ")}
 Return JSON {"query": string, "keywords": string[] (3-6), "job": string}.`;
 const REWRITE_SCHEMA = { name: "rewrite", schema: { type: "object", additionalProperties: false, required: ["query", "keywords", "job"], properties: { query: { type: "string" }, keywords: { type: "array", items: { type: "string" } }, job: { type: "string" } } } };

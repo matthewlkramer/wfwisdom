@@ -19,7 +19,7 @@ export function SearchPage() {
       <div style={{ height: 16 }} />
       {q.length < 2 ? <State kind="empty" title="Type a question or a few words">Try “how do we set tuition levels” or “sample board resolution to open a bank account”.</State>
         : r.isLoading ? <Loading what="Searching" /> : r.error ? <ErrorState error={r.error} retry={() => r.refetch()} />
-        : <>{r.data!.rewritten && r.data!.rewritten.toLowerCase() !== q.toLowerCase() ? <p className="muted" style={{ marginBottom: 12 }}>Searched for: <em>{r.data!.rewritten}</em>{r.data!.mode === "keyword" ? " (keyword mode)" : ""}</p> : r.data!.mode === "keyword" ? <p className="muted">Keyword mode.</p> : null}
+        : <>{r.data!.rewritten && r.data!.rewritten.toLowerCase() !== q.toLowerCase() ? <p className="muted" style={{ marginBottom: 12 }}>Your words, and also: <em>{r.data!.rewritten}</em>{r.data!.mode === "keyword" ? " (keyword mode)" : ""}</p> : r.data!.mode === "keyword" ? <p className="muted">Keyword mode.</p> : null}
           {results.length ? <ItemGrid items={results} context={{ from: "search", q }} /> : <State kind="empty" title="Nothing matched">The knowledge base may not cover this. <Link to={`/ask?q=${encodeURIComponent(q)}`}>Ask the question</Link> to get a direct answer, or try different words.</State>}
           {r.data!.results.length ? <p className="muted" style={{ marginTop: 16 }}>Not what you needed? <Link to={`/ask?q=${encodeURIComponent(q)}`}>Ask it as a question</Link>.</p> : null}</>}
     </div>
