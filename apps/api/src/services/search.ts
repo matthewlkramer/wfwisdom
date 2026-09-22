@@ -54,6 +54,9 @@ export function titleCoverage(query: string, title: string): number {
   return typed.filter((t) => words.includes(searchStem(t)) || lower.includes(t)).length / typed.length;
 }
 
+/** A keyword candidate: its rank over the whole document, and its rank over the title alone. */
+type FtsRow = { id: string; rank: number; titleRank: number };
+
 export async function search(query: string, opts: { staff: boolean; limit?: number; userId?: string | null; language?: ResourceLanguage; regions?: string[] }): Promise<SearchResponse> {
   const s = await getSettings();
   const db = getDb();
@@ -65,10 +68,10 @@ export async function search(query: string, opts: { staff: boolean; limit?: numb
   let rewritten: string | null = null; let keywords: string[] = []; let jobKey: string | null = null;
   let mode: SearchResponse["mode"] = "semantic";
   let ranked: { itemId: string; rel: number }[] = [];
-  let ftsRows: { id: string; rank: number; titleRank: number }[] = [];
+  let ftsRows: FtsRow[] = [];
   const fts = (texts: string[]) => {
     const q = ftsQuery(texts);
-    if (!q) return Promise.resolve([] as { id: string; rank: number }[]);
+    if (!q) return Promise.resolve([] as FtsRow[]);
     // The title as its own vector, so a match on it can be told apart from a match anywhere in the body.
     const titleVec = sql`to_tsvector('english', coalesce(${itemMeta.displayTitle}, ${items.title}))`;
     return db.select({ id: items.id, rank: sql<number>`ts_rank_cd(${sql.raw('"items"."fts"')}, ${q})`, titleRank: sql<number>`ts_rank_cd(${titleVec}, ${q})` }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id))
@@ -77,7 +80,7 @@ export async function search(query: string, opts: { staff: boolean; limit?: numb
       // Title matches first. Cover density counts every occurrence, so without this a long document that
       // mentions the word repeatedly outranks the one named after it and can fall outside the candidates
       // entirely: on "roots", "Wildflower's Roots in Research" came fourth behind three bodies.
-      .orderBy(sql`3 desc, 2 desc`).limit(60).catch(() => [] as { id: string; rank: number; titleRank: number }[]);
+      .orderBy(sql`3 desc, 2 desc`).limit(60).catch(() => [] as FtsRow[]);
   };
   try {
     // The model's rewrite and the embedding of the words as typed run side by side; the rewrite's embedding follows.
