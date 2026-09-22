@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { FeedbackListResult, FeedbackResult, FeedbackStatus } from "@wfw/shared";
+import { Link } from "react-router-dom";
+import type { FeedbackListResult, FeedbackResult, FeedbackStatus, SearchFeedbackContext } from "@wfw/shared";
 import { api, fmtDate } from "../../api";
 import { ErrorState, Loading, SearchInput, State } from "../../components/ui";
 
@@ -48,6 +49,7 @@ export function AdminFeedback() {
             <div className="wf-section-header" style={{ marginTop: 0 }}><div><p className="eyebrow">Selected feedback</p><h3>{humanize(selected.category)} from {selected.reporterName}</h3></div><button type="button" className="icon-button" onClick={() => setSelected(null)} aria-label="Close details"><X size={17} /></button></div>
             <blockquote className="feedback-quote">{selected.message}</blockquote>
             <p className="muted" style={{ fontSize: ".85rem" }}>{selected.pageUrl ? <a href={selected.pageUrl}>{selected.pageUrl}</a> : selected.pagePath ?? "No page recorded"} · {fmtDate(selected.createdAt)}{typeof selected.context.viewport === "string" ? ` · ${selected.context.viewport}` : ""}</p>
+            <SearchContext context={selected.context} />
             {selected.screenshotDataUrl ? <a href={selected.screenshotDataUrl} target="_blank" rel="noreferrer" aria-label="Open full-size screenshot"><img className="feedback-screenshot" src={selected.screenshotDataUrl} alt={`Page captured with feedback from ${selected.reporterName}`} /></a> : <p className="muted">No screenshot was captured.</p>}
           </section>
           <section className="wf-card wf-card-section">
@@ -59,6 +61,38 @@ export function AdminFeedback() {
           </section>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The search a note came from, when it was sent from the results page.
+ *
+ * Staff reading the queue later cannot reproduce it: the same words rank differently once the library is
+ * re-indexed, and the reader's filters are their own. So what they typed and what came back are stored
+ * with the note, and shown here in the order they saw.
+ */
+function SearchContext({ context }: { context: Record<string, unknown> }) {
+  const search = context.search as SearchFeedbackContext | undefined;
+  if (!search || typeof search.query !== "string") return null;
+  const f = search.filters ?? { language: "all", regions: [], types: [] };
+  const filters = [f.language && f.language !== "all" ? `language: ${f.language}` : null,
+    f.regions?.length ? `regions: ${f.regions.join(", ")}` : null,
+    f.types?.length ? `types: ${f.types.join(", ")}` : null].filter(Boolean);
+  return (
+    <div className="wf-card wf-card-section" style={{ padding: 12, marginTop: 12 }}>
+      <p className="eyebrow" style={{ marginTop: 0 }}>The search this came from</p>
+      <p style={{ margin: 0 }}><strong>{search.query}</strong>{search.mode ? <span className="muted"> · {search.mode}</span> : null}</p>
+      {search.rewritten && search.rewritten.toLowerCase() !== search.query.toLowerCase()
+        ? <p className="muted" style={{ margin: "4px 0 0", fontSize: ".82rem" }}>and also: {search.rewritten}</p> : null}
+      {filters.length ? <p className="muted" style={{ margin: "4px 0 0", fontSize: ".82rem" }}>{filters.join(" · ")}</p> : null}
+      {search.results?.length
+        ? <ol style={{ margin: "8px 0 0", paddingLeft: 20, fontSize: ".85rem" }}>
+            {search.results.map((x) => <li key={x.id}><Link to={`/item/${x.id}`}>{x.title}</Link></li>)}
+          </ol>
+        : <p className="muted" style={{ margin: "8px 0 0", fontSize: ".85rem" }}>Nothing came back for it.</p>}
+      {search.resultCount > (search.results?.length ?? 0)
+        ? <p className="muted" style={{ margin: "6px 0 0", fontSize: ".78rem" }}>{search.resultCount} results in all; the first {search.results.length} are kept.</p> : null}
     </div>
   );
 }
