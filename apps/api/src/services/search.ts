@@ -34,6 +34,26 @@ export function ftsQuery(texts: string[]): ReturnType<typeof sql> | null {
   return sql`(${sql.join(arms.map((t) => sql`websearch_to_tsquery('english', ${t})`), sql` || `)})`;
 }
 
+const SEARCH_STOP = new Set(["the", "and", "for", "with", "from", "how", "our", "your", "what", "when", "does", "about", "into", "that", "this"]);
+const searchWords = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length >= 2);
+const searchStem = (t: string) => t.replace(/(ies|es|s)$/, "");
+/** The words the reader typed, minus filler. Two letters is the floor, so "SSJ", "990" and "ABA" count. */
+export const typedTerms = (query: string): string[] => [...new Set(searchWords(query).filter((t) => !SEARCH_STOP.has(t)))];
+/**
+ * How much of what the reader typed the title carries, from 0 to 1.
+ *
+ * Someone who types a name they remember is looking for the thing called that, so this outweighs how
+ * often the words turn up in a body. Cover density counts every occurrence, which is why "roots" put
+ * "Wildflower's Roots in Research" fourth, behind three long documents that mention the word.
+ */
+export function titleCoverage(query: string, title: string): number {
+  const typed = typedTerms(query);
+  if (!typed.length) return 0;
+  const lower = title.toLowerCase();
+  const words = searchWords(title).map(searchStem);
+  return typed.filter((t) => words.includes(searchStem(t)) || lower.includes(t)).length / typed.length;
+}
+
 export async function search(query: string, opts: { staff: boolean; limit?: number; userId?: string | null; language?: ResourceLanguage; regions?: string[] }): Promise<SearchResponse> {
   const s = await getSettings();
   const db = getDb();
@@ -45,12 +65,19 @@ export async function search(query: string, opts: { staff: boolean; limit?: numb
   let rewritten: string | null = null; let keywords: string[] = []; let jobKey: string | null = null;
   let mode: SearchResponse["mode"] = "semantic";
   let ranked: { itemId: string; rel: number }[] = [];
-  let ftsRows: { id: string; rank: number }[] = [];
+  let ftsRows: { id: string; rank: number; titleRank: number }[] = [];
   const fts = (texts: string[]) => {
     const q = ftsQuery(texts);
     if (!q) return Promise.resolve([] as { id: string; rank: number }[]);
-    return db.select({ id: items.id, rank: sql<number>`ts_rank_cd(${sql.raw('"items"."fts"')}, ${q})` }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id))
-      .where(and(visibleWhere(opts.staff), filterWhere(reader), sql`${sql.raw('"items"."fts"')} @@ ${q}`)).orderBy(sql`2 desc`).limit(60).catch(() => [] as { id: string; rank: number }[]);
+    // The title as its own vector, so a match on it can be told apart from a match anywhere in the body.
+    const titleVec = sql`to_tsvector('english', coalesce(${itemMeta.displayTitle}, ${items.title}))`;
+    return db.select({ id: items.id, rank: sql<number>`ts_rank_cd(${sql.raw('"items"."fts"')}, ${q})`, titleRank: sql<number>`ts_rank_cd(${titleVec}, ${q})` }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id))
+      // A staff title is not in the generated column, which is built from Connected's title, so it is matched here too.
+      .where(and(visibleWhere(opts.staff), filterWhere(reader), sql`(${sql.raw('"items"."fts"')} @@ ${q} or ${titleVec} @@ ${q})`))
+      // Title matches first. Cover density counts every occurrence, so without this a long document that
+      // mentions the word repeatedly outranks the one named after it and can fall outside the candidates
+      // entirely: on "roots", "Wildflower's Roots in Research" came fourth behind three bodies.
+      .orderBy(sql`3 desc, 2 desc`).limit(60).catch(() => [] as { id: string; rank: number; titleRank: number }[]);
   };
   try {
     // The model's rewrite and the embedding of the words as typed run side by side; the rewrite's embedding follows.
@@ -69,7 +96,9 @@ export async function search(query: string, opts: { staff: boolean; limit?: numb
   // Hybrid: fuse semantic ranks with keyword (full-text) ranks by reciprocal rank fusion, so items that match on both rise.
   if (ranked.length === 0) {
     mode = "keyword";
-    ranked = ftsRows.map((r) => ({ itemId: r.id, rel: Number(r.rank) }));
+    // With no semantic pass to fuse with, the keyword rank alone decides the order, so the title
+    // signal has to be carried into it rather than left behind in the SQL ordering.
+    ranked = ftsRows.map((r) => ({ itemId: r.id, rel: 10 * Number(r.titleRank) + Number(r.rank) }));
     if (ranked.length === 0) {
       const like = await db.select({ id: items.id }).from(items).leftJoin(itemMeta, eq(itemMeta.itemId, items.id)).where(and(visibleWhere(opts.staff), filterWhere(reader), sql`lower(coalesce(${itemMeta.displayTitle}, ${items.title})) like ${"%" + query.toLowerCase() + "%"}`)).limit(30);
       ranked = like.map((r) => ({ itemId: r.id, rel: 0.5 }));
@@ -88,12 +117,15 @@ export async function search(query: string, opts: { staff: boolean; limit?: numb
     for (const r of rows) inJob.add(r.itemId);
   }
   const maxRel = Math.max(...ranked.map((r) => r.rel), 1e-6); const minRel = Math.min(...ranked.map((r) => r.rel), maxRel);
-  const terms = [query, ...keywords].join(" ").toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 3);
+  // The words the reader actually typed decide the title boost; the model's keywords only widen the net.
+  const terms = [...new Set([...typedTerms(query), ...searchWords(keywords.join(" "))])];
   const scored = ranked.filter((r) => map.has(r.itemId)).map((r) => {
     const it = map.get(r.itemId) as ItemRow;
     const rel = maxRel > minRel ? (r.rel - minRel) / (maxRel - minRel) : 1; // spread relevance across the candidate set
-    const title = it.title.toLowerCase(); const hits = terms.filter((t) => title.includes(t)).length;
-    const final = rel * (0.8 + 0.2 * (it.score / 100)) + 0.08 * Math.min(hits, 3) + (inJob.has(it.id) ? 0.15 : 0) - (it.dated ? 0.1 : 0);
+    const title = it.title.toLowerCase();
+    const covered = titleCoverage(query, it.title);
+    const hits = terms.filter((t) => title.includes(t)).length;
+    const final = rel * (0.8 + 0.2 * (it.score / 100)) + 0.45 * covered + 0.05 * Math.min(hits, 3) + (inJob.has(it.id) ? 0.15 : 0) - (it.dated ? 0.1 : 0);
     return { it, final };
   }).sort((a, b) => b.final - a.final).slice(0, limit);
   const out: SearchResponse = { query, rewritten, mode, results: scored.map((r) => toSummary(r.it)) };
