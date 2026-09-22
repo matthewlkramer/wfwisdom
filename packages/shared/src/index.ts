@@ -69,6 +69,23 @@ export interface FeedbackResult {
   context: Record<string, unknown>; adminNotes: string | null; createdByUserId: string; resolvedByUserId: string | null;
   resolvedAt: string | null; createdAt: string; updatedAt: string; reporterName: string; reporterEmail: string;
 }
+/**
+ * What a search looked like when someone sent feedback on its results, stored under context.search.
+ *
+ * Kept small on purpose: app_feedback.context is capped at 20 KB, so the results are trimmed to the
+ * first page a reader actually saw and each title is truncated.
+ */
+export interface SearchFeedbackContext {
+  query: string;
+  rewritten: string | null;
+  mode: string;
+  filters: { language: string; regions: string[]; types: string[] };
+  resultCount: number;
+  results: { position: number; id: string; title: string }[];
+}
+export const SEARCH_FEEDBACK_RESULTS = 25;
+export const SEARCH_FEEDBACK_TITLE = 140;
+
 export interface FeedbackListResult { feedback: FeedbackResult[]; pagination: { page: number; limit: number; total: number; pageCount: number } }
 
 export interface SchoolMaterial { id: string; kind: "file" | "link"; title: string; filename: string | null; url: string | null; charCount: number; status: string; createdAt: string }

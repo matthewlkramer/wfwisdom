@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent, type PointerEvent } from "react";
+import { useRef, useState, type FormEvent, type PointerEvent, type ReactNode } from "react";
 import { GripHorizontal, X } from "lucide-react";
 import type { FeedbackCategory } from "@wfw/shared";
 import { api } from "../api";
@@ -12,9 +12,24 @@ export function dialogPosition({ clientX, clientY, offsetX, offsetY, dialogWidth
   return { left: Math.min(Math.max(inset, clientX - offsetX), Math.max(inset, viewportWidth - dialogWidth - inset)), top: Math.min(Math.max(inset, clientY - offsetY), Math.max(inset, viewportHeight - dialogHeight - inset)) };
 }
 
-/** Draggable feedback form. The current page and a screenshot of the viewport go with the message. */
-export function FeedbackDialog({ onClose }: { onClose: () => void }) {
-  const [category, setCategory] = useState<FeedbackCategory>("suggestion");
+/**
+ * Draggable feedback form. The current page and a screenshot of the viewport go with the message.
+ *
+ * The search results page opens the same dialog with its own wording and the search attached, so a note
+ * about a search lands in the one queue alongside everything else rather than in a form of its own.
+ */
+export function FeedbackDialog({ onClose, heading, intro, prompt, defaultCategory = "suggestion", extraContext, preview }: {
+  onClose: () => void;
+  heading?: string;
+  intro?: string;
+  /** Placeholder in the message box, so the question asked matches what the dialog was opened for. */
+  prompt?: string;
+  defaultCategory?: FeedbackCategory;
+  /** Merged into the stored context. Whatever it holds is also shown in `preview`, so nothing is sent unseen. */
+  extraContext?: Record<string, unknown>;
+  preview?: ReactNode;
+}) {
+  const [category, setCategory] = useState<FeedbackCategory>(defaultCategory);
   const [message, setMessage] = useState("");
   const [state, setState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [error, setError] = useState("");
@@ -43,7 +58,7 @@ export function FeedbackDialog({ onClose }: { onClose: () => void }) {
     setState("pending"); setError("");
     try {
       const screenshotDataUrl = await captureVisiblePage();
-      await api.post("/api/feedback", { category, message: message.trim(), pageUrl: window.location.href, pagePath: window.location.pathname, pageTitle: document.title, screenshotDataUrl, context: { viewport: `${window.innerWidth}x${window.innerHeight}`, userAgent: navigator.userAgent, referrer: document.referrer || null, screenshot: screenshotDataUrl ? "captured" : "unavailable" } });
+      await api.post("/api/feedback", { category, message: message.trim(), pageUrl: window.location.href, pagePath: window.location.pathname, pageTitle: document.title, screenshotDataUrl, context: { viewport: `${window.innerWidth}x${window.innerHeight}`, userAgent: navigator.userAgent, referrer: document.referrer || null, screenshot: screenshotDataUrl ? "captured" : "unavailable", ...extraContext } });
       setState("success"); setMessage("");
     } catch (cause) { setState("error"); setError(cause instanceof Error ? cause.message : "Feedback could not be sent."); }
   };
@@ -52,13 +67,14 @@ export function FeedbackDialog({ onClose }: { onClose: () => void }) {
       <section ref={dialog} className="feedback-dialog" style={position ? { left: position.left, top: position.top, transform: "none" } : undefined} onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="feedback-title">
         <header className="feedback-dialog-drag-handle" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
           <span className="feedback-dialog-grip" aria-hidden="true"><GripHorizontal size={22} /></span>
-          <div><span className="eyebrow">App feedback</span><h2 id="feedback-title">Help us make this clearer</h2><p className="muted">Send a note to the team. Your current page and a screenshot are included automatically.</p></div>
+          <div><span className="eyebrow">App feedback</span><h2 id="feedback-title">{heading ?? "Help us make this clearer"}</h2><p className="muted">{intro ?? "Send a note to the team. Your current page and a screenshot are included automatically."}</p></div>
           <button type="button" className="icon-button" onClick={onClose} aria-label="Close feedback"><X size={18} /></button>
         </header>
         {state === "success" ? <div className="feedback-success">Thanks. Your note is in the review queue.</div> : (
           <form className="feedback-form" onSubmit={(e) => void submit(e)}>
             <label>Type <select value={category} onChange={(e) => setCategory(e.target.value as FeedbackCategory)}><option value="suggestion">Suggestion</option><option value="bug">Something is broken</option><option value="question">Question</option><option value="other">Other</option></select></label>
-            <label>Message <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="What should we know?" aria-describedby="feedback-error" /></label>
+            {preview}
+            <label>Message <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder={prompt ?? "What should we know?"} aria-describedby="feedback-error" /></label>
             {error ? <div id="feedback-error"><State kind="error" title="Unable to send feedback">{error}</State></div> : null}
             <footer><button type="button" onClick={onClose}>Cancel</button><button type="submit" className="primary-button" disabled={state === "pending"}>{state === "pending" ? "Sending…" : "Send feedback"}</button></footer>
           </form>
