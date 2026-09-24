@@ -21,6 +21,9 @@ A pnpm workspace, Node 22:
 Commands, all from the root: `pnpm dev`, `pnpm build`, `pnpm test`, `pnpm typecheck`,
 `pnpm db:migrate`, `pnpm db:seed`.
 
+In Claude Code on the web, `.claude/hooks/session-start.sh` runs `pnpm install` when a session starts, so
+a cloud environment needs no setup script. Build and tests need no database or keys.
+
 `.replit` runs `pnpm preview` in the workspace and `pnpm deploy:start` in the deployment, which is
 `db:migrate && db:seed && start` — so **every deploy migrates and seeds.** Keep both idempotent.
 
